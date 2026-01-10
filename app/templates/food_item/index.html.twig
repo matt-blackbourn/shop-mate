@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}FoodItem index{% endblock %}
+
+{% block body %}
+    <h1>FoodItem index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for food_item in food_items %}
+            <tr>
+                <td>{{ food_item.id }}</td>
+                <td>{{ food_item.name }}</td>
+                <td>
+                    <a href="{{ path('app_food_item_show', {'id': food_item.id}) }}">show</a>
+                    <a href="{{ path('app_food_item_edit', {'id': food_item.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="3">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_food_item_new') }}">Create new</a>
+{% endblock %}

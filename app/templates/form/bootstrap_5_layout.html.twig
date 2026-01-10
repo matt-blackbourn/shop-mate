@@ -1,0 +1,26 @@
+{# templates/form/bootstrap_5_layout.html.twig #}
+{% use 'form_div_layout.html.twig' %}
+
+{# Wrap each field in Bootstrap spacing and classes #}
+{% block form_row %}
+    <div class="mb-3">
+        {{ form_label(form) }}
+        {{ form_widget(form, {'attr': {'class': 'form-control'}}) }}
+        {{ form_errors(form) }}
+    </div>
+{% endblock %}
+
+{# Center buttons #}
+{% block button_row %}
+    <div class="d-flex justify-content-center mt-4">
+        {{ form_widget(form) }}
+    </div>
+{% endblock %}
+
+{# Style submit buttons #}
+{% block submit_widget %}
+    {% set type = type|default('submit') %}
+    <button type="{{ type }}" class="btn btn-primary btn-lg">
+        {{ label|default('Save') }}
+    </button>
+{% endblock %}
