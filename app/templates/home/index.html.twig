@@ -1,26 +1,39 @@
 {# templates/home/index.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}Dashboard{% endblock %}
-
-{% block stylesheets %}
-    {{ parent() }}
-    {# Include Bootstrap 5 via CDN #}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-{% endblock %}
+{% block title %}Home{% endblock %}
 
 {% block body %}
-<div class="container text-center mt-5">
-    <h1 class="mb-4">ShopMate</h1>
+    <header>
+        <h1 class="mb-4">ShopMate</h1>
+    </header>
 
-    <div class="d-flex justify-content-center gap-3">
-        {# <a href="{{ path('app_list_new') }}" class="btn btn-success btn-lg">
-            Create List
-        </a> #}
+    <main class="centered">
+        <div class="container">
+            {# <a href="{{ path('app_list_new') }}" class="btn btn-success btn-lg">
+                Create List
+            </a> #}
 
-        <a href="{{ path('app_food_item_new') }}" class="btn btn-primary btn-lg">
-            Create Food Item
-        </a>
-    </div>
-</div>
+            <a href="{{ path('app_food_item_index') }}" class="btn btn-primary btn-lg">
+                All Our Food
+            </a>
+
+            <a href="{{ path('app_food_item_new') }}" class="btn btn-primary btn-lg">
+                Create Food Item
+            </a>
+        </div>
+    </main>
 {% endblock %}
+
+
+{# 🧠 Key mental rule (remember this)
+
+If it looks good at 50% width on desktop, it will look bad on phones.
+
+Mobile wants:
+
+full-width forms
+
+stacked actions
+
+vertical rhythm, not centering hacks #}

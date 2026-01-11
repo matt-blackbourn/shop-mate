@@ -1,0 +1,74 @@
+/* Reset-ish */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+/* App root */
+.app {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+
+  /* iOS safe areas */
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* Basic typography */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(15px, 4vw, 18px);
+  line-height: 1.4;
+}
+
+/* Main content */
+main {
+  flex: 1;
+  padding: clamp(16px, 4vw, 24px);
+}
+
+header {
+    text-align: center;
+}
+
+/* Buttons */
+button,
+.btn {
+width: 100%;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+}
+
+/* Forms */
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: clamp(16px, 4vw, 24px);
+}
+
+.centered {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(16px, 4vw, 24px);
+  }
