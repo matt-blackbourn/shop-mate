@@ -19,17 +19,24 @@ class FoodItemRepository extends ServiceEntityRepository
     //    /**
     //     * @return FoodItem[] Returns an array of FoodItem objects
     //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('f')
-    //            ->andWhere('f.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('f.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findAllByName(): array
+    {
+        return $this->createQueryBuilder('f')
+            ->orderBy('f.name', 'ASC')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
+    public function findAllGroupedByArea(): array
+    {
+        return $this->createQueryBuilder('f')
+            ->orderBy('f.area', 'ASC')
+            ->innerJoin('f.area', 'a')
+            ->addOrderBy('a.orderBy', 'ASC')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 
     //    public function findOneBySomeField($value): ?FoodItem
     //    {

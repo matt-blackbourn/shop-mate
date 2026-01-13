@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Shopping List{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/foodItem.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+<div class="container py-3">
+
+    <h1 class="h4 mb-3">New shopping list</h1>
+
+    {{ form_start(form) }}
+
+
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <h2 class="h6 mb-0">Items</h2>
+
+        <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#quickAddFoodItemModal"
+        >
+            ➕ Add item
+        </button>
+    </div>
+
+    <div class="list-group">
+        {% for checkbox in form.items %}
+            <label class="list-group-item d-flex align-items-center gap-3 py-3">
+                {{ form_widget(checkbox, {
+                    attr: { class: 'form-check-input flex-shrink-0' }
+                }) }}
+                <span class="flex-grow-1">
+                    {{ checkbox.vars.label }}
+                </span>
+            </label>
+        {% endfor %}
+    </div>
+
+    <div class="sticky-bottom bg-white pt-3 pb-2 mt-4 border-top">
+        <button class="btn btn-primary btn-lg w-100">
+            Create list
+        </button>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+
+{% include 'food_item/quick_add_modal.html.twig' %}
+{% endblock %}

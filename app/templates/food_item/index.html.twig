@@ -3,39 +3,44 @@
 {% block title %}Food Items{% endblock %}
 
 {% block body %}
+<header>
     <h1>All Our Food</h1>
+</header>
 
-    
-    <a href="{{ path('app_food_item_new') }}" class="btn btn-primary btn-lg">
-        New Food
-    </a>
-    <a href="{{ path('app_home') }}" class="btn btn-secondary btn-lg">
-        Home
-    </a>
+<main>
+    <div class="container">
 
-    <table class="table">
-        <thead>
-            <tr>
-                {# <th>Id</th> #}
-                <th>Name</th>
-                {# <th>actions</th> #} 
-            </tr>
-        </thead>
-        <tbody>
-        {% for food_item in food_items %}
-            <tr>
-                <td>{{ food_item.name }}</td>
-                <td>
-                    {# <a href="{{ path('app_food_item_show', {'id': food_item.id}) }}">show</a>
-                    <a href="{{ path('app_food_item_edit', {'id': food_item.id}) }}">edit</a> #}
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="3">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+        <div class="actions">
+            <a href="{{ path('app_food_item_new') }}" class="btn btn-primary btn-lg">
+                + New Food
+            </a>
 
+            <a href="{{ path('app_home') }}" class="btn btn-secondary btn-lg">
+                Home
+            </a>
+        </div>
+
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for food_item in food_items %}
+                    <tr>
+                        <td>{{ food_item.name }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td>No food items yet</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</main>
 {% endblock %}

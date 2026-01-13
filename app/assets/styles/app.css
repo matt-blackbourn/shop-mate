@@ -10,6 +10,13 @@ html, body {
   padding: 0;
 }
 
+main,
+footer {
+  padding-left: clamp(16px, 4vw, 24px);
+  padding-right: clamp(16px, 4vw, 24px);
+}
+
+
 /* App root */
 .app {
   min-height: 100svh;
@@ -38,7 +45,24 @@ main {
 }
 
 header {
-    text-align: center;
+    /* Push below notch + give breathing room */
+    padding-top: calc(env(safe-area-inset-top) + 20px);
+  
+    /* Bottom spacing to main */
+    padding-bottom: 16px;
+  
+    /* Left/right breathing room */
+    padding-left: clamp(16px, 4vw, 24px);
+    padding-right: clamp(16px, 4vw, 24px);
+  
+    /* optional styling */
+    text-align: left; /* align header text left for proper margin feel */
+}
+  
+header h1 {
+    margin: 0;          /* remove default margins */
+    font-size: 1.5rem;
+    display: block;     /* ensure padding applies correctly */
 }
 
 /* Buttons */
@@ -71,4 +95,82 @@ textarea {
     align-items: center;
     justify-content: center;
     padding: clamp(16px, 4vw, 24px);
-  }
+}
+
+/* Action buttons */
+.actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.actions .btn {
+    flex: 1;
+    text-align: center;
+}
+
+/* Table safety on mobile */
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+  
+  /* Table spacing */
+  table {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+/* Food list */
+.food-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.food-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+}
+
+.food-name {
+  font-size: 1rem;
+}
+
+/* Empty state */
+.food-empty {
+  text-align: center;
+  color: #666;
+  padding: 2rem 0;
+}
+
+/* Floating action button */
+.fab {
+  position: fixed;
+  right: clamp(16px, 4vw, 24px);
+  bottom: calc(
+    clamp(16px, 4vw, 24px)
+    + env(safe-area-inset-bottom)
+  );
+
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+
+  background: #0d6efd;
+  color: white;
+  font-size: 2rem;
+  text-align: center;
+  line-height: 56px;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  text-decoration: none;
+}

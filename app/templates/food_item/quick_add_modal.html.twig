@@ -1,0 +1,38 @@
+{# templates/food_item/_quick_add_modal.html.twig #}
+
+<div class="modal fade" id="quickAddFoodItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Add food item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input
+                        type="text"
+                        id="quick-add-name"
+                        class="form-control form-control-lg"
+                        placeholder="e.g. Milk"
+                    >
+                </div>
+
+                <div class="text-danger small d-none" id="quick-add-error"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-primary w-100 btn-lg"
+                    id="quick-add-submit"
+                >
+                    Add item
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

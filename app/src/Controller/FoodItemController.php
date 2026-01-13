@@ -7,6 +7,7 @@ use App\Form\FoodItemType;
 use App\Repository\FoodItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -18,7 +19,7 @@ final class FoodItemController extends AbstractController
     public function index(FoodItemRepository $foodItemRepository): Response
     {
         return $this->render('food_item/index.html.twig', [
-            'food_items' => $foodItemRepository->findAll(),
+            'food_items' => $foodItemRepository->findAllGroupedByArea(),
         ]);
     }
 
@@ -39,6 +40,29 @@ final class FoodItemController extends AbstractController
         return $this->render('food_item/new.html.twig', [
             'food_item' => $foodItem,
             'form' => $form,
+        ]);
+    }
+
+    #[Route('/food-item/quick-add', name: 'ajax_food_item_quick_add', methods: ['POST'])]
+    public function quickAdd(
+        Request $request,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+
+        if (empty($data['name'])) {
+            return $this->json(['error' => 'Name is required'], 400);
+        }
+
+        $foodItem = new FoodItem();
+        $foodItem->setName(trim($data['name']));
+
+        $em->persist($foodItem);
+        $em->flush();
+
+        return $this->json([
+            'id' => $foodItem->getId(),
+            'name' => $foodItem->getName(),
         ]);
     }
 
