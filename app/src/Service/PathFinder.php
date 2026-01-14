@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Edge;
 use App\Entity\FoodItem;
 use App\Entity\ShoppingList;
 use App\Entity\Supermarket;
@@ -23,9 +24,14 @@ class PathFinder
      * Nearest-neighbour route (the core algorithm)
      */
     public function buildShoppingRoute(ShoppingList $shoppingList): array {
-        // Convert collection to id-indexed array (your approach 👍)
-        $mappedItems = [];
+        // Convert collection to id-indexed array (your approach 👍), and separate by phase and unmapped items
         $unmappedItems = [];
+        $mappedItems = [
+            Edge::ENTRANCE_PHASE => [],
+            Edge::POST_ENTRANCE_PHASE => [],
+            Edge::MAIN_PHASE => [],
+            Edge::END_PHASE => [],
+        ];
         foreach ($shoppingList->getItems() as $foodItem) {
             $location = $this->productLocationRepository->findOneBy([
                 'foodItem' => $foodItem,
@@ -33,47 +39,55 @@ class PathFinder
             ]);
 
             if($location){
-                $mappedItems[$foodItem->getId()] = $foodItem;
+                $mappedItems[$location->getEdge()->getPhase()][$foodItem->getId()] = $foodItem;
             } else {
                 $unmappedItems[$foodItem->getId()] = $foodItem;
             }
-
         }
 
         $graph = $this->buildGraph($shoppingList->getSupermarket());
         $route = [];
         $currentNodeId = $shoppingList->getSupermarket()->getEntranceNode()->getId();
 
-        while (!empty($mappedItems)) {
-            $distances = $this->dijkstra($graph, $currentNodeId);
+        foreach([
+            Edge::ENTRANCE_PHASE,
+            Edge::POST_ENTRANCE_PHASE,
+            Edge::MAIN_PHASE,
+            Edge::END_PHASE,
+        ] as $phase) {
 
-            $closestItem = null;
-            $closestNode = null;
-            $closestDistance = INF;
-
-            foreach ($mappedItems as $foodItem) {
-                $result = $this->getClosestNodeToFoodItem($distances, $foodItem, $shoppingList->getSupermarket());
-
-                if ($result === null) {
-                    continue;
+            $remainingItems = $mappedItems[$phase];
+      
+            while (!empty($remainingItems)) {
+                $distances = $this->dijkstra($graph, $currentNodeId);
+    
+                $closestItem = null;
+                $closestNode = null;
+                $closestDistance = INF;
+    
+                foreach ($remainingItems as $foodItem) {
+                    $result = $this->getClosestNodeToFoodItem($distances, $foodItem, $shoppingList->getSupermarket());
+                    if ($result === null) {
+                        continue;
+                    }
+    
+                    if ($result['distance'] < $closestDistance) {
+                        $closestDistance = $result['distance'];
+                        $closestNode = $result['node'];
+                        $closestItem = $foodItem;
+                    }
                 }
-
-                if ($result['distance'] < $closestDistance) {
-                    $closestDistance = $result['distance'];
-                    $closestNode = $result['node'];
-                    $closestItem = $foodItem;
+    
+                // Safety check (should not happen, but avoids infinite loop)
+                if ($closestItem === null) {
+                    break;
                 }
+    
+                $currentNodeId = $closestNode;
+                $route[] = $closestItem;
+    
+                unset($remainingItems[$closestItem->getId()]);
             }
-
-            // Safety check (should not happen, but avoids infinite loop)
-            if ($closestItem === null) {
-                break;
-            }
-
-            $currentNodeId = $closestNode;
-            $route[] = $closestItem;
-
-            unset($mappedItems[$closestItem->getId()]);
         }
 
         // Append unmapped items at the end
@@ -85,7 +99,7 @@ class PathFinder
     }
 
 
-        /**
+    /**
      * Build adjacency list from edges
      * 
      * Structure nodeId =>[neighbourNodeId => length, ...]

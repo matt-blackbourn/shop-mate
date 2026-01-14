@@ -10,6 +10,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: EdgeRepository::class)]
 class Edge
 {
+    public const ENTRANCE_PHASE = 1;
+    public const POST_ENTRANCE_PHASE = 2;
+    public const MAIN_PHASE = 3;
+    public const END_PHASE = 4;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -43,6 +48,9 @@ class Edge
 
     #[ORM\ManyToOne(inversedBy: 'edges')]
     private ?Supermarket $supermarket = null;
+
+    #[ORM\Column]
+    private ?int $phase = self::MAIN_PHASE;
 
     public function __construct()
     {
@@ -171,6 +179,18 @@ class Edge
     public function setSupermarket(?Supermarket $supermarket): static
     {
         $this->supermarket = $supermarket;
+
+        return $this;
+    }
+
+    public function getPhase(): ?int
+    {
+        return $this->phase;
+    }
+
+    public function setPhase(int $phase): static
+    {
+        $this->phase = $phase;
 
         return $this;
     }
