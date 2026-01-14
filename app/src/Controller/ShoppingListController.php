@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\ShoppingList;
 use App\Form\ShoppingListType;
 use App\Repository\ShoppingListRepository;
+use App\Service\PathFinder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,10 +49,11 @@ final class ShoppingListController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_shopping_list_show', methods: ['GET'])]
-    public function show(ShoppingList $shoppingList): Response
+    public function show(ShoppingList $shoppingList, PathFinder $pathFinder): Response
     {
         return $this->render('shopping_list/show.html.twig', [
             'shopping_list' => $shoppingList,
+            'orderedList' => $pathFinder->buildShoppingRoute($shoppingList),
         ]);
     }
 

@@ -10,7 +10,7 @@
             <h5>Items</h5>
             <ul>
             {% for item in shopping_list.items %}
-                <li>{{ item.name }} ({{ item.id }})</li>
+                <li>{{ item.name }}</li>
             {% endfor %}
             </ul>
             <tr>
@@ -19,6 +19,12 @@
             </tr>
         </tbody>
     </table>
+
+    <ul>
+    {% for item in orderedList %}
+        <li>{{ item.name }}</li>
+    {% endfor %}
+    </ul>
 
 
     <a href="{{ path('app_shopping_list_edit', {'id': shopping_list.id}) }}">edit</a>

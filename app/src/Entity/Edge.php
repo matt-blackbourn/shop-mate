@@ -41,6 +41,9 @@ class Edge
     #[ORM\OneToMany(targetEntity: ProductLocation::class, mappedBy: 'edge')]
     private Collection $productLocations;
 
+    #[ORM\ManyToOne(inversedBy: 'edges')]
+    private ?Supermarket $supermarket = null;
+
     public function __construct()
     {
         $this->foodItems = new ArrayCollection();
@@ -156,6 +159,18 @@ class Edge
                 $productLocation->setEdge(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getSupermarket(): ?Supermarket
+    {
+        return $this->supermarket;
+    }
+
+    public function setSupermarket(?Supermarket $supermarket): static
+    {
+        $this->supermarket = $supermarket;
 
         return $this;
     }

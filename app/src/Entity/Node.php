@@ -36,10 +36,17 @@ class Node
     #[ORM\OneToMany(targetEntity: Edge::class, mappedBy: 'end')]
     private Collection $edgeEnd;
 
+    /**
+     * @var Collection<int, Supermarket>
+     */
+    #[ORM\OneToMany(targetEntity: Supermarket::class, mappedBy: 'entranceNode')]
+    private Collection $supermarkets;
+
     public function __construct()
     {
         $this->edgeStart = new ArrayCollection();
         $this->edgeEnd = new ArrayCollection();
+        $this->supermarkets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -137,6 +144,36 @@ class Node
             // set the owning side to null (unless already changed)
             if ($edgeEnd->getEnd() === $this) {
                 $edgeEnd->setEnd(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Supermarket>
+     */
+    public function getSupermarkets(): Collection
+    {
+        return $this->supermarkets;
+    }
+
+    public function addSupermarket(Supermarket $supermarket): static
+    {
+        if (!$this->supermarkets->contains($supermarket)) {
+            $this->supermarkets->add($supermarket);
+            $supermarket->setEntranceNode($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSupermarket(Supermarket $supermarket): static
+    {
+        if ($this->supermarkets->removeElement($supermarket)) {
+            // set the owning side to null (unless already changed)
+            if ($supermarket->getEntranceNode() === $this) {
+                $supermarket->setEntranceNode(null);
             }
         }
 

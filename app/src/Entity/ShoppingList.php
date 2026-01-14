@@ -18,7 +18,7 @@ class ShoppingList
     /**
      * @var Collection<int, FoodItem>
      */
-    #[ORM\ManyToMany(targetEntity: FoodItem::class, inversedBy: 'shoppingLists')]
+    #[ORM\ManyToMany(targetEntity: FoodItem::class, inversedBy: 'shoppingLists', indexBy: 'id')]
     private Collection $item;
 
     #[ORM\Column(nullable: true)]
@@ -26,6 +26,9 @@ class ShoppingList
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dateCompleted = null;
+
+    #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
+    private ?Supermarket $supermarket = null;
 
     public function __construct()
     {
@@ -81,6 +84,18 @@ class ShoppingList
     public function setDateCompleted(?\DateTimeImmutable $dateCompleted): static
     {
         $this->dateCompleted = $dateCompleted;
+
+        return $this;
+    }
+
+    public function getSupermarket(): ?Supermarket
+    {
+        return $this->supermarket;
+    }
+
+    public function setSupermarket(?Supermarket $supermarket): static
+    {
+        $this->supermarket = $supermarket;
 
         return $this;
     }
