@@ -39,11 +39,18 @@ class Supermarket
     #[ORM\ManyToOne(inversedBy: 'supermarkets')]
     private ?Node $entranceNode = null;
 
+    /**
+     * @var Collection<int, Node>
+     */
+    #[ORM\OneToMany(targetEntity: Node::class, mappedBy: 'supermarket')]
+    private Collection $nodes;
+
     public function __construct()
     {
         $this->productLocations = new ArrayCollection();
         $this->edges = new ArrayCollection();
         $this->shoppingLists = new ArrayCollection();
+        $this->nodes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -161,6 +168,36 @@ class Supermarket
     public function setEntranceNode(?Node $entranceNode): static
     {
         $this->entranceNode = $entranceNode;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Node>
+     */
+    public function getNodes(): Collection
+    {
+        return $this->nodes;
+    }
+
+    public function addNode(Node $node): static
+    {
+        if (!$this->nodes->contains($node)) {
+            $this->nodes->add($node);
+            $node->setSupermarket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNode(Node $node): static
+    {
+        if ($this->nodes->removeElement($node)) {
+            // set the owning side to null (unless already changed)
+            if ($node->getSupermarket() === $this) {
+                $node->setSupermarket(null);
+            }
+        }
 
         return $this;
     }

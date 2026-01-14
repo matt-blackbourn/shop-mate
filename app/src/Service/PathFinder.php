@@ -6,6 +6,7 @@ use App\Entity\FoodItem;
 use App\Entity\ShoppingList;
 use App\Entity\Supermarket;
 use App\Repository\EdgeRepository;
+use App\Repository\NodeRepository;
 use App\Repository\ProductLocationRepository;
 use SplPriorityQueue;
 use Doctrine\Common\Collections\Collection;
@@ -15,34 +16,43 @@ class PathFinder
     public function __construct(
         private EdgeRepository $edgeRepository,
         private ProductLocationRepository $productLocationRepository,
+        private NodeRepository $nodeRepository,
     ){}
-
-
 
     /**
      * Nearest-neighbour route (the core algorithm)
      */
     public function buildShoppingRoute(ShoppingList $shoppingList): array {
         // Convert collection to id-indexed array (your approach 👍)
-        $items = [];
+        $mappedItems = [];
+        $unmappedItems = [];
         foreach ($shoppingList->getItems() as $foodItem) {
-            $items[$foodItem->getId()] = $foodItem;
+            $location = $this->productLocationRepository->findOneBy([
+                'foodItem' => $foodItem,
+                'supermarket' => $shoppingList->getSupermarket(),
+            ]);
+
+            if($location){
+                $mappedItems[$foodItem->getId()] = $foodItem;
+            } else {
+                $unmappedItems[$foodItem->getId()] = $foodItem;
+            }
+
         }
 
         $graph = $this->buildGraph($shoppingList->getSupermarket());
         $route = [];
         $currentNodeId = $shoppingList->getSupermarket()->getEntranceNode()->getId();
 
-        while (!empty($items)) {
+        while (!empty($mappedItems)) {
             $distances = $this->dijkstra($graph, $currentNodeId);
 
             $closestItem = null;
             $closestNode = null;
             $closestDistance = INF;
 
-            foreach ($items as $foodItem) {
+            foreach ($mappedItems as $foodItem) {
                 $result = $this->getClosestNodeToFoodItem($distances, $foodItem, $shoppingList->getSupermarket());
-                // dump($foodItem,$result);
 
                 if ($result === null) {
                     continue;
@@ -54,8 +64,6 @@ class PathFinder
                     $closestItem = $foodItem;
                 }
             }
-            
-     
 
             // Safety check (should not happen, but avoids infinite loop)
             if ($closestItem === null) {
@@ -65,7 +73,12 @@ class PathFinder
             $currentNodeId = $closestNode;
             $route[] = $closestItem;
 
-            unset($items[$closestItem->getId()]);
+            unset($mappedItems[$closestItem->getId()]);
+        }
+
+        // Append unmapped items at the end
+        foreach ($unmappedItems as $foodItem) {
+            $route[] = $foodItem;
         }
 
         return $route;
@@ -106,7 +119,10 @@ class PathFinder
         ]);
 
         if (!$productLocation) {
-            return null;
+            return [
+                'node' => $this->nodeRepository->findLastNodeInSupermarket($supermarket)->getId(),
+                'distance' => INF,
+            ];
         }
 
         $edge = $productLocation->getEdge();

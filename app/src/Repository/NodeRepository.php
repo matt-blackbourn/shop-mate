@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Node;
+use App\Entity\Supermarket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,13 +32,15 @@ class NodeRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?Node
-    //    {
-    //        return $this->createQueryBuilder('n')
-    //            ->andWhere('n.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+       public function findLastNodeInSupermarket(Supermarket $supermarket): ?Node
+       {
+           return $this->createQueryBuilder('n')
+                ->andWhere('n.supermarket = :supermarket')
+                ->setParameter('supermarket', $supermarket)
+                ->orderBy('n.id', 'DESC')
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult()
+           ;
+       }
 }

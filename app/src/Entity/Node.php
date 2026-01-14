@@ -42,6 +42,9 @@ class Node
     #[ORM\OneToMany(targetEntity: Supermarket::class, mappedBy: 'entranceNode')]
     private Collection $supermarkets;
 
+    #[ORM\ManyToOne(inversedBy: 'nodes')]
+    private ?Supermarket $supermarket = null;
+
     public function __construct()
     {
         $this->edgeStart = new ArrayCollection();
@@ -176,6 +179,18 @@ class Node
                 $supermarket->setEntranceNode(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getSupermarket(): ?Supermarket
+    {
+        return $this->supermarket;
+    }
+
+    public function setSupermarket(?Supermarket $supermarket): static
+    {
+        $this->supermarket = $supermarket;
 
         return $this;
     }
