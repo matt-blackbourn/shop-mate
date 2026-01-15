@@ -32,15 +32,25 @@ class NodeRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-       public function findLastNodeInSupermarket(Supermarket $supermarket): ?Node
-       {
-           return $this->createQueryBuilder('n')
-                ->andWhere('n.supermarket = :supermarket')
-                ->setParameter('supermarket', $supermarket)
-                ->orderBy('n.id', 'DESC')
-                ->setMaxResults(1)
-                ->getQuery()
-                ->getOneOrNullResult()
-           ;
-       }
+    public function findLastNodeInSupermarket(Supermarket $supermarket): ?Node
+    {
+        return $this->createQueryBuilder('n')
+            ->andWhere('n.supermarket = :supermarket')
+            ->setParameter('supermarket', $supermarket)
+            ->orderBy('n.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
+
+    public function findBySupermarket(Supermarket $supermarket): array
+    {
+        return $this->createQueryBuilder('n', 'n.id')
+            ->andWhere('n.supermarket = :supermarket')
+            ->setParameter('supermarket', $supermarket)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }

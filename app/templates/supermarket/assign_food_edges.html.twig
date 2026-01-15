@@ -1,0 +1,87 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Assign Food Items to Edges
+{% endblock %}
+
+{% block body %}
+	<h1>Assign Food Items to Edges</h1>
+	{% for message in app.flashes('error') %}
+		<div style="color:red">{{ message }}</div>
+	{% endfor %}
+	{% for message in app.flashes('success') %}
+		<div style="color:green">{{ message }}</div>
+	{% endfor %}
+
+	<form method="post">
+
+		<label style="display:block; margin-bottom: 1rem;">
+			<input type="checkbox" id="show-only-unassigned">
+			Show only unassigned
+		</label>
+
+		<button type="submit">Save all</button>
+		<br>
+
+		<table border="1" cellpadding="6" cellspacing="0">
+			<thead>
+				<tr>
+					<th>Food item</th>
+					<th>Start node</th>
+					<th>End node</th>
+					<th>Status</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for food in foodItems %}
+					{% set location = placements[food.id] ?? null %}
+					{% set isMapped = location is not null %}
+
+					<tr data-assigned="{{ placements[food.id] is defined ? '1' : '0' }}">
+						<td>{{ food.name }}</td>
+
+						<td>
+							<select name="locations[{{ food.id }}][start]">
+								<option value="">—</option>
+								{% for node in nodes %}
+									<option value="{{ node.id }}" {% if placements[food.id] is defined and node.id == placements[food.id].edge.start.id %} selected {% endif %}>
+										{{ node.id }}
+									</option>
+								{% endfor %}
+							</select>
+						</td>
+
+						<td>
+							<select name="locations[{{ food.id }}][end]">
+								<option value="">—</option>
+								{% for node in nodes %}
+									<option value="{{ node.id }}" {% if placements[food.id] is defined and node.id == placements[food.id].edge.end.id %} selected {% endif %}>
+										{{ node.id }}
+									</option>
+								{% endfor %}
+							</select>
+						</td>
+
+						<td>
+							{% if isMapped %}✓{% else %}—
+							{% endif %}
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+
+
+	</form>
+
+	<script>
+		document.getElementById('show-only-unassigned').addEventListener('change', function () {
+            const hideAssigned = this.checked;
+
+            document.querySelectorAll('tr[data-assigned]').forEach(row => {
+                const isAssigned = row.dataset.assigned === '1';
+                row.style.display = hideAssigned && isAssigned ? 'none' : '';
+            });
+        });
+	</script>
+
+{% endblock %}

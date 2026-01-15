@@ -2,7 +2,9 @@
 
 namespace App\Repository;
 
+use App\Entity\FoodItem;
 use App\Entity\ProductLocation;
+use App\Entity\Supermarket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +18,16 @@ class ProductLocationRepository extends ServiceEntityRepository
         parent::__construct($registry, ProductLocation::class);
     }
 
-    //    /**
-    //     * @return ProductLocation[] Returns an array of ProductLocation objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?ProductLocation
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function findOneByFoodAndSupermarket(FoodItem $food, Supermarket $supermarket): ?ProductLocation
+    {
+        return $this->createQueryBuilder('pl')
+            ->innerJoin('pl.edge', 'e')
+            ->innerJoin('e.supermarket', 's')
+            ->where('pl.foodItem = :food')
+            ->andWhere('s.id = :supermarket')
+            ->setParameter('food', $food)        // Use setParameter, singular
+            ->setParameter('supermarket', $supermarket) // Use the entity itself
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }
