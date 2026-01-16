@@ -10,6 +10,7 @@ use App\Repository\EdgeRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductLocationRepository;
 use SplPriorityQueue;
+use Doctrine\Common\Collections\Collection;
 
 class PathFinder
 {
@@ -30,47 +31,41 @@ class PathFinder
      * Nearest-neighbour route (the core algorithm)
      */
     public function buildShoppingRoute(ShoppingList $shoppingList): array {
-        // Convert collection to id-indexed array, and separate by phase and unmapped items
+        // Convert collection to id-indexed array (your approach 👍), and separate by phase and unmapped items
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
 
-        // Sort food with known location into phase buckets
-        foreach ($shoppingList->getItems() as $foodItem) {
+        foreach ($shoppingList->getListItems() as $listItem) {
+            $foodItem = $listItem->getFoodItem();
+            
             $location = $this->productLocationRepository->findOneBy([
                 'foodItem' => $foodItem,
                 'supermarket' => $shoppingList->getSupermarket(),
             ]);
-            
+
             if($location){
                 $mappedItems[$location->getEdge()->getPhase()][$foodItem->getId()] = $foodItem;
             } else {
-                $unmappedItems[$foodItem->getId()] = $foodItem; // We'll add these at the end
+                $unmappedItems[$foodItem->getId()] = $foodItem;
             }
         }
 
-        // Apply phase processing rules
-        // If we have no entrance phase items, main phase becomes entrance phase
-        if (empty($mappedItems[Edge::ENTRANCE_PHASE])) {
-            $mappedItems[Edge::ENTRANCE_PHASE] = $mappedItems[Edge::MAIN_PHASE] ?? [];
-            $mappedItems[Edge::MAIN_PHASE] = [];
-        }
-
-        // Set some variables before building the route
-        $orderedList = [];
-        $currentNodeId = $shoppingList->getSupermarket()->getEntranceNode()->getId();
         $graph = $this->buildGraph($shoppingList->getSupermarket());
+        $route = [];
+        $currentNodeId = $shoppingList->getSupermarket()->getEntranceNode()->getId();
 
         // Process each phase in order
         foreach($this->phases as $phase) {
-            $remainingItems = $mappedItems[$phase];
 
+            $remainingItems = $mappedItems[$phase];
+      
             while (!empty($remainingItems)) {
+                $distances = $this->dijkstra($graph, $currentNodeId);
+    
                 $closestItem = null;
                 $closestNode = null;
                 $closestDistance = INF;
-                $distances = $this->dijkstra($graph, $currentNodeId); // get distances from current node to all others
     
-                // Find the closest item out of the remaining food items in the phase
                 foreach ($remainingItems as $foodItem) {
                     $result = $this->getClosestNodeToFoodItem($distances, $foodItem, $shoppingList->getSupermarket());
                     if ($result === null) {
@@ -89,19 +84,19 @@ class PathFinder
                     break;
                 }
     
-                // Update current position and add item to route. Remove this item from the remaining items before next iteration
                 $currentNodeId = $closestNode;
-                $orderedList[] = $closestItem;
+                $route[] = $closestItem;
+    
                 unset($remainingItems[$closestItem->getId()]);
             }
         }
 
         // Append unmapped items at the end
         foreach ($unmappedItems as $foodItem) {
-            $orderedList[] = $foodItem;
+            $route[] = $foodItem;
         }
 
-        return $orderedList;
+        return $route;
     }
 
 
@@ -133,20 +128,22 @@ class PathFinder
      */
     private function getClosestNodeToFoodItem(array $distances, FoodItem $foodItem, Supermarket $supermarket): ?array
     {
-        $location = $this->productLocationRepository->findOneBy([
+        $productLocation = $this->productLocationRepository->findOneBy([
             'foodItem' => $foodItem,
             'supermarket' => $supermarket,
         ]);
 
-        if (!$location) {
+        if (!$productLocation) {
             return [
                 'node' => $this->nodeRepository->findLastNodeInSupermarket($supermarket)->getId(),
                 'distance' => INF,
             ];
         }
 
-        $startId = $location->getEdge()->getStart()->getId();
-        $endId   = $location->getEdge()->getEnd()->getId();
+        $edge = $productLocation->getEdge();
+
+        $startId = $edge->getStart()->getId();
+        $endId   = $edge->getEnd()->getId();
 
         $distanceToStart = $distances[$startId] ?? INF;
         $distanceToEnd   = $distances[$endId] ?? INF;
@@ -172,7 +169,7 @@ class PathFinder
      * 3 => 14
      * 4 => 22...]
      */
-    private function dijkstra(array $graph, string $start): array
+    public function dijkstra(array $graph, string $start): array
     {
         $distances = [];
         $queue = new SplPriorityQueue();
@@ -184,30 +181,24 @@ class PathFinder
 
         // Set start (current) node distance to 0
         $distances[$start] = 0;
-
-        // Insert the starting node into the priority queue with a priority of 0
         $queue->insert($start, 0);
 
-        // Process the priority queue until it is empty
         while (!$queue->isEmpty()) {
-            // Extract the node with the smallest distance (highest priority)
-            $shortest = $queue->extract();
+            $u = $queue->extract();
 
-            // Iterate through all neighboring nodes of the current node
-            foreach ($graph[$shortest] ?? [] as $nodeId => $length) {
-                // Calculate the alternative distance to the neighboring node
-                $alt = $distances[$shortest] + $length;
-
-                // If the alternative distance is shorter, update the distance and reinsert into the queue
-                if ($alt < $distances[$nodeId]) {
-                    $distances[$nodeId] = $alt;
-
-                    // Use negative distance to get min-heap behavior (SplPriorityQueue is a max-heap)
-                    $queue->insert($nodeId, -$alt);
+            foreach ($graph[$u] ?? [] as $v => $length) {
+                $alt = $distances[$u] + $length;
+                if ($alt < $distances[$v]) {
+                    $distances[$v] = $alt;
+                    $queue->insert($v, -$alt); // max-heap workaround
                 }
             }
         }
 
         return $distances;
     }
+
+
+
+
 }

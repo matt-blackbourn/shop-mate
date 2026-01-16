@@ -20,9 +20,6 @@ class FoodItem
     private ?string $name = null;
 
     #[ORM\ManyToOne(inversedBy: 'foodItems')]
-    private ?Area $area = null;
-
-    #[ORM\ManyToOne(inversedBy: 'foodItems')]
     private ?Edge $edge = null;
 
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
@@ -35,15 +32,15 @@ class FoodItem
     private Collection $productLocations;
 
     /**
-     * @var Collection<int, ShoppingList>
+     * @var Collection<int, ListItem>
      */
-    #[ORM\ManyToMany(targetEntity: ShoppingList::class, mappedBy: 'item')]
-    private Collection $shoppingLists;
+    #[ORM\OneToMany(targetEntity: ListItem::class, mappedBy: 'foodItem')]
+    private Collection $listItems;
 
     public function __construct()
     {
         $this->productLocations = new ArrayCollection();
-        $this->shoppingLists = new ArrayCollection();
+        $this->listItems = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -59,18 +56,6 @@ class FoodItem
     public function setName(string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getArea(): ?Area
-    {
-        return $this->area;
-    }
-
-    public function setArea(?Area $area): static
-    {
-        $this->area = $area;
 
         return $this;
     }
@@ -130,27 +115,30 @@ class FoodItem
     }
 
     /**
-     * @return Collection<int, ShoppingList>
+     * @return Collection<int, ListItem>
      */
-    public function getShoppingLists(): Collection
+    public function getListItems(): Collection
     {
-        return $this->shoppingLists;
+        return $this->listItems;
     }
 
-    public function addShoppingList(ShoppingList $shoppingList): static
+    public function addListItem(ListItem $listItem): static
     {
-        if (!$this->shoppingLists->contains($shoppingList)) {
-            $this->shoppingLists->add($shoppingList);
-            $shoppingList->addItem($this);
+        if (!$this->listItems->contains($listItem)) {
+            $this->listItems->add($listItem);
+            $listItem->setFoodItem($this);
         }
 
         return $this;
     }
 
-    public function removeShoppingList(ShoppingList $shoppingList): static
+    public function removeListItem(ListItem $listItem): static
     {
-        if ($this->shoppingLists->removeElement($shoppingList)) {
-            $shoppingList->removeItem($this);
+        if ($this->listItems->removeElement($listItem)) {
+            // set the owning side to null (unless already changed)
+            if ($listItem->getFoodItem() === $this) {
+                $listItem->setFoodItem(null);
+            }
         }
 
         return $this;

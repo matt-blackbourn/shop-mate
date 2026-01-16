@@ -9,8 +9,8 @@
         <tbody>
             <h5>Items</h5>
             <ul>
-            {% for item in shopping_list.items %}
-                <li>{{ item.name }}</li>
+            {% for listItem in shopping_list.listItems %}
+                <li>{{ listItem.foodItem.name }}</li>
             {% endfor %}
             </ul>
             <tr>
@@ -21,8 +21,8 @@
     </table>
 
     <ul>
-    {% for item in orderedList %}
-        <li>{{ item.name }}</li>
+    {% for listItem in orderedList %}
+        <li>{{ listItem.foodItem.name }}</li>
     {% endfor %}
     </ul>
 

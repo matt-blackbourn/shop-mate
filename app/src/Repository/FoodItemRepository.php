@@ -38,7 +38,14 @@ class FoodItemRepository extends ServiceEntityRepository
         ;
     }
 
-    //    public function findOneBySomeField($value): ?FoodItem
+    /**
+     * select f.id, COALESCE (userfooditem.customName, f.name) as name
+     * COALESCE ufo.customCategory_id, f.category_id as category_id
+     * FROM food_item f
+     * INNER JOIN user_food_item ufo ON ufo.food_item_id = f.id AND ufo.user_id = ?
+     * Where f.owner_id = ='system' OR f.owner_id = 'user' and f.user_id = :userid
+     */
+    //    public function findAllFoodsByUser($user): ?FoodItem
     //    {
     //        return $this->createQueryBuilder('f')
     //            ->andWhere('f.exampleField = :val')

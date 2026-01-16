@@ -15,12 +15,6 @@ class ShoppingList
     #[ORM\Column]
     private ?int $id = null;
 
-    /**
-     * @var Collection<int, FoodItem>
-     */
-    #[ORM\ManyToMany(targetEntity: FoodItem::class, inversedBy: 'shoppingLists', indexBy: 'id')]
-    private Collection $item;
-
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dateCreated = null;
 
@@ -30,38 +24,21 @@ class ShoppingList
     #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
     private ?Supermarket $supermarket = null;
 
+    /**
+     * @var Collection<int, ListItem>
+     */
+    // If a child entity is removed from the collection, Doctrine will DELETE it from the database when you flush.
+    #[ORM\OneToMany(targetEntity: ListItem::class, mappedBy: 'shoppingList', cascade: ['persist'], orphanRemoval: true)]
+    private Collection $listItems;
+
     public function __construct()
     {
-        $this->item = new ArrayCollection();
+        $this->listItems = new ArrayCollection();
     }
 
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    /**
-     * @return Collection<int, FoodItem>
-     */
-    public function getItems(): Collection
-    {
-        return $this->item;
-    }
-
-    public function addItem(FoodItem $item): static
-    {
-        if (!$this->item->contains($item)) {
-            $this->item->add($item);
-        }
-
-        return $this;
-    }
-
-    public function removeItem(FoodItem $item): static
-    {
-        $this->item->removeElement($item);
-
-        return $this;
     }
 
     public function getDateCreated(): ?\DateTimeImmutable
@@ -96,6 +73,36 @@ class ShoppingList
     public function setSupermarket(?Supermarket $supermarket): static
     {
         $this->supermarket = $supermarket;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListItem>
+     */
+    public function getListItems(): Collection
+    {
+        return $this->listItems;
+    }
+
+    public function addListItem(ListItem $listItem): static
+    {
+        if (!$this->listItems->contains($listItem)) {
+            $this->listItems->add($listItem);
+            $listItem->setShoppingList($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListItem(ListItem $listItem): static
+    {
+        if ($this->listItems->removeElement($listItem)) {
+            // set the owning side to null (unless already changed)
+            if ($listItem->getShoppingList() === $this) {
+                $listItem->setShoppingList(null);
+            }
+        }
 
         return $this;
     }

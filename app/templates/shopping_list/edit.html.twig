@@ -1,54 +1,68 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit Shopping List{% endblock %}
-
-{% block javascripts %}
-    {{ parent() }}
-    <script src="{{ asset('js/foodItem.js') }}"></script>
+{% block title %}Edit Shopping List
 {% endblock %}
 
+{# {% block javascripts %}
+	{{ parent() }}
+	<script src="{{ asset('js/foodItem.js') }}"></script>
+{% endblock %} #}
+
 {% block body %}
-<div class="container py-3">
+	<div class="container py-3">
 
-    <h1 class="h4 mb-3">Edit shopping list</h1>
+		<h1 class="h4 mb-3">Edit shopping list</h1>
 
-    {{ form_start(form) }}
+		{{ form_start(form) }}
+
+		<div id="listItems" data-prototype="{{ form_widget(form.listItems.vars.prototype)|e('html_attr') }}">
+			{% for itemForm in form.listItems %}
+				<div class="list-item">
+					{{ form_row(itemForm.foodItem) }}
+					{{ form_row(itemForm.quantity) }}
+					{{ form_row(itemForm.notes) }}
+					<button type="button" class="remove-item">Remove</button>
+				</div>
+			{% endfor %}
+            {% do form.listItems.setRendered %}
+		</div>
+
+		<button type="button" id="add-item">Add item</button>
 
 
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
-        <h2 class="h6 mb-0">Items</h2>
+		<div class="form-actions">
+            <button type="submit" class="btn btn-success waves-effect waves-light"> <i class="fa fa-check"></i> Save</button>
+            <a class="btn btn-inverse waves-effect waves-light" href="{{ path('app_home') }}">Cancel</a>
+        </div>
 
-        <button
-            type="button"
-            class="btn btn-sm btn-outline-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#quickAddFoodItemModal"
-        >
-            ➕ Add item
-        </button>
-    </div>
+		{{ form_end(form) }}
 
-    <div class="list-group">
-        {% for checkbox in form.items %}
-            <label class="list-group-item d-flex align-items-center gap-3 py-3">
-                {{ form_widget(checkbox, {
-                    attr: { class: 'form-check-input flex-shrink-0' }
-                }) }}
-                <span class="flex-grow-1">
-                    {{ checkbox.vars.label }}
-                </span>
-            </label>
-        {% endfor %}
-    </div>
 
-    <div class="sticky-bottom bg-white pt-3 pb-2 mt-4 border-top">
-        <button class="btn btn-primary btn-lg w-100">
-            Update list
-        </button>
-    </div>
+		<script>
+			const container = document.getElementById('listItems');
+            let index = {{ form.listItems|length }};
 
-    {{ form_end(form) }}
-</div>
 
-{% include 'food_item/quick_add_modal.html.twig' %}
+            document.getElementById('add-item').addEventListener('click', () => {
+            const prototype = container.dataset.prototype.replace(/__name__/g, index);
+            index++;
+
+
+            const div = document.createElement('div');
+            div.classList.add('list-item');
+            div.innerHTML = prototype + '<button type="button" class="remove-item">Remove</button>';
+
+
+            container.appendChild(div);
+            });
+
+
+            container.addEventListener('click', e => {
+            if (e.target.classList.contains('remove-item')) {
+            e.target.closest('.list-item').remove();
+            }
+            });
+		</script>
+	</div>
+
 {% endblock %}
