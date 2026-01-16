@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Edge;
 use App\Entity\FoodItem;
+use App\Entity\ListItem;
 use App\Entity\ShoppingList;
 use App\Entity\Supermarket;
 use App\Repository\EdgeRepository;
@@ -31,43 +32,49 @@ class PathFinder
      * Nearest-neighbour route (the core algorithm)
      */
     public function buildShoppingRoute(ShoppingList $shoppingList): array {
-        // Convert collection to id-indexed array (your approach 👍), and separate by phase and unmapped items
+         // Convert collection to id-indexed array, and separate by phase and unmapped items
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
 
         foreach ($shoppingList->getListItems() as $listItem) {
-            $foodItem = $listItem->getFoodItem();
-            
             $location = $this->productLocationRepository->findOneBy([
-                'foodItem' => $foodItem,
+                'foodItem' => $listItem->getFoodItem(),
                 'supermarket' => $shoppingList->getSupermarket(),
             ]);
 
             if($location){
-                $mappedItems[$location->getEdge()->getPhase()][$foodItem->getId()] = $foodItem;
+                $mappedItems[$location->getEdge()->getPhase()][$listItem->getId()] = $listItem;
             } else {
-                $unmappedItems[$foodItem->getId()] = $foodItem;
+                $unmappedItems[] = $listItem->getFoodItem(); // We'll add these at the end
             }
         }
 
-        $graph = $this->buildGraph($shoppingList->getSupermarket());
-        $route = [];
+        // Apply phase processing rules
+        // If we have no entrance phase items, main phase becomes entrance phase
+        if (empty($mappedItems[Edge::ENTRANCE_PHASE])) {
+            $mappedItems[Edge::ENTRANCE_PHASE] = $mappedItems[Edge::MAIN_PHASE] ?? [];
+            $mappedItems[Edge::MAIN_PHASE] = [];
+        }
+
+        // Set some variables before building the route
+        $orderedList = [];
         $currentNodeId = $shoppingList->getSupermarket()->getEntranceNode()->getId();
+        $graph = $this->buildGraph($shoppingList->getSupermarket());
 
         // Process each phase in order
         foreach($this->phases as $phase) {
-
             $remainingItems = $mappedItems[$phase];
-      
+            
             while (!empty($remainingItems)) {
-                $distances = $this->dijkstra($graph, $currentNodeId);
+                $distances = $this->dijkstra($graph, $currentNodeId);  // get distances from current node to all other
     
-                $closestItem = null;
+                $closestListItem  = null;
                 $closestNode = null;
                 $closestDistance = INF;
     
-                foreach ($remainingItems as $foodItem) {
-                    $result = $this->getClosestNodeToFoodItem($distances, $foodItem, $shoppingList->getSupermarket());
+                 // Find the closest item out of the remaining list items in the phase
+                foreach ($remainingItems as $listItem) {
+                    $result = $this->getClosestNodeToListItem($distances, $listItem, $shoppingList->getSupermarket());
                     if ($result === null) {
                         continue;
                     }
@@ -75,28 +82,24 @@ class PathFinder
                     if ($result['distance'] < $closestDistance) {
                         $closestDistance = $result['distance'];
                         $closestNode = $result['node'];
-                        $closestItem = $foodItem;
+                        $closestListItem = $listItem;
                     }
+
                 }
     
                 // Safety check (should not happen, but avoids infinite loop)
-                if ($closestItem === null) {
+                if ($closestListItem === null) {
                     break;
                 }
     
                 $currentNodeId = $closestNode;
-                $route[] = $closestItem;
+                $orderedList[] = $closestListItem;
     
-                unset($remainingItems[$closestItem->getId()]);
+                unset($remainingItems[$closestListItem->getId()]);
             }
         }
 
-        // Append unmapped items at the end
-        foreach ($unmappedItems as $foodItem) {
-            $route[] = $foodItem;
-        }
-
-        return $route;
+        return array_merge($orderedList, $unmappedItems);
     }
 
 
@@ -126,39 +129,30 @@ class PathFinder
      * Distance from a node to a food item (edge-based)
      * A food item is on an edge, not a node — so we take the closest endpoint.
      */
-    private function getClosestNodeToFoodItem(array $distances, FoodItem $foodItem, Supermarket $supermarket): ?array
+    private function getClosestNodeToListItem(array $distances, ListItem $listItem, Supermarket $supermarket): ?array
     {
-        $productLocation = $this->productLocationRepository->findOneBy([
-            'foodItem' => $foodItem,
+        $location = $this->productLocationRepository->findOneBy([
+            'foodItem' => $listItem->getFoodItem(),
             'supermarket' => $supermarket,
         ]);
 
-        if (!$productLocation) {
+        
+        if (!$location) {
             return [
                 'node' => $this->nodeRepository->findLastNodeInSupermarket($supermarket)->getId(),
                 'distance' => INF,
             ];
         }
-
-        $edge = $productLocation->getEdge();
-
+        
+        $edge = $location->getEdge();
+        
         $startId = $edge->getStart()->getId();
         $endId   = $edge->getEnd()->getId();
-
+        
         $distanceToStart = $distances[$startId] ?? INF;
         $distanceToEnd   = $distances[$endId] ?? INF;
 
-        if ($distanceToStart <= $distanceToEnd) {
-            return [
-                'node' => $startId,
-                'distance' => $distanceToStart,
-            ];
-        }
-
-        return [
-            'node' => $endId,
-            'distance' => $distanceToEnd,
-        ];
+        return $distanceToStart <= $distanceToEnd ? ['node' => $startId, 'distance' => $distanceToStart] : ['node' => $endId, 'distance' => $distanceToEnd];
     }
 
 
@@ -181,24 +175,29 @@ class PathFinder
 
         // Set start (current) node distance to 0
         $distances[$start] = 0;
+
+        // Insert the starting node into the priority queue with a priority of 0
         $queue->insert($start, 0);
 
         while (!$queue->isEmpty()) {
-            $u = $queue->extract();
-
-            foreach ($graph[$u] ?? [] as $v => $length) {
-                $alt = $distances[$u] + $length;
-                if ($alt < $distances[$v]) {
-                    $distances[$v] = $alt;
-                    $queue->insert($v, -$alt); // max-heap workaround
+            // Extract the node with the smallest distance (highest priority)
+            $shortest = $queue->extract();
+    
+            // Iterate through all neighboring nodes of the current node
+            foreach ($graph[$shortest] ?? [] as $nodeId => $length) {
+                // Calculate the alternative distance to the neighboring node
+                $alt = $distances[$shortest] + $length;
+                // If the alternative distance is shorter, update the distance and reinsert into the queue
+                if ($alt < $distances[$nodeId]) {
+                    $distances[$nodeId] = $alt;
+    
+                    // Use negative distance to get min-heap behavior (SplPriorityQueue is a max-heap)
+                    $queue->insert($nodeId, -$alt);
                 }
             }
+
         }
 
         return $distances;
     }
-
-
-
-
 }
