@@ -2,66 +2,142 @@
 
 {% block title %}New Shopping List{% endblock %}
 
-{# {% block javascripts %}
-    {{ parent() }}
-    <script src="{{ asset('js/foodItem.js') }}"></script>
-{% endblock %} #}
-
 {% block body %}
 <div class="container py-3">
 
     <h1 class="h4 mb-3">New shopping list</h1>
 
-   {{ form_start(form) }}
+  {{ form_start(form) }}
 
-		<div id="listItems" data-prototype="{{ form_widget(form.listItems.vars.prototype)|e('html_attr') }}">
-			{% for itemForm in form.listItems %}
-				<div class="list-item">
-					{{ form_row(itemForm.foodItem) }}
-					{{ form_row(itemForm.quantity) }}
-					{{ form_row(itemForm.notes) }}
-					<button type="button" class="remove-item">Remove</button>
-				</div>
-			{% endfor %}
-            {% do form.listItems.setRendered %}
-		</div>
+    <div
+        id="listItems"
+        class="d-flex flex-column gap-2"
+        data-prototype="{{ form_widget(form.listItems.vars.prototype)|e('html_attr') }}"
+    >
+        {% for itemForm in form.listItems %}
+            <div class="card list-item">
+                <div class="card-body p-2">
 
-		<button type="button" id="add-item">Add item</button>
+                    <!-- Top row: food + remove -->
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div class="flex-grow-1">
+                            {{ form_widget(itemForm.foodItem, { attr: { class: 'form-select form-select-sm' } }) }}
+                        </div>
 
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger remove-item"
+                            aria-label="Remove item"
+                        >
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
 
-		<div class="form-actions">
-            <button type="submit" class="btn btn-success waves-effect waves-light"> <i class="fa fa-check"></i> Save</button>
-            <a class="btn btn-inverse waves-effect waves-light" href="{{ path('app_home') }}">Cancel</a>
-        </div>
+                    <!-- Quantity row -->
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <small class="text-muted">Qty</small>
 
-		{{ form_end(form) }}
+                        <div class="d-flex align-items-center gap-2 qty-control">
+                            <button type="button" class="btn btn-sm btn-outline-secondary qty-down">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
 
+                            <span class="fw-semibold qty-display">
+                                {{ itemForm.quantity.vars.value ?? 1 }}
+                            </span>
 
-		<script>
-			const container = document.getElementById('listItems');
-            let index = {{ form.listItems|length }};
+                            {{ form_widget(itemForm.quantity, {
+                                attr: {
+                                    class: 'd-none quantity-input'
+                                }
+                            }) }}
 
+                            <button type="button" class="btn btn-sm btn-outline-secondary qty-up">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
 
-            document.getElementById('add-item').addEventListener('click', () => {
-            const prototype = container.dataset.prototype.replace(/__name__/g, index);
-            index++;
+                    <!-- Notes -->
+                    <div class="mt-2">
+                        {{ form_widget(itemForm.notes, {
+                            attr: {
+                                class: 'form-control form-control-sm',
+                                placeholder: 'Notes (optional)'
+                            }
+                        }) }}
+                    </div>
 
+                </div>
+            </div>
+        {% endfor %}
+        {% do form.listItems.setRendered %}
+    </div>
 
-            const div = document.createElement('div');
-            div.classList.add('list-item');
-            div.innerHTML = prototype + '<button type="button" class="remove-item">Remove</button>';
+    <!-- Add item -->
+    <button
+        type="button"
+        id="add-item"
+        class="btn btn-outline-primary w-100 mt-3"
+    >
+        <i class="fa-solid fa-plus"></i> Add item
+    </button>
 
+    <!-- Actions -->
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-success flex-fill">
+            Save
+        </button>
+        <a href="{{ path('app_home') }}" class="btn btn-outline-secondary flex-fill">
+            Cancel
+        </a>
+    </div>
 
-            container.appendChild(div);
-            });
+    {{ form_end(form) }}
 
+</div>
 
-            container.addEventListener('click', e => {
-            if (e.target.classList.contains('remove-item')) {
+<script>
+    const container = document.getElementById('listItems');
+    let index = {{ form.listItems|length }};
+
+    document.getElementById('add-item').addEventListener('click', () => {
+        const prototype = container.dataset.prototype.replace(/__name__/g, index);
+        index++;
+
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('card', 'list-item');
+        wrapper.innerHTML = `
+            <div class="card-body p-2">
+                ${prototype}
+            </div>
+        `;
+
+        container.appendChild(wrapper);
+    });
+
+    container.addEventListener('click', e => {
+
+        // Remove item
+        if (e.target.closest('.remove-item')) {
             e.target.closest('.list-item').remove();
-            }
-            });
-		</script>
-	</div>
+        }
+
+        // Quantity up/down
+        if (e.target.closest('.qty-up') || e.target.closest('.qty-down')) {
+            const item = e.target.closest('.list-item');
+            const input = item.querySelector('.quantity-input');
+            const display = item.querySelector('.qty-display');
+
+            let value = parseInt(input.value || 1, 10);
+
+            if (e.target.closest('.qty-up')) value++;
+            if (e.target.closest('.qty-down')) value = Math.max(1, value - 1);
+
+            input.value = value;
+            display.textContent = value;
+        }
+    });
+</script>
 
 {% endblock %}

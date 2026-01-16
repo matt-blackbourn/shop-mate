@@ -1,68 +1,201 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit Shopping List
-{% endblock %}
-
-{# {% block javascripts %}
-	{{ parent() }}
-	<script src="{{ asset('js/foodItem.js') }}"></script>
-{% endblock %} #}
+{% block title %}Edit Shopping List{% endblock %}
 
 {% block body %}
-	<div class="container py-3">
+<div class="container py-3">
 
-		<h1 class="h4 mb-3">Edit shopping list</h1>
+    <h1 class="h5 mb-3">Edit shopping list</h1>
 
-		{{ form_start(form) }}
+    {{ form_start(form) }}
 
-		<div id="listItems" data-prototype="{{ form_widget(form.listItems.vars.prototype)|e('html_attr') }}">
-			{% for itemForm in form.listItems %}
-				<div class="list-item">
-					{{ form_row(itemForm.foodItem) }}
-					{{ form_row(itemForm.quantity) }}
-					{{ form_row(itemForm.notes) }}
-					<button type="button" class="remove-item">Remove</button>
-				</div>
-			{% endfor %}
-            {% do form.listItems.setRendered %}
-		</div>
+    <!-- Add item button at top -->
+    <button
+        type="button"
+        id="add-item"
+        class="btn btn-outline-primary w-100 mb-3"
+    >
+        <i class="bi bi-plus"></i> Add item
+    </button>
 
-		<button type="button" id="add-item">Add item</button>
+    <div
+        id="listItems"
+        class="d-flex flex-column gap-2"
+        data-prototype="{{ form_widget(form.listItems.vars.prototype)|e('html_attr') }}"
+    >
+        {% for itemForm in form.listItems %}
+        <div class="card list-item collapsed">
+            <div class="card-body p-2">
 
+                <!-- Header -->
+                <div class="d-flex align-items-center justify-content-between item-header">
+                    <div class="fw-semibold food-label">
+                        New item
+                    </div>
 
-		<div class="form-actions">
-            <button type="submit" class="btn btn-success waves-effect waves-light"> <i class="fa fa-check"></i> Save</button>
-            <a class="btn btn-inverse waves-effect waves-light" href="{{ path('app_home') }}">Cancel</a>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                            <i class="bi bi-x"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary toggle-item">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Collapsible body -->
+                <div class="item-body mt-2">
+                    {{ form_widget(itemForm.foodItem, { attr: { class: 'form-select form-select-sm food-select' } }) }}
+
+                    <!-- Quantity -->
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <small class="text-muted">Qty</small>
+                        <div class="d-flex align-items-center gap-2 qty-control">
+                            <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
+                            <span class="fw-semibold qty-display">{{ itemForm.quantity.vars.value ?? 1 }}</span>
+                            {{ form_widget(itemForm.quantity, { attr: { class: 'd-none quantity-input' } }) }}
+                            <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mt-2">
+                        {{ form_widget(itemForm.notes, { attr: { class: 'form-control form-control-sm', placeholder: 'Notes' } }) }}
+                    </div>
+                </div>
+
+            </div>
         </div>
+        {% endfor %}
+        {% do form.listItems.setRendered %}
+    </div>
 
-		{{ form_end(form) }}
+    <!-- Form actions -->
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-success flex-fill">Save</button>
+        <a href="{{ path('app_home') }}" class="btn btn-outline-secondary flex-fill">Cancel</a>
+    </div>
 
+    {{ form_end(form) }}
+</div>
 
-		<script>
-			const container = document.getElementById('listItems');
-            let index = {{ form.listItems|length }};
+<style>
+.list-item.collapsed .item-body {
+    display: none;
+}
+.list-item.collapsed .toggle-item i {
+    transform: rotate(-90deg);
+}
+.toggle-item i {
+    transition: transform 0.15s ease;
+}
+.item-header {
+    cursor: pointer;
+}
+.item-header .food-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
 
+<script>
+const container = document.getElementById('listItems');
+let index = {{ form.listItems|length }};
 
-            document.getElementById('add-item').addEventListener('click', () => {
-            const prototype = container.dataset.prototype.replace(/__name__/g, index);
-            index++;
+// Add new item at top
+document.getElementById('add-item').addEventListener('click', () => {
+    const prototype = container.dataset.prototype.replace(/__name__/g, index);
+    index++;
 
+    // Collapse existing items
+    container.querySelectorAll('.list-item').forEach(i => {
+        i.classList.remove('expanded');
+        i.classList.add('collapsed');
+    });
 
-            const div = document.createElement('div');
-            div.classList.add('list-item');
-            div.innerHTML = prototype + '<button type="button" class="remove-item">Remove</button>';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card list-item expanded';
+    wrapper.innerHTML = `
+        <div class="card-body p-2">
+            <div class="d-flex align-items-center justify-content-between item-header">
+                <div class="fw-semibold food-label">New item</div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                        <i class="bi bi-x"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary toggle-item">
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="item-body mt-2">
+                ${prototype}
+            </div>
+        </div>
+    `;
+    container.prepend(wrapper);
 
+    // Update label immediately for new item
+    const select = wrapper.querySelector('.food-select');
+    const label = wrapper.querySelector('.food-label');
+    if (select && label) {
+        label.textContent = select.options[select.selectedIndex]?.text || 'New item';
+    }
+});
 
-            container.appendChild(div);
-            });
+// Event delegation
+container.addEventListener('change', e => {
+    const item = e.target.closest('.list-item');
+    if (!item) return;
 
+    // Update food label when select changes
+    if (e.target.classList.contains('food-select')) {
+        const select = e.target;
+        const label = item.querySelector('.food-label');
+        label.textContent = select.options[select.selectedIndex]?.text || 'New item';
+    }
+});
 
-            container.addEventListener('click', e => {
-            if (e.target.classList.contains('remove-item')) {
-            e.target.closest('.list-item').remove();
-            }
-            });
-		</script>
-	</div>
+container.addEventListener('click', e => {
+    const item = e.target.closest('.list-item');
+    if (!item) return;
 
+    // Toggle expand/collapse when header clicked (ignore buttons)
+    if (e.target.closest('.item-header') && !e.target.closest('button')) {
+        item.classList.toggle('expanded');
+        item.classList.toggle('collapsed');
+    }
+
+    // Remove item
+    if (e.target.closest('.remove-item')) {
+        item.remove();
+    }
+
+    // Quantity controls
+    if (e.target.closest('.qty-up') || e.target.closest('.qty-down')) {
+        const input = item.querySelector('.quantity-input');
+        const display = item.querySelector('.qty-display');
+
+        let value = parseInt(input.value || 1, 10);
+        if (e.target.closest('.qty-up')) value++;
+        if (e.target.closest('.qty-down')) value = Math.max(1, value - 1);
+
+        input.value = value;
+        display.textContent = value;
+    }
+});
+
+// On page load: update all labels after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    container.querySelectorAll('.list-item').forEach(item => {
+        const select = item.querySelector('.food-select');
+        const label = item.querySelector('.food-label');
+        if (select && label) {
+            label.textContent = select.options[select.selectedIndex]?.text || 'New item';
+        }
+    });
+});
+
+</script>
 {% endblock %}

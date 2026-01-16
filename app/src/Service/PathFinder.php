@@ -45,7 +45,7 @@ class PathFinder
             if($location){
                 $mappedItems[$location->getEdge()->getPhase()][$listItem->getId()] = $listItem;
             } else {
-                $unmappedItems[] = $listItem->getFoodItem(); // We'll add these at the end
+                $unmappedItems[] = $listItem; // We'll add these at the end
             }
         }
 
@@ -98,7 +98,7 @@ class PathFinder
                 unset($remainingItems[$closestListItem->getId()]);
             }
         }
-
+        
         return array_merge($orderedList, $unmappedItems);
     }
 
