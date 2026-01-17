@@ -2,12 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\ListItem;
 use App\Entity\ShoppingList;
 use App\Form\ShoppingListType;
+use App\Repository\ListItemRepository;
 use App\Repository\ShoppingListRepository;
 use App\Service\PathFinder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -21,6 +24,43 @@ final class ShoppingListController extends AbstractController
         return $this->render('shopping_list/index.html.twig', [
             'shopping_lists' => $shoppingListRepository->findAll(),
         ]);
+    }
+
+    #[Route('/{id}/active', name: 'app_shopping_list_active')]
+    public function active(
+        ShoppingList $shoppingList,
+        PathFinder $pathFinder,
+    ): Response {
+        $orderedList = $pathFinder->buildShoppingRoute($shoppingList);
+
+        if(count($orderedList) === 0) {
+            return $this->redirectToRoute('app_shopping_list_edit', ['id' => $shoppingList->getId()]);
+        }
+
+        return $this->render('shopping_list/active.html.twig', [
+            'orderedList' => $orderedList,
+        ]);
+    }
+
+    // maybe needs to go in list item controller later
+    #[Route('/ajax/pick/{id}', name: 'app_shopping_pick', methods: ['POST'])]
+    public function pick(ListItem $item, EntityManagerInterface $em): JsonResponse
+    {
+        $item->markPicked();
+        $em->flush();
+
+        return new JsonResponse(['ok' => true]);
+    }
+
+    // maybe needs to go in list item controller later
+    #[Route('/ajax/unpick/{id}', name: 'app_shopping_unpick', methods: ['POST'])]
+    public function unpick(ListItem $item, EntityManagerInterface $em): JsonResponse
+    {
+        $item->setPicked(false);
+        $item->setPickedAt(null);
+        $em->flush();
+
+        return new JsonResponse(['ok' => true]);
     }
 
     #[Route('/new', name: 'app_shopping_list_new', methods: ['GET', 'POST'])]

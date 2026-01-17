@@ -32,11 +32,15 @@ class PathFinder
      * Nearest-neighbour route (the core algorithm)
      */
     public function buildShoppingRoute(ShoppingList $shoppingList): array {
-         // Convert collection to id-indexed array, and separate by phase and unmapped items
+        // Convert collection to id-indexed array, and separate by phase and unmapped items
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
 
         foreach ($shoppingList->getListItems() as $listItem) {
+            if($listItem->isPicked()) {
+                continue; // Skip already picked items
+            }
+
             $location = $this->productLocationRepository->findOneBy([
                 'foodItem' => $listItem->getFoodItem(),
                 'supermarket' => $shoppingList->getSupermarket(),
@@ -98,7 +102,7 @@ class PathFinder
                 unset($remainingItems[$closestListItem->getId()]);
             }
         }
-        
+
         return array_merge($orderedList, $unmappedItems);
     }
 

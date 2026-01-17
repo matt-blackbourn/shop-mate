@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/supermarket')]
-final class SupermarketController extends AbstractController
+class SupermarketController extends AbstractController
 {
     #[Route(name: 'app_supermarket_index', methods: ['GET'])]
     public function index(SupermarketRepository $supermarketRepository): Response
@@ -27,6 +27,8 @@ final class SupermarketController extends AbstractController
             'supermarkets' => $supermarketRepository->findAll(),
         ]);
     }
+
+   
 
     #[Route('/new', name: 'app_supermarket_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
@@ -50,83 +52,83 @@ final class SupermarketController extends AbstractController
     
 
     #[Route('/{id}/admin/assign-food-edges', name: 'admin_assign_food_edges', methods: ['GET', 'POST'])]
-public function assignFoodEdges(
-    Request $request,
-    Supermarket $supermarket,
-    FoodItemRepository $foodRepo,
-    NodeRepository $nodeRepo,
-    EdgeRepository $edgeRepo,
-    EntityManagerInterface $em,
-    ProductLocationRepository $locationRepo,
-): Response {
-    $foodItems = $foodRepo->findAll();
-    $nodes = $nodeRepo->findBySupermarket($supermarket);
+    public function assignFoodEdges(
+        Request $request,
+        Supermarket $supermarket,
+        FoodItemRepository $foodRepo,
+        NodeRepository $nodeRepo,
+        EdgeRepository $edgeRepo,
+        EntityManagerInterface $em,
+        ProductLocationRepository $locationRepo,
+    ): Response {
+        $foodItems = $foodRepo->findAll();
+        $nodes = $nodeRepo->findBySupermarket($supermarket);
 
-    // Load existing placements properly
-    $placements = [];
-    foreach ($foodItems as $food) {
-        $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket);
-        if ($placement) {
-            $placements[$food->getId()] = $placement;
+        // Load existing placements properly
+        $placements = [];
+        foreach ($foodItems as $food) {
+            $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket);
+            if ($placement) {
+                $placements[$food->getId()] = $placement;
+            }
         }
-    }
 
-    if ($request->isMethod('POST')) {
-        $locationsData = $request->request->all('locations'); // always returns an array
+        if ($request->isMethod('POST')) {
+            $locationsData = $request->request->all('locations'); // always returns an array
 
-        $errors = [];
-    
-        foreach ($locationsData as $foodId => $loc) {
-            $food = $foodRepo->find($foodId);
-    
-            $startId = $loc['start'] ?? null;
-            $endId   = $loc['end'] ?? null;
-    
-            if(($endId && !$startId) || ($startId && !$endId)) {
-                continue;
-            }
-
-            if(!$startId && !$endId) {
-                // Remove existing placement if any
-                $existingPlacement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket);
-                if($existingPlacement) {
-                    $em->remove($existingPlacement);
-                }
-                continue;
-            }
-
-            $edge = $edgeRepo->findOneByNodes($startId, $endId);
-            if(!$edge) {
-                $errors[] = "No edge found for {$food->getName()}.";
-                continue;
-            }
-    
-            // Find existing placement for this food in this supermarket or create new
-            $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket) ?? new ProductLocation();
-            $placement->setFoodItem($food);
-            $placement->setEdge($edge);
-            $placement->setSupermarket($supermarket);
-            $em->persist($placement);
-        }
-    
-        $em->flush();
+            $errors = [];
         
-        if (empty($errors)) {
-            $this->addFlash('success', 'All assignments saved.');
-            return $this->redirectToRoute('admin_assign_food_edges', ['id' => $supermarket->getId()]);
-        } else {
-            foreach ($errors as $err) {
-                $this->addFlash('error', $err);
+            foreach ($locationsData as $foodId => $loc) {
+                $food = $foodRepo->find($foodId);
+        
+                $startId = $loc['start'] ?? null;
+                $endId   = $loc['end'] ?? null;
+        
+                if(($endId && !$startId) || ($startId && !$endId)) {
+                    continue;
+                }
+
+                if(!$startId && !$endId) {
+                    // Remove existing placement if any
+                    $existingPlacement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket);
+                    if($existingPlacement) {
+                        $em->remove($existingPlacement);
+                    }
+                    continue;
+                }
+
+                $edge = $edgeRepo->findOneByNodes($startId, $endId);
+                if(!$edge) {
+                    $errors[] = "No edge found for {$food->getName()}.";
+                    continue;
+                }
+        
+                // Find existing placement for this food in this supermarket or create new
+                $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket) ?? new ProductLocation();
+                $placement->setFoodItem($food);
+                $placement->setEdge($edge);
+                $placement->setSupermarket($supermarket);
+                $em->persist($placement);
+            }
+        
+            $em->flush();
+            
+            if (empty($errors)) {
+                $this->addFlash('success', 'All assignments saved.');
+                return $this->redirectToRoute('admin_assign_food_edges', ['id' => $supermarket->getId()]);
+            } else {
+                foreach ($errors as $err) {
+                    $this->addFlash('error', $err);
+                }
             }
         }
-    }
 
-    return $this->render('supermarket/assign_food_edges.html.twig', [
-        'foodItems' => $foodItems,
-        'nodes' => $nodes,
-        'placements' => $placements,
-    ]);
-}
+        return $this->render('supermarket/assign_food_edges.html.twig', [
+            'foodItems' => $foodItems,
+            'nodes' => $nodes,
+            'placements' => $placements,
+        ]);
+    }
 
 
     #[Route('/{id}/edit', name: 'app_supermarket_edit', methods: ['GET', 'POST'])]

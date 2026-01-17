@@ -9,135 +9,189 @@
 
   {{ form_start(form) }}
 
+    <!-- Add item button at top -->
+    <button
+        type="button"
+        id="add-item"
+        class="btn btn-outline-primary w-100 mb-3"
+    >
+        <i class="bi bi-plus"></i> Add item
+    </button>
+
     <div
         id="listItems"
         class="d-flex flex-column gap-2"
         data-prototype="{{ form_widget(form.listItems.vars.prototype)|e('html_attr') }}"
     >
         {% for itemForm in form.listItems %}
-            <div class="card list-item">
-                <div class="card-body p-2">
+        <div class="card list-item collapsed">
+            <div class="card-body p-2">
 
-                    <!-- Top row: food + remove -->
-                    <div class="d-flex align-items-center justify-content-between gap-2">
-                        <div class="flex-grow-1">
-                            {{ form_widget(itemForm.foodItem, { attr: { class: 'form-select form-select-sm' } }) }}
-                        </div>
-
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-danger remove-item"
-                            aria-label="Remove item"
-                        >
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
+                <!-- Header -->
+                <div class="d-flex align-items-center justify-content-between item-header">
+                    <div class="fw-semibold food-label">
+                        New item
                     </div>
 
-                    <!-- Quantity row -->
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Collapsible body -->
+                <div class="item-body mt-2">
+                    {{ form_widget(itemForm.foodItem, { attr: { class: 'form-select form-select-sm food-select' } }) }}
+
+                    <!-- Quantity -->
                     <div class="d-flex align-items-center justify-content-between mt-2">
                         <small class="text-muted">Qty</small>
-
                         <div class="d-flex align-items-center gap-2 qty-control">
-                            <button type="button" class="btn btn-sm btn-outline-secondary qty-down">
-                                <i class="fa-solid fa-minus"></i>
-                            </button>
-
-                            <span class="fw-semibold qty-display">
-                                {{ itemForm.quantity.vars.value ?? 1 }}
-                            </span>
-
-                            {{ form_widget(itemForm.quantity, {
-                                attr: {
-                                    class: 'd-none quantity-input'
-                                }
-                            }) }}
-
-                            <button type="button" class="btn btn-sm btn-outline-secondary qty-up">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
+                            <span class="fw-semibold qty-display">{{ itemForm.quantity.vars.value ?? 1 }}</span>
+                            {{ form_widget(itemForm.quantity, { attr: { class: 'd-none quantity-input' } }) }}
+                            <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
                         </div>
                     </div>
 
                     <!-- Notes -->
                     <div class="mt-2">
-                        {{ form_widget(itemForm.notes, {
-                            attr: {
-                                class: 'form-control form-control-sm',
-                                placeholder: 'Notes (optional)'
-                            }
-                        }) }}
+                        {{ form_widget(itemForm.notes, { attr: { class: 'form-control form-control-sm', placeholder: 'Notes' } }) }}
                     </div>
-
                 </div>
+
             </div>
+        </div>
         {% endfor %}
         {% do form.listItems.setRendered %}
     </div>
 
-    <!-- Add item -->
-    <button
-        type="button"
-        id="add-item"
-        class="btn btn-outline-primary w-100 mt-3"
-    >
-        <i class="fa-solid fa-plus"></i> Add item
-    </button>
-
-    <!-- Actions -->
+    <!-- Form actions -->
     <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-success flex-fill">
-            Save
-        </button>
-        <a href="{{ path('app_home') }}" class="btn btn-outline-secondary flex-fill">
-            Cancel
-        </a>
+        <button type="submit" class="btn btn-success flex-fill">Save</button>
+        <a href="{{ path('app_home') }}" class="btn btn-outline-secondary flex-fill">Cancel</a>
     </div>
 
     {{ form_end(form) }}
-
 </div>
 
+<style>
+.list-item.collapsed .item-body {
+    display: none;
+}
+.list-item.collapsed .toggle-item i {
+    transform: rotate(-90deg);
+}
+.toggle-item i {
+    transition: transform 0.15s ease;
+}
+.item-header {
+    cursor: pointer;
+}
+.item-header .food-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
+
 <script>
-    const container = document.getElementById('listItems');
-    let index = {{ form.listItems|length }};
+const container = document.getElementById('listItems');
+let index = {{ form.listItems|length }};
 
-    document.getElementById('add-item').addEventListener('click', () => {
-        const prototype = container.dataset.prototype.replace(/__name__/g, index);
-        index++;
+// Add new item at top
+document.getElementById('add-item').addEventListener('click', () => {
+    const prototype = container.dataset.prototype.replace(/__name__/g, index);
+    index++;
 
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('card', 'list-item');
-        wrapper.innerHTML = `
-            <div class="card-body p-2">
+    // Collapse existing items
+    container.querySelectorAll('.list-item').forEach(i => {
+        i.classList.remove('expanded');
+        i.classList.add('collapsed');
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card list-item expanded';
+    wrapper.innerHTML = `
+        <div class="card-body p-2">
+            <div class="d-flex align-items-center justify-content-between item-header">
+                <div class="fw-semibold food-label">New item</div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="item-body mt-2">
                 ${prototype}
             </div>
-        `;
+        </div>
+    `;
+    container.prepend(wrapper);
 
-        container.appendChild(wrapper);
-    });
-
-    container.addEventListener('click', e => {
-
-        // Remove item
-        if (e.target.closest('.remove-item')) {
-            e.target.closest('.list-item').remove();
+    // Update label immediately for new item
+    wrapper.addEventListener('change', e => {
+        if(e.target.tagName === 'SELECT'){
+            const select = e.target;
+            const label = wrapper.querySelector('.food-label');
+            label.textContent = select.options[select.selectedIndex]?.text || 'New item';
         }
+    })
+});
 
-        // Quantity up/down
-        if (e.target.closest('.qty-up') || e.target.closest('.qty-down')) {
-            const item = e.target.closest('.list-item');
-            const input = item.querySelector('.quantity-input');
-            const display = item.querySelector('.qty-display');
+// Event delegation
+container.addEventListener('change', e => {
+    const item = e.target.closest('.list-item');
+    if (!item) return; 
 
-            let value = parseInt(input.value || 1, 10);
+    // Update food label when select changes
+    if (e.target.classList.contains('food-select')) {
+        const select = e.target;
+        const label = item.querySelector('.food-label');
+        label.textContent = select.options[select.selectedIndex]?.text || 'New item';
+    }
+});
 
-            if (e.target.closest('.qty-up')) value++;
-            if (e.target.closest('.qty-down')) value = Math.max(1, value - 1);
+container.addEventListener('click', e => {
+    const item = e.target.closest('.list-item');
+    if (!item) return;
 
-            input.value = value;
-            display.textContent = value;
+    // Toggle expand/collapse when header clicked (ignore buttons)
+    if (e.target.closest('.item-header') && !e.target.closest('button')) {
+        item.classList.toggle('expanded');
+        item.classList.toggle('collapsed');
+    }
+
+    // Remove item
+    if (e.target.closest('.remove-item')) {
+        item.remove();
+    }
+
+    // Quantity controls
+    if (e.target.closest('.qty-up') || e.target.closest('.qty-down')) {
+        const input = item.querySelector('.quantity-input');
+        const display = item.querySelector('.qty-display');
+
+        let value = parseInt(input.value || 1, 10);
+        if (e.target.closest('.qty-up')) value++;
+        if (e.target.closest('.qty-down')) value = Math.max(1, value - 1);
+
+        input.value = value;
+        display.textContent = value;
+    }
+});
+
+// On page load: update all labels after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    container.querySelectorAll('.list-item').forEach(item => {
+        const select = item.querySelector('.food-select');
+        const label = item.querySelector('.food-label');
+        if (select && label) {
+            label.textContent = select.options[select.selectedIndex]?.text || 'New item';
         }
     });
+});
+
 </script>
-
 {% endblock %}

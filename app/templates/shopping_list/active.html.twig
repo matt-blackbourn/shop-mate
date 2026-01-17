@@ -1,0 +1,138 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Shopping{% endblock %}
+
+{% block body %}
+
+<div class="shopping-cards">
+    {% for listItem in orderedList %}
+       <div class="shopping-card" data-id="{{ listItem.id }}">
+            <div class="card-header">
+                <div class="title">
+                    {{ listItem.foodItem.name }} {% if listItem.quantity %}({{ listItem.quantity }}){% endif %}
+         
+                </div>
+
+                <button class="pick-btn" type="button">
+                    Picked
+                </button>
+            </div>
+
+            {% if listItem.notes %}
+                <div class="notes">{{ listItem.notes }}</div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<style>
+.shopping-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    touch-action: pan-y;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+}
+
+.title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding-right: 8px;
+}
+
+.qty, .notes {
+    font-size: .85rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.pick-btn {
+    font-size: 0.85rem;          /* slightly larger text */
+    padding: 6px 12px;           /* bigger tap target */
+    border-radius: 999px;
+    border: none;
+    background: #e6f4ea;
+    color: #1e7e34;
+    font-weight: 500;
+    min-height: 36px;            /* accessibility-friendly */
+    flex-shrink: 0;
+}
+
+.pick-btn:active {
+    transform: scale(0.96);
+    background: #d7eddc;
+}
+</style>
+
+<script>
+// Pick item function
+document.querySelectorAll('.pick-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+        const card = e.target.closest('.shopping-card');
+        pickItem(card);
+    });
+});
+
+let startX = null;
+
+// Swipe left to pick item
+document.querySelectorAll('.shopping-card').forEach(card => {
+    card.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+    });
+
+    card.addEventListener('touchend', e => {
+        if (!startX) return;
+
+        const endX = e.changedTouches[0].clientX;
+        if (startX - endX > 80) {
+            pickItem(card);
+        }
+        startX = null;
+    });
+
+    card.addEventListener('touchmove', e => {
+        if (!startX) return;
+
+        const delta = e.touches[0].clientX - startX;
+        if (delta < 0) {
+            card.style.transform = `translateX(${delta}px)`;
+        }
+});
+});
+
+function pickItem(card) {
+    if (card.dataset.picking) return;
+    card.dataset.picking = '1';
+
+    // Animate immediately
+    card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+    card.style.transform = 'translateX(-120%)';
+    card.style.opacity = '0';
+
+    // Remove from DOM after animation
+    setTimeout(() => card.remove(), 200);
+
+    // Fire-and-forget request
+    fetch(`/shoppinglist/ajax/pick/${card.dataset.id}`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    }).catch(() => {
+        // Later: show toast / undo
+        console.error('Failed to mark item as picked');
+    });
+}
+</script>
+{% endblock %}
