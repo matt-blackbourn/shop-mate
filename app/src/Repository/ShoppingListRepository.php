@@ -20,8 +20,7 @@ class ShoppingListRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('sl')
             // ->addSelect('COALESCE(sl.dateCompleted, sl.dateCreated) AS HIDDEN sortDate')
-            ->addSelect('sl.dateModified AS HIDDEN sortDate')
-            ->orderBy('sortDate', 'DESC')
+            ->orderBy('sl.dateModified', 'DESC')
             ->getQuery()
             ->getResult();
     }

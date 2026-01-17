@@ -42,12 +42,19 @@
                 {% set timeAgo = diffWeeks ~ ' week' ~ (diffWeeks != 1 ? 's' : '') ~ ' ago' %}
             {% endif %}
 
+            {% set used = false %}
+            {% for item in list.listItems %}
+                {% if item.picked %}
+                    {% set used = true %}
+                {% endif %}
+            {% endfor %}
+
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body p-3" style="cursor: pointer;" onclick="toggleButtons('buttons-{{ loop.index }}')">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>{{ list.dateModified|date('l') }} - {{ list.listItems|length }} items</strong>
+                                <strong class="{{ used ? 'text-decoration-line-through' : '' }}">{{ list.dateModified|date('l') }} - {{ list.listItems|length }} items</strong>
                                 <small class="text-muted">({{ timeAgo }})</small>
                             </div>
                             <i class="bi bi-chevron-down" id="icon-{{ loop.index }}"></i>
