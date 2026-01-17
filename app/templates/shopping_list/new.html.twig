@@ -9,20 +9,14 @@
 
   {{ form_start(form) }}
 
-    <div class="d-flex gap-2 mt-4">
-        <button
-            type="button"
-            id="add-item"
-            class="btn btn-outline-primary flex-fill">
-            <i class="bi bi-plus"></i> Add item
-        </button>
-
-        {# <a href="{{ path('app_shopping_list_active', { id: form.vars.value.id }) }}"
-        class="btn btn-primary flex-fill d-flex align-items-center justify-content-center">
-            Start Shop!
-        </a> #}
-    </div>
-
+    <!-- Add item button at top -->
+    <button
+        type="button"
+        id="add-item"
+        class="btn btn-outline-primary w-100 mb-3"
+    >
+        <i class="bi bi-plus"></i> Add item
+    </button>
 
     <div
         id="listItems"
@@ -50,21 +44,35 @@
                 <div class="item-body mt-2">
                     {{ form_widget(itemForm.foodItem, { attr: { class: 'form-select form-select-sm food-select' } }) }}
 
-                    <!-- Quantity -->
-                    <div class="d-flex align-items-center justify-content-between mt-2">
-                        <small class="text-muted">Qty</small>
-                        <div class="d-flex align-items-center gap-2 qty-control">
-                            <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
-                            <span class="fw-semibold qty-display">{{ itemForm.quantity.vars.value ?? 1 }}</span>
-                            {{ form_widget(itemForm.quantity, { attr: { class: 'd-none quantity-input' } }) }}
-                            <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
-                        </div>
-                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-2">
 
                     <!-- Notes -->
-                    <div class="mt-2">
-                        {{ form_widget(itemForm.notes, { attr: { class: 'form-control form-control-sm', placeholder: 'Notes' } }) }}
+                    <div class="flex-grow-1">
+                        {{ form_widget(itemForm.notes, {
+                            attr: {
+                                class: 'form-control form-control-sm',
+                                placeholder: 'Notes'
+                            }
+                        }) }}
                     </div>
+
+                    <!-- Quantity controls -->
+                    <div class="d-flex align-items-center gap-1 qty-control">
+                        <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
+
+                        <span class="fw-semibold qty-display px-2">
+                            {{ itemForm.quantity.vars.value ?? 1 }}
+                        </span>
+
+                        {{ form_widget(itemForm.quantity, {
+                            attr: { class: 'd-none quantity-input', value: itemForm.quantity.vars.value ?? 1 }
+                        }) }}
+
+                        <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
+                    </div>
+
+                </div>
+
                 </div>
 
             </div>
@@ -100,12 +108,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.qty-control .btn {
+    padding: 0.25rem 0.4rem;
+}
 </style>
 
 <script>
 const container = document.getElementById('listItems');
 let index = {{ form.listItems|length }};
 
+// Add new item at top
 // Add new item at top
 document.getElementById('add-item').addEventListener('click', () => {
     const prototype = container.dataset.prototype.replace(/__name__/g, index);
@@ -119,6 +131,11 @@ document.getElementById('add-item').addEventListener('click', () => {
 
     const wrapper = document.createElement('div');
     wrapper.className = 'card list-item expanded';
+
+    // Extract only the <select> from the prototype
+    const selectMatch = prototype.match(/<select[\s\S]+<\/select>/);
+    const foodSelectHTML = selectMatch ? selectMatch[0] : '';
+
     wrapper.innerHTML = `
         <div class="card-body p-2">
             <div class="d-flex align-items-center justify-content-between item-header">
@@ -129,15 +146,29 @@ document.getElementById('add-item').addEventListener('click', () => {
                     </button>
                 </div>
             </div>
+
             <div class="item-body mt-2">
-                ${prototype}
+                ${foodSelectHTML}
+
+                <!-- Inline Notes + Quantity -->
+                <div class="d-flex align-items-center gap-2 mt-2">
+                    <div class="flex-grow-1">
+                        <input type="text" class="form-control form-control-sm" placeholder="Notes">
+                    </div>
+                    <div class="d-flex align-items-center gap-1 qty-control">
+                        <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
+                        <span class="fw-semibold qty-display px-2">1</span>
+                        <input type="hidden" class="quantity-input" value="1">
+                        <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
+                    </div>
+                </div>
             </div>
         </div>
     `;
+
     container.prepend(wrapper);
 
-    // Update label immediately for new item
-    wrapper.addEventListener('change', e => {
+    container.addEventListener('change', e => {
         if(e.target.tagName === 'SELECT'){
             const select = e.target;
             const label = wrapper.querySelector('.food-label');
@@ -146,10 +177,12 @@ document.getElementById('add-item').addEventListener('click', () => {
     })
 });
 
+
+
 // Event delegation
 container.addEventListener('change', e => {
     const item = e.target.closest('.list-item');
-    if (!item) return; 
+    if (!item) return;
 
     // Update food label when select changes
     if (e.target.classList.contains('food-select')) {
