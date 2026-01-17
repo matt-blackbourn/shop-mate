@@ -9,14 +9,20 @@
 
   {{ form_start(form) }}
 
-    <!-- Add item button at top -->
-    <button
-        type="button"
-        id="add-item"
-        class="btn btn-outline-primary w-100 mb-3"
-    >
-        <i class="bi bi-plus"></i> Add item
-    </button>
+    <div class="d-flex gap-2 mt-4">
+        <button
+            type="button"
+            id="add-item"
+            class="btn btn-outline-primary flex-fill">
+            <i class="bi bi-plus"></i> Add item
+        </button>
+
+        {# <a href="{{ path('app_shopping_list_active', { id: form.vars.value.id }) }}"
+        class="btn btn-primary flex-fill d-flex align-items-center justify-content-center">
+            Start Shop!
+        </a> #}
+    </div>
+
 
     <div
         id="listItems"

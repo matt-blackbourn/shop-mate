@@ -7,6 +7,7 @@ use App\Entity\ShoppingList;
 use App\Form\ShoppingListType;
 use App\Repository\ListItemRepository;
 use App\Repository\ShoppingListRepository;
+use App\Repository\SupermarketRepository;
 use App\Service\PathFinder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -66,7 +67,8 @@ final class ShoppingListController extends AbstractController
     #[Route('/new', name: 'app_shopping_list_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        SupermarketRepository $supermarketRepository,
     ): Response {
         $shoppingList = new ShoppingList();
         $shoppingList->setDateCreated(new \DateTimeImmutable());
@@ -75,6 +77,7 @@ final class ShoppingListController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $shoppingList->setSupermarket($supermarketRepository->find(1)); // Default supermarket for now
             $em->persist($shoppingList);
             $em->flush();
 
