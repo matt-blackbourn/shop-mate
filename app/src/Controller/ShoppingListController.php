@@ -22,7 +22,7 @@ final class ShoppingListController extends AbstractController
     public function index(ShoppingListRepository $shoppingListRepository): Response
     {
         return $this->render('shopping_list/index.html.twig', [
-            'shopping_lists' => $shoppingListRepository->findAll(),
+            'shoppingLists' => $shoppingListRepository->findAllOrderedByRecent(),
         ]);
     }
 
