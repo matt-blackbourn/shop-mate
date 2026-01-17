@@ -19,7 +19,8 @@ class ShoppingListRepository extends ServiceEntityRepository
     public function findAllOrderedByRecent(): array
     {
         return $this->createQueryBuilder('sl')
-            ->addSelect('COALESCE(sl.dateCompleted, sl.dateCreated) AS HIDDEN sortDate')
+            // ->addSelect('COALESCE(sl.dateCompleted, sl.dateCreated) AS HIDDEN sortDate')
+            ->addSelect('sl.dateModified AS HIDDEN sortDate')
             ->orderBy('sortDate', 'DESC')
             ->getQuery()
             ->getResult();

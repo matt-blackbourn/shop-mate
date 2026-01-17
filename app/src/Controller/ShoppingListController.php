@@ -54,15 +54,15 @@ final class ShoppingListController extends AbstractController
     }
 
     // maybe needs to go in list item controller later
-    #[Route('/ajax/unpick/{id}', name: 'app_shopping_unpick', methods: ['POST'])]
-    public function unpick(ListItem $item, EntityManagerInterface $em): JsonResponse
-    {
-        $item->setPicked(false);
-        $item->setPickedAt(null);
-        $em->flush();
+    // #[Route('/ajax/unpick/{id}', name: 'app_shopping_unpick', methods: ['POST'])]
+    // public function unpick(ListItem $item, EntityManagerInterface $em): JsonResponse
+    // {
+    //     $item->setPicked(false);
+    //     $item->setPickedAt(null);
+    //     $em->flush();
 
-        return new JsonResponse(['ok' => true]);
-    }
+    //     return new JsonResponse(['ok' => true]);
+    // }
 
     #[Route('/new', name: 'app_shopping_list_new', methods: ['GET', 'POST'])]
     public function new(
@@ -81,9 +81,7 @@ final class ShoppingListController extends AbstractController
             $em->persist($shoppingList);
             $em->flush();
 
-            return $this->redirectToRoute('app_shopping_list_show', [
-                'id' => $shoppingList->getId(),
-            ]);
+            return $this->redirectToRoute('app_shopping_list_index');
         }
 
         return $this->render('shopping_list/new.html.twig', [
@@ -109,7 +107,7 @@ final class ShoppingListController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_shopping_list_show', ['id' => $shoppingList->getId()]);
+            return $this->redirectToRoute('app_shopping_list_index');
         }
 
         return $this->render('shopping_list/edit.html.twig', [

@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ShoppingListRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class ShoppingList
 {
     #[ORM\Id]
@@ -30,6 +31,15 @@ class ShoppingList
     // If a child entity is removed from the collection, Doctrine will DELETE it from the database when you flush.
     #[ORM\OneToMany(targetEntity: ListItem::class, mappedBy: 'shoppingList', cascade: ['persist'], orphanRemoval: true)]
     private Collection $listItems;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $dateModified = null;
+
+    #[ORM\PreUpdate]
+    public function updateDateModified(): void
+    {
+        $this->dateModified = new \DateTimeImmutable();
+    }
 
     public function __construct()
     {
@@ -103,6 +113,18 @@ class ShoppingList
                 $listItem->setShoppingList(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getDateModified(): ?\DateTimeImmutable
+    {
+        return $this->dateModified;
+    }
+
+    public function setDateModified(?\DateTimeImmutable $dateModified): static
+    {
+        $this->dateModified = $dateModified;
 
         return $this;
     }
