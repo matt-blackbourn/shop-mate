@@ -1,4 +1,8 @@
 /* Reset-ish */
+:root {
+    --app-bg: #f9fafb; /* soft off-white to match logo */
+}
+
 *,
 *::before,
 *::after {

@@ -1,45 +1,291 @@
-{# templates/home/index.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}Home{% endblock %}
-
 {% block body %}
-    <header>
-        <h1 class="mb-4">ShopMate</h1>
+<div class="home">
+
+    <!-- Header -->
+    <header class="home-header">
+        <div class="brand">
+            {# <img
+                src="{{ asset('images/shopmate.jpeg') }}"
+                alt="ShopMate"
+                class="brand-logo"
+            > #}
+            <span class="brand-name">
+                <span class="brand-shop">Shop</span><span class="brand-mate">Mate</span>
+            </span>
+        </div>
+        <div class="header-spacer"></div>
+        <button class="menu-button" aria-label="Open menu">
+            ☰
+        </button>
     </header>
 
-    <main class="centered">
-        <div class="container">
-            <a href="{{ path('app_supermarket_index') }}" class="btn btn-success btn-lg">
-                Supermarkets
-            </a>
-            <a href="{{ path('app_shopping_list_index') }}" class="btn btn-success btn-lg">
-                Lists
-            </a>
-            <a href="{{ path('app_shopping_list_new') }}" class="btn btn-success btn-lg">
-                Create List
+    <!-- Main -->
+    <main class="home-main">
+        <div class="home-hero">
+            <img
+                src="{{ asset('images/shopmate.jpeg') }}"
+                alt="ShopMate"
+                class="hero-logo"
+            >
+
+        </div>
+
+
+        <div class="home-actions">
+            <a href="{{ path('app_shopping_list_index') }}" class="btn btn-primary">
+                🛒 Go Shopping
             </a>
 
-            <a href="{{ path('app_food_item_index') }}" class="btn btn-primary btn-lg">
-                All Our Food
-            </a>
-
-            <a href="{{ path('app_food_item_new') }}" class="btn btn-primary btn-lg">
-                Create Food Item
+            <a href="{{ path('app_shopping_list_new') }}" class="btn btn-secondary">
+                📝 Make a list
             </a>
         </div>
     </main>
+
+    <!-- Overlay -->
+    <div class="menu-overlay" hidden></div>
+
+    <!-- Side menu -->
+    <nav class="side-menu" hidden>
+        <button class="menu-close" aria-label="Close menu">×</button>
+
+        <ul>
+            <li>
+                <a href="#">Placeholder item</a>
+            </li>
+        </ul>
+    </nav>
+
+</div>
+
+<style>
+/* Reset-ish */
+
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:var(--app-bg);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #2d2d2d;
+}
+
+/* Layout */
+.home {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.home-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--app-bg);
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.header-spacer {
+    width: 1.5rem;
+}
+
+.menu-button {
+     background: none;
+    border: none;
+    font-size: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 auto;
+}
+
+.brand-logo {
+    height: 36px;
+    width: auto;
+}
+
+.brand-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.brand-shop {
+    color: #e86c1a;
+}
+
+.brand-mate {
+    color: #1fa37a;
+}
+
+/* Main content */
+.home-main {
+    padding-top: 2.5rem;
+    padding: 2rem 1.25rem;
+    text-align: center;
+}
+
+.home-title {
+    margin: 0;
+    font-size: 1.6rem;
+}
+
+.home-subtitle {
+    margin-top: 0.5rem;
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+/* Buttons */
+.home-actions {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: #ffffff;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: #ffffff;
+}
+
+/* Subtle pressed state */
+.btn:active {
+    transform: scale(0.98);
+}
+
+/* Side menu (closed by default) */
+.side-menu {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: 70%;
+    max-width: 280px;
+    background: #ffffff;
+    box-shadow: -8px 0 20px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+}
+
+.side-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.side-menu a {
+    display: block;
+    padding: 0.75rem 0;
+    color: #374151;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* Overlay */
+.menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(2px);
+    z-index: 9;
+}
+
+/* Side menu */
+.side-menu {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: 70%;
+    max-width: 280px;
+    background: #ffffff;
+    box-shadow: -8px 0 20px rgba(0, 0, 0, 0.08);
+    padding: 1.25rem;
+    z-index: 10;
+}
+
+/* Close button */
+.menu-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    cursor: pointer;
+}
+
+/* Hero */
+.home-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.hero-logo {
+    width: 220px;
+    max-width: 80%;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.hero-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+@media (max-width: 360px) {
+    .hero-logo {
+        width: 200px;
+    }
+}
+
+</style>
+
+<script>
+    const menuButton = document.querySelector('.menu-button');
+    const menu = document.querySelector('.side-menu');
+    const overlay = document.querySelector('.menu-overlay');
+    const closeButton = document.querySelector('.menu-close');
+
+    function openMenu() {
+        menu.hidden = false;
+        overlay.hidden = false;
+    }
+
+    function closeMenu() {
+        menu.hidden = true;
+        overlay.hidden = true;
+    }
+
+    menuButton.addEventListener('click', openMenu);
+    closeButton.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', closeMenu);
+</script>
+
 {% endblock %}
-
-
-{# 🧠 Key mental rule (remember this)
-
-If it looks good at 50% width on desktop, it will look bad on phones.
-
-Mobile wants:
-
-full-width forms
-
-stacked actions
-
-vertical rhythm, not centering hacks #}
