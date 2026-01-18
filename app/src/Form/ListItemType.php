@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\FoodItem;
 use App\Entity\ListItem;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -17,9 +18,16 @@ class ListItemType extends AbstractType
     {
         $builder
             ->add('foodItem', EntityType::class, [
+                'query_builder' => function(EntityRepository $er){
+                    return $er->createQueryBuilder('u')
+                        ->addOrderBy('u.name', 'ASC');
+                },
                 'class' => FoodItem::class,
                 'choice_label' => 'name',
-                'placeholder' => 'Choose food',
+                'placeholder' => '',
+                'attr' => [
+                    'class' => 'food-select',
+                ],
             ])
             ->add('quantity', IntegerType::class, [
                 'attr' => ['min' => 1],

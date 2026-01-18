@@ -13,7 +13,7 @@
     <button
         type="button"
         id="add-item"
-        class="btn btn-outline-primary w-100 mb-3"
+        class="btn btn-primary w-100 mb-3"
     >
         <i class="bi bi-plus"></i> Add item
     </button>
@@ -111,6 +111,10 @@
 .qty-control .btn {
     padding: 0.25rem 0.4rem;
 }
+.ts-control {
+    min-height: 38px;
+    padding: 0.375rem 0.75rem;
+}
 </style>
 
 <script>
@@ -132,9 +136,18 @@ document.getElementById('add-item').addEventListener('click', () => {
     const wrapper = document.createElement('div');
     wrapper.className = 'card list-item expanded';
 
-    // Extract only the <select> from the prototype
-    const selectMatch = prototype.match(/<select[\s\S]+<\/select>/);
-    const foodSelectHTML = selectMatch ? selectMatch[0] : '';
+    // Parse prototype safely
+    const temp = document.createElement('div');
+    temp.innerHTML = prototype;
+
+    // Find the food select
+    const select = temp.querySelector('select');
+
+    // Ensure class exists for Tom Select
+    select.classList.add('food-select');
+
+    // Extract HTML
+    const foodSelectHTML = select.outerHTML;
 
     wrapper.innerHTML = `
         <div class="card-body p-2">
@@ -167,6 +180,9 @@ document.getElementById('add-item').addEventListener('click', () => {
     `;
 
     container.prepend(wrapper);
+
+    // 🔥 Tell Tom Select a new item was added
+    document.dispatchEvent(new Event('collection:add'));
 
     container.addEventListener('change', e => {
         if(e.target.tagName === 'SELECT'){
@@ -229,6 +245,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (select && label) {
             label.textContent = select.options[select.selectedIndex]?.text || 'New item';
         }
+    });
+});
+
+{# TOM select #}
+document.addEventListener('DOMContentLoaded', () => {
+    function initFoodSelect(context = document) {
+        context.querySelectorAll('select.food-select').forEach(select => {
+            if (select.tomselect) return; // prevent double-init
+
+            new TomSelect(select, {
+                create: false,
+                maxItems: 1,
+                preload: true,
+                placeholder: 'Search food…',
+                allowEmptyOption: true,
+                closeAfterSelect: true,
+            });
+        });
+    }
+
+    // Init existing items
+    initFoodSelect();
+
+    // Handle Symfony collection add
+    document.addEventListener('collection:add', (e) => {
+        initFoodSelect(e.target);
     });
 });
 

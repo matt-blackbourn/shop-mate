@@ -19,7 +19,7 @@ final class FoodItemController extends AbstractController
     public function index(FoodItemRepository $foodItemRepository): Response
     {
         return $this->render('food_item/index.html.twig', [
-            'food_items' => $foodItemRepository->findAllGroupedByArea(),
+            'food_items' => $foodItemRepository->findAll(),
         ]);
     }
 
