@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         context.querySelectorAll('select.food-select').forEach(select => {
             if (select.tomselect) return; // prevent double-init
 
-            new TomSelect(select, {
+            const ts = new TomSelect(select, {
                 create: false,
                 maxItems: 1,
                 preload: true,
@@ -262,6 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 allowEmptyOption: true,
                 closeAfterSelect: true,
             });
+
+            ts.focus();
+            ts.open();
         });
     }
 
