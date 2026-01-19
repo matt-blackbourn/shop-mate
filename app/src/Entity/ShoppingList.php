@@ -35,11 +35,13 @@ class ShoppingList
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dateModified = null;
 
-    #[ORM\PreUpdate]
+    
+    #[ORM\PrePersist]
     public function updateDateModified(): void
     {
         $this->dateModified = new \DateTimeImmutable();
     }
+
 
     public function __construct()
     {
@@ -102,6 +104,8 @@ class ShoppingList
             $listItem->setShoppingList($this);
         }
 
+        $this->dateModified = new \DateTimeImmutable();
+
         return $this;
     }
 
@@ -112,6 +116,8 @@ class ShoppingList
             if ($listItem->getShoppingList() === $this) {
                 $listItem->setShoppingList(null);
             }
+
+            $this->dateModified = new \DateTimeImmutable();
         }
 
         return $this;
