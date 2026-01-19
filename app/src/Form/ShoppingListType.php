@@ -19,6 +19,7 @@ class ShoppingListType extends AbstractType
                 'allow_delete' => true,
                 'by_reference' => false,
                 'prototype' => true,
+                'prototype_name' => '__name__',
             ])
         ;
     }

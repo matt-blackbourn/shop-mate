@@ -40,6 +40,7 @@ final class ShoppingListController extends AbstractController
 
         return $this->render('shopping_list/active.html.twig', [
             'orderedList' => $orderedList,
+            'shoppingList' => $shoppingList,
         ]);
     }
 
@@ -111,7 +112,7 @@ final class ShoppingListController extends AbstractController
         }
 
         return $this->render('shopping_list/edit.html.twig', [
-            'shopping_list' => $shoppingList,
+            'shoppingList' => $shoppingList,
             'form' => $form,
         ]);
     }

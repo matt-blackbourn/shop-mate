@@ -4,30 +4,71 @@
 
 {% block body %}
 
-<div class="shopping-cards">
-    {% for listItem in orderedList %}
-       <div class="shopping-card" data-id="{{ listItem.id }}">
-            <div class="card-header">
-                <div class="title">
-                    {{ listItem.foodItem.name }} {% if listItem.quantity %}({{ listItem.quantity }}){% endif %}
-         
+<div class="container py-3">
+
+    <!-- Sticky header -->
+    <div class="sticky-top bg-white border-bottom z-3">
+        <div class="d-flex align-items-center justify-content-between px-2 py-2">
+
+            <!-- Exit shopping -->
+            <a href="{{ path('app_home') }}"
+               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-arrow-left"></i>
+                <span class="d-none d-sm-inline">Done</span>
+            </a>
+
+            <!-- Heading -->
+            <h1 class="h6 mb-0 text-center flex-grow-1">
+                Shopping @ {{ shoppingList.supermarket.name }}
+            </h1>
+
+            <!-- Edit list -->
+            <a href="{{ path('app_shopping_list_edit', { id: shoppingList.id }) }}"
+               class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-pencil"></i>
+                <span class="d-none d-sm-inline">Edit</span>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Spacer -->
+    <div class="sticky-spacer"></div>
+
+    <!-- Shopping items -->
+    <div class="shopping-cards">
+
+        {% for listItem in orderedList %}
+            <div class="shopping-card" data-id="{{ listItem.id }}">
+
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="title">
+                        {{ listItem.foodItem.name }}
+                        {% if listItem.quantity %}
+                            <span class="text-muted">
+                                ({{ listItem.quantity }})
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <button class="pick-btn btn btn-outline-success btn-sm" type="button">
+                        Picked
+                    </button>
                 </div>
 
-                <button class="pick-btn" type="button">
-                    Picked
-                </button>
-            </div>
+                {% if listItem.notes %}
+                    <div class="notes small text-muted mt-1">
+                        {{ listItem.notes }}
+                    </div>
+                {% endif %}
 
-            {% if listItem.notes %}
-                <div class="notes">{{ listItem.notes }}</div>
-            {% endif %}
-        </div>
-    {% endfor %}
+            </div>
+        {% endfor %}
+
+    </div>
+
 </div>
 
-<a href="{{ path('app_home') }}" class="btn btn-primary">
-    Finished Shopping
-</a>
 
 <style>
 .shopping-card {
@@ -37,6 +78,10 @@
     margin-bottom: 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,.1);
     touch-action: pan-y;
+}
+
+.notes {
+    margin-left: 0.25rem;
 }
 
 .card-header {
@@ -86,33 +131,6 @@ document.querySelectorAll('.pick-btn').forEach(btn => {
     });
 });
 
-let startX = null;
-
-// Swipe left to pick item
-document.querySelectorAll('.shopping-card').forEach(card => {
-    card.addEventListener('touchstart', e => {
-        startX = e.touches[0].clientX;
-    });
-
-    card.addEventListener('touchend', e => {
-        if (!startX) return;
-
-        const endX = e.changedTouches[0].clientX;
-        if (startX - endX > 80) {
-            pickItem(card);
-        }
-        startX = null;
-    });
-
-    card.addEventListener('touchmove', e => {
-        if (!startX) return;
-
-        const delta = e.touches[0].clientX - startX;
-        if (delta < 0) {
-            card.style.transform = `translateX(${delta}px)`;
-        }
-});
-});
 
 function pickItem(card) {
     if (card.dataset.picking) return;

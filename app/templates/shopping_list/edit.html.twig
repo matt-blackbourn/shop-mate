@@ -5,18 +5,66 @@
 {% block body %}
 <div class="container py-3">
 
-    <h1 class="h5 mb-3">Edit shopping list</h1>
-
     {{ form_start(form) }}
 
-    <!-- Add item button at top -->
-    <button
-        type="button"
-        id="add-item"
-        class="btn btn-primary w-100 mb-3"
-    >
-        <i class="bi bi-plus"></i> Add item
-    </button>
+    <!-- Sticky header: page-level actions -->
+    <div class="sticky-top bg-white border-bottom z-3">
+        <div class="d-flex align-items-center justify-content-between px-2 py-2">
+
+            <!-- Home / Cancel -->
+            <a href="{{ path('app_home') }}"
+               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-house"></i>
+                <span class="d-none d-sm-inline">Home</span>
+            </a>
+
+            <!-- Heading -->
+            <h1 class="h6 mb-0 text-center flex-grow-1">
+                Edit shopping list
+            </h1>
+
+            <!-- Save -->
+            <button type="submit"
+                    class="btn btn-success btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-check-lg"></i>
+                <span class="d-none d-sm-inline">Save</span>
+            </button>
+
+        </div>
+    </div>
+
+    <!-- Spacer so content doesn't slide under sticky header -->
+    <div class="sticky-spacer"></div>
+
+    <!-- Workflow actions (extensible) -->
+    <div class="d-grid gap-2 mb-3">
+
+        <!-- Go to active shopping -->
+        <a href="{{ path('app_shopping_list_active', { id: shoppingList.id }) }}"
+           class="btn btn-outline-primary">
+            <i class="bi bi-cart-check"></i>
+            Go shopping!
+        </a>
+
+        <!-- Add item -->
+        <button
+            type="button"
+            id="add-item"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-plus"></i>
+            Add item
+        </button>
+
+        {# Future: add new food
+        <button type="button" class="btn btn-outline-secondary">
+            <i class="bi bi-basket"></i>
+            Add new food
+        </button>
+        #}
+
+    </div>
+
 
     <div
         id="listItems"
@@ -81,12 +129,6 @@
         {% do form.listItems.setRendered %}
     </div>
 
-    <!-- Form actions -->
-    <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-success flex-fill">Save</button>
-        <a href="{{ path('app_home') }}" class="btn btn-outline-secondary flex-fill">Cancel</a>
-    </div>
-
     {{ form_end(form) }}
 </div>
 
@@ -115,13 +157,15 @@
     min-height: 38px;
     padding: 0.375rem 0.75rem;
 }
+.sticky-spacer {
+    height: 56px;
+}
 </style>
 
 <script>
 const container = document.getElementById('listItems');
 let index = {{ form.listItems|length }};
 
-// Add new item at top
 // Add new item at top
 document.getElementById('add-item').addEventListener('click', () => {
     const prototype = container.dataset.prototype.replace(/__name__/g, index);
@@ -184,13 +228,6 @@ document.getElementById('add-item').addEventListener('click', () => {
     // 🔥 Tell Tom Select a new item was added
     document.dispatchEvent(new Event('collection:add'));
 
-    container.addEventListener('change', e => {
-        if(e.target.tagName === 'SELECT'){
-            const select = e.target;
-            const label = wrapper.querySelector('.food-label');
-            label.textContent = select.options[select.selectedIndex]?.text || 'New item';
-        }
-    })
 });
 
 
@@ -276,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initFoodSelect(e.target);
     });
 });
+
 
 </script>
 {% endblock %}
