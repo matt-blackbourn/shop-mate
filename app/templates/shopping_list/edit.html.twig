@@ -166,9 +166,9 @@
 const container = document.getElementById('listItems');
 let index = {{ form.listItems|length }};
 
-// Add new item at top
 document.getElementById('add-item').addEventListener('click', () => {
-    const prototype = container.dataset.prototype.replace(/__name__/g, index);
+    // Get fully-named prototype
+    const prototypeHtml = container.dataset.prototype.replace(/__name__/g, index);
     index++;
 
     // Collapse existing items
@@ -177,21 +177,30 @@ document.getElementById('add-item').addEventListener('click', () => {
         i.classList.add('collapsed');
     });
 
+    // Parse prototype
+    const temp = document.createElement('div');
+    temp.innerHTML = prototypeHtml;
+
+    // Extract Symfony-managed fields
+    const foodSelect = temp.querySelector('select');
+    const notesInput = temp.querySelector('input[name$="[notes]"]');
+    const quantityInput = temp.querySelector('input[name$="[quantity]"]');
+
+    // Defensive checks (optional but wise)
+    if (!foodSelect || !notesInput || !quantityInput) {
+        console.error('Prototype missing expected fields');
+        return;
+    }
+
+    // Styling hooks
+    foodSelect.classList.add('food-select');
+    notesInput.classList.add('form-control', 'form-control-sm');
+    quantityInput.classList.add('quantity-input');
+    quantityInput.type = 'hidden';
+
+    // Create card wrapper
     const wrapper = document.createElement('div');
     wrapper.className = 'card list-item expanded';
-
-    // Parse prototype safely
-    const temp = document.createElement('div');
-    temp.innerHTML = prototype;
-
-    // Find the food select
-    const select = temp.querySelector('select');
-
-    // Ensure class exists for Tom Select
-    select.classList.add('food-select');
-
-    // Extract HTML
-    const foodSelectHTML = select.outerHTML;
 
     wrapper.innerHTML = `
         <div class="card-body p-2">
@@ -205,17 +214,16 @@ document.getElementById('add-item').addEventListener('click', () => {
             </div>
 
             <div class="item-body mt-2">
-                ${foodSelectHTML}
+                ${foodSelect.outerHTML}
 
-                <!-- Inline Notes + Quantity -->
                 <div class="d-flex align-items-center gap-2 mt-2">
                     <div class="flex-grow-1">
-                        <input type="text" class="form-control form-control-sm" placeholder="Notes">
+                        ${notesInput.outerHTML}
                     </div>
                     <div class="d-flex align-items-center gap-1 qty-control">
                         <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
                         <span class="fw-semibold qty-display px-2">1</span>
-                        <input type="hidden" class="quantity-input" value="1">
+                        ${quantityInput.outerHTML}
                         <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
                     </div>
                 </div>
@@ -225,10 +233,10 @@ document.getElementById('add-item').addEventListener('click', () => {
 
     container.prepend(wrapper);
 
-    // 🔥 Tell Tom Select a new item was added
+    // Let Tom Select initialise new selects
     document.dispatchEvent(new Event('collection:add'));
-
 });
+
 
 
 
