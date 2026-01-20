@@ -108,11 +108,19 @@ final class ShoppingListController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_shopping_list_index');
+            $action = $request->request->get('action');
+
+            if($action === 'go_shopping') {
+                return $this->redirectToRoute('app_shopping_list_active', [
+                    'id' => $shoppingList->getId(),
+                ]);
+            }
+        
+            // default: save → home
+            return $this->redirectToRoute('home');
         }
 
         return $this->render('shopping_list/edit.html.twig', [
-            'shoppingList' => $shoppingList,
             'form' => $form,
         ]);
     }
