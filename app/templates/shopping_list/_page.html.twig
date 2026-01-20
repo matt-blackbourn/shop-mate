@@ -379,47 +379,54 @@ document.addEventListener('submit', async function (e) {
     const form = e.target;
     const formData = new FormData(form);
 
-    const response = await fetch(form.action, {
+    // Step 1: immediately close modal
+    const modalEl = document.getElementById('addFoodModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+       // Step 2: send AJAX request in the background
+    fetch(form.action, {
         method: 'POST',
         body: formData,
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
         }
-    });
+    })
+    .then(async (response) => {
+        if (!response.ok) {
+            const err = await response.json();
+            console.error('Food creation error:', err);
+            // Optionally show toast/alert
+            return;
+        }
+        return response.json();
+    })
+    .then((data) => {
+        if (!data) return;
 
-    const data = await response.json();
+        // Step 3: inject new option into Tom Select
+        if (!activeFoodSelect) return;
 
-    // ✅ SUCCESS: FoodItem was created
-    if (!activeFoodSelect) {
-        console.warn('No active food select to inject into');
-        return;
-    }
+        activeFoodSelect.addOption({
+            value: data.id,
+            text: data.label
+        });
 
-    activeFoodSelect.addOption({
-        value: data.id,
-        text: data.label
-    });
+        activeFoodSelect.setValue(data.id);
+        activeFoodSelect.close();
 
-    activeFoodSelect.setValue(data.id);
-    activeFoodSelect.close();
-
-    activeFoodSelect = null;
-
-    // Close modal
-    bootstrap.Modal.getInstance(
-        document.getElementById('addFoodModal')
-    ).hide();
+        activeFoodSelect = null;
+    })
+    .catch(err => console.error('Food creation request failed:', err));
 });
+
 
 {# Open the modal with the pre-filled name #}
 function openAddFoodModal(name = '') {
-    console.log('Opening add food modal with name:', name);
     const modalEl = document.getElementById('addFoodModal');
     if (!modalEl) return;
-    console.log(modalEl);
 
     const form = modalEl.querySelector('form');
-    console.log(form);
     if (form) {
         form.reset();
 
