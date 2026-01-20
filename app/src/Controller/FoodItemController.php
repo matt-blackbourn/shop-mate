@@ -43,26 +43,31 @@ final class FoodItemController extends AbstractController
         ]);
     }
 
-    #[Route('/food-item/quick-add', name: 'ajax_food_item_quick_add', methods: ['POST'])]
-    public function quickAdd(
+    #[Route('/ajax/new/modal', name: 'app_food_new_modal', methods: ['POST'])]
+    public function foodModal(
         Request $request,
         EntityManagerInterface $em
-    ): JsonResponse {
-        $data = json_decode($request->getContent(), true);
-
-        if (empty($data['name'])) {
-            return $this->json(['error' => 'Name is required'], 400);
+    ): Response {
+        $food = new FoodItem();
+        $form = $this->createForm(FoodItemType::class, $food, [
+            'action' => $this->generateUrl('app_food_new_modal'),
+        ]);
+    
+        $form->handleRequest($request);
+    
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em->persist($food);
+            $em->flush();
+    
+            return $this->json([
+                'id'    => $food->getId(),
+                'label' => $food->getName(),
+            ]);
         }
-
-        $foodItem = new FoodItem();
-        $foodItem->setName(trim($data['name']));
-
-        $em->persist($foodItem);
-        $em->flush();
-
-        return $this->json([
-            'id' => $foodItem->getId(),
-            'name' => $foodItem->getName(),
+    
+        // Initial load OR validation error
+        return $this->render('food_item/_new_food_modal.html.twig', [
+            'form' => $form->createView(),
         ]);
     }
 

@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\FoodItem;
 use App\Entity\ListItem;
 use App\Entity\ShoppingList;
+use App\Form\FoodItemType;
 use App\Form\ShoppingListType;
 use App\Repository\ListItemRepository;
 use App\Repository\ShoppingListRepository;
@@ -117,11 +119,18 @@ final class ShoppingListController extends AbstractController
             }
         
             // default: save → home
-            return $this->redirectToRoute('home');
+            return $this->redirectToRoute('app_home');
         }
 
+        // Create form for new food modal
+        $food = new FoodItem();
+        $foodForm = $this->createForm(FoodItemType::class, $food, [
+            'action' => $this->generateUrl('app_food_new_modal'),
+        ]);
+
         return $this->render('shopping_list/edit.html.twig', [
-            'form' => $form,
+            'form' => $form->createView(),
+            'foodForm' => $foodForm->createView(),
         ]);
     }
 
