@@ -151,13 +151,13 @@ class SupermarketController extends AbstractController
             $filename = uniqid().'.'.$image->guessExtension();
             $image->move($this->getParameter('floorplans_dir'), $filename);
 
-            [$width, $length] = getimagesize(
+            [$width, $height] = getimagesize(
                 $this->getParameter('floorplans_dir').'/'.$filename
             );
 
             $supermarket->setImagePath($filename);
             $supermarket->setWidth($width);
-            $supermarket->setLength($length);
+            $supermarket->setHeight($height);
 
             $em->persist($supermarket);
             $em->flush();

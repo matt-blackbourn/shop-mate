@@ -49,7 +49,7 @@ class Supermarket
     private ?string $imagePath = null;
 
     #[ORM\Column(nullable: true)]
-    private ?int $length = null;
+    private ?int $height = null;
 
     #[ORM\Column(nullable: true)]
     private ?int $width = null;
@@ -223,14 +223,14 @@ class Supermarket
         return $this;
     }
 
-    public function getLength(): ?int
+    public function getHeight(): ?int
     {
-        return $this->length;
+        return $this->height;
     }
 
-    public function setLength(?int $length): static
+    public function setHeight(?int $height): static
     {
-        $this->length = $length;
+        $this->height = $height;
 
         return $this;
     }

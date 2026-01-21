@@ -10,9 +10,18 @@
             id="supermarket-img"
             src="{{ asset('uploads/supermarkets/' ~ supermarket.imagePath) }}"
             width="{{ supermarket.width }}"
-            length="{{ supermarket.length }}"
+            height="{{ supermarket.height }}"
             alt="Floor plan"
         >
+        {# top left = 0,0 #}
+        <svg
+            id="overlay"
+            width="{{ supermarket.width }}"
+            height="{{ supermarket.height }}"
+            viewBox="0 0 {{ supermarket.width }} {{ supermarket.height }}"
+            preserveAspectRatio="none"
+        >
+        </svg>
     </div>
 
     <a href="{{ path('app_supermarket_index') }}">back to list</a>
@@ -22,7 +31,34 @@
         position: relative;
         display: inline-block;
     }
+    #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
 
 </style>
+<script>
+    const svg = document.getElementById('overlay');
+
+    svg.addEventListener('click', (e) => {
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+
+        const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+        drawNode(x, y);
+    });
+
+    function drawNode(x, y) {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', x);
+        circle.setAttribute('cy', y);
+        circle.setAttribute('r', 6);
+        circle.setAttribute('fill', 'red');
+
+        svg.appendChild(circle);
+    }
+</script>
 
 {% endblock %}
