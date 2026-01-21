@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Node;
 use App\Entity\ProductLocation;
 use App\Entity\Supermarket;
-use App\Form\ProductlocationType;
 use App\Form\SupermarketType;
 use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
@@ -137,6 +137,32 @@ class SupermarketController extends AbstractController
         ]);
     }
 
+    #[Route('/ajax/{id}/nodes', methods: ['POST'])]
+    public function saveNodesBulk(
+        Supermarket $supermarket,
+        Request $request,
+        EntityManagerInterface $em
+    ) {
+        $data = json_decode($request->getContent(), true);
+
+        foreach ($data['nodes'] as $key => $nodeData) {
+            $node = new Node();
+            $node->setSupermarket($supermarket);
+            $node->setXValue($nodeData['x']);
+            $node->setYValue($nodeData['y']);
+
+            if($key === 0) {
+                $supermarket->setEntranceNode($node);
+            }
+
+            $em->persist($node);
+        }
+
+        $em->flush();
+
+        return $this->json(['status' => 'ok']);
+    }
+
 
     #[Route('/{id}/edit', name: 'app_supermarket_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
@@ -149,10 +175,10 @@ class SupermarketController extends AbstractController
             $image = $form->get('image')->getData();
 
             $filename = uniqid().'.'.$image->guessExtension();
-            $image->move($this->getParameter('floorplans_dir'), $filename);
+            $image->move($this->getParameter('supermarkets_dir'), $filename);
 
             [$width, $height] = getimagesize(
-                $this->getParameter('floorplans_dir').'/'.$filename
+                $this->getParameter('supermarkets_dir').'/'.$filename
             );
 
             $supermarket->setImagePath($filename);

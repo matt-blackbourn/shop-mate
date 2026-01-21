@@ -3,9 +3,25 @@
 {% block title %}Supermarket{% endblock %}
 
 {% block body %}
-    <h1>{{ supermarket.name }}</h1>
+    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-2">
+        <!-- Left group: title + node count -->
+        <h1 class="h4 mb-0">{{ supermarket.name }}</h1>
+        <span id="node-count" class="badge bg-secondary">0 nodes</span>
 
-    <div id="supermarket-wrapper">
+        <!-- Right buttons, inline with title -->
+        <button id="undo-node" type="button" class="btn btn-outline-secondary btn-sm">
+            Undo last node
+        </button>
+        <button id="save-nodes" class="btn btn-success btn-sm" disabled>
+            Save nodes
+        </button>
+        <a href="{{ path('app_supermarket_index') }}" class="btn btn-link btn-sm text-muted">
+            Back to list
+        </a>
+    </div>
+
+
+    <div id="supermarket-wrapper" data-supermarket-id="{{ supermarket.id }}">
         <img
             id="supermarket-img"
             src="{{ asset('uploads/supermarkets/' ~ supermarket.imagePath) }}"
@@ -24,8 +40,6 @@
         </svg>
     </div>
 
-    <a href="{{ path('app_supermarket_index') }}">back to list</a>
-
 <style>
     #supermarket-wrapper {
         position: relative;
@@ -36,19 +50,77 @@
         top: 0;
         left: 0;
     }
+    .node {
+        fill: #0d6efd;
+        stroke: white;
+        stroke-width: 2;
+    }
 
 </style>
 <script>
     const svg = document.getElementById('overlay');
+    const nodes = []; // { x, y, element }
+    const nodeCountEl = document.getElementById('node-count');
+    const saveBtn = document.getElementById('save-nodes');
+
 
     svg.addEventListener('click', (e) => {
+        // Ignore clicks on existing nodes
+        if (e.target.tagName !== 'svg') return;
+
         const pt = svg.createSVGPoint();
         pt.x = e.clientX;
         pt.y = e.clientY;
 
         const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
-        drawNode(x, y);
+
+        addNode(x, y);
     });
+
+    document.getElementById('save-nodes').addEventListener('click', () => {
+        const wrapper = document.getElementById('supermarket-wrapper');
+        const supermarketId = wrapper.dataset.supermarketId;        
+
+        fetch(`/supermarket/ajax/${supermarketId}/nodes`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                nodes: nodes.map(n => ({
+                    x: n.x,
+                    y: n.y
+                }))
+            })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Save failed');
+            return res.json();
+        })
+        .then(() => {
+            alert('Nodes saved');
+        })
+        .catch(err => {
+            alert(err.message);
+        });
+    });
+
+    document.getElementById('undo-node').addEventListener('click', () => {
+        undoLastNode();
+    });
+
+    function updateNodeCount() {
+        nodeCountEl.textContent = `${nodes.length} nodes`;
+        saveBtn.disabled = nodes.length === 0;
+    }
+
+    function undoLastNode() {
+        if (nodes.length === 0) return;
+
+        const last = nodes.pop();
+        last.element.remove();
+        updateNodeCount(); 
+    }
 
     function drawNode(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -59,6 +131,22 @@
 
         svg.appendChild(circle);
     }
-</script>
+
+
+    function addNode(x, y) {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+
+        circle.setAttribute('cx', x);
+        circle.setAttribute('cy', y);
+        circle.setAttribute('r', 6);
+        circle.classList.add('node');
+
+        svg.appendChild(circle);
+
+        nodes.push({ x, y, element: circle });
+
+        updateNodeCount();
+    }
+    </script>
 
 {% endblock %}
