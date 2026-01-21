@@ -128,16 +128,32 @@ class SupermarketController extends AbstractController
         ]);
     }
 
-
-    #[Route('/{id}/draw', name: 'app_supermarket_draw', methods: ['GET', 'POST'])]
-    public function draw(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
+    #[Route('/{id}/draw/nodes', name: 'app_supermarket_draw_nodes', methods: ['GET', 'POST'])]
+    public function nodes(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
     {
         return $this->render('supermarket/draw.html.twig', [
             'supermarket' => $supermarket,
         ]);
     }
 
-    #[Route('/ajax/{id}/nodes', methods: ['POST'])]
+    #[Route('/{id}/draw/edges', name: 'app_supermarket_draw_edges', methods: ['GET', 'POST'])]
+    public function edges(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
+    {
+        $nodes = $supermarket->getNodes(); // findall by supermarket???
+
+        $data = array_map(fn($n) => [
+            'id' => $n->getId(),
+            'x' => $n->getXValue(),
+            'y' => $n->getYValue()
+        ], $nodes->toArray());
+
+        return $this->render('supermarket/edges.html.twig', [
+            'supermarket' => $supermarket,
+            'nodes' => $this->json($data),
+        ]);
+    }
+
+    #[Route('/ajax/{id}/nodes/save', methods: ['POST'])]
     public function saveNodesBulk(
         Supermarket $supermarket,
         Request $request,
@@ -156,6 +172,42 @@ class SupermarketController extends AbstractController
             }
 
             $em->persist($node);
+        }
+
+        $em->flush();
+
+        return $this->json(['status' => 'ok']);
+    }
+
+    #[Route('/ajax/{id}/edges/get', methods: ['GET'])]
+    public function getEdgesBulk(
+        Supermarket $supermarket,
+    ) {
+        $nodes = $supermarket->getNodes(); 
+
+        $data = array_map(fn($n) => [
+            'id' => $n->getId(),
+            'x' => $n->getX(),
+            'y' => $n->getY()
+        ], $nodes->toArray());
+
+        return $this->json($data);
+    }
+
+    #[Route('/ajax/{id}/edges/delete', methods: ['POST'])]
+    public function deleteEdgesBulk(
+        Supermarket $supermarket,
+        Request $request,
+        EdgeRepository $edgeRepo,
+        EntityManagerInterface $em,
+    ) {
+        $data = json_decode($request->getContent(), true);
+
+        foreach ($data['edges'] as $edgeId) {
+            $edge = $edgeRepo->find($edgeId);
+            if ($edge && $edge->getSupermarket()->getId() === $supermarket->getId()) {
+                $em->remove($edge);
+            }
         }
 
         $em->flush();

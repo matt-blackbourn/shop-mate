@@ -1,0 +1,153 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Supermarket{% endblock %}
+
+{% block body %}
+    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-2">
+        <h1 class="h4 mb-0">{{ supermarket.name }}</h1>
+        <span id="edge-count" class="badge bg-secondary">0 edges</span>
+
+        <button id="remove-selected" type="button" class="btn btn-outline-danger btn-sm">
+            Remove selected edges
+        </button>
+
+        <button id="save-edges" class="btn btn-success btn-sm">
+            Save edges
+        </button>
+
+        <a href="{{ path('app_supermarket_index') }}" class="btn btn-link btn-sm text-muted">
+            Back to list
+        </a>
+    </div>
+
+
+    <div id="supermarket-wrapper" data-supermarket-id="{{ supermarket.id }}" data-nodes="{{ nodes|json_encode|e('html_attr') }}">
+        <img
+            id="supermarket-img"
+            src="{{ asset('uploads/supermarkets/' ~ supermarket.imagePath) }}"
+            width="{{ supermarket.width }}"
+            height="{{ supermarket.height }}"
+            alt="Floor plan"
+        >
+        {# top left = 0,0 #}
+        <svg
+            id="overlay"
+            width="{{ supermarket.width }}"
+            height="{{ supermarket.height }}"
+            viewBox="0 0 {{ supermarket.width }} {{ supermarket.height }}"
+            preserveAspectRatio="none"
+        >
+        </svg>
+    </div>
+
+<style>
+    #supermarket-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+    #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const wrapper = document.getElementById('supermarket-wrapper');
+    const supermarketId = wrapper.dataset.supermarketId;
+    const nodes = JSON.parse(wrapper.dataset.nodes);
+    const svg = document.getElementById('overlay');
+    const edgeCountEl = document.getElementById('edge-count');
+
+    const edges = [];   // {id, from, to, element, selected}
+
+    // 1️⃣ Load nodes
+    const nodeData = await nodeRes.json();
+
+    nodeData.forEach(n => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', n.x);
+        circle.setAttribute('cy', n.y);
+        circle.setAttribute('r', 6);
+        circle.classList.add('node');
+        svg.appendChild(circle);
+
+        nodes[n.id] = { ...n, element: circle };
+    });
+
+    // 2️⃣ Load edges
+    const edgeRes = await fetch(`/supermarket/ajax/${supermarketId}/edges/get`);
+    const edgeData = await edgeRes.json();
+
+    edgeData.forEach(e => {
+        const fromNode = nodes[e.from];
+        const toNode = nodes[e.to];
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', fromNode.x);
+        line.setAttribute('y1', fromNode.y);
+        line.setAttribute('x2', toNode.x);
+        line.setAttribute('y2', toNode.y);
+        line.setAttribute('stroke', 'rgba(0,0,255,0.4)');
+        line.setAttribute('stroke-width', 3);
+        line.dataset.id = e.id;
+        line.dataset.selected = 'false';
+
+        svg.prepend(line);
+
+        edges.push({ ...e, element: line, selected: false });
+    });
+
+    updateEdgeCount();
+
+    // 3️⃣ Click to select/deselect edges
+    svg.addEventListener('click', e => {
+        if (e.target.tagName !== 'line') return;
+
+        const edge = edges.find(ed => ed.id == e.target.dataset.id);
+        if (!edge) return;
+
+        edge.selected = !edge.selected;
+        e.target.setAttribute('stroke', edge.selected ? 'red' : 'rgba(0,0,255,0.4)');
+
+        updateEdgeCount();
+    });
+
+    function updateEdgeCount() {
+        const count = edges.filter(e => e.selected).length;
+        edgeCountEl.textContent = `${count} selected`;
+    }
+
+    // 4️⃣ Remove selected edges
+    document.getElementById('remove-selected').addEventListener('click', () => {
+        edges.filter(e => e.selected).forEach(e => {
+            e.element.remove();
+            e.toRemove = true;  // mark for backend deletion
+            e.selected = false;
+        });
+        updateEdgeCount();
+    });
+
+    // 5️⃣ Save edges (persist deletions)
+    document.getElementById('save-edges').addEventListener('click', async () => {
+        const toDelete = edges.filter(e => e.toRemove).map(e => e.id);
+
+        if (toDelete.length === 0) return alert('No edges to remove');
+
+        const res = await fetch(`/supermarket/ajax/${supermarketId}/edges/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ edges: toDelete })
+        });
+
+        if (!res.ok) return alert('Save failed');
+
+        alert('Edges updated');
+    });
+});
+
+   
+</script>
+
+{% endblock %}

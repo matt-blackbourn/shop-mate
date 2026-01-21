@@ -81,7 +81,7 @@
         const wrapper = document.getElementById('supermarket-wrapper');
         const supermarketId = wrapper.dataset.supermarketId;        
 
-        fetch(`/supermarket/ajax/${supermarketId}/nodes`, {
+        fetch(`/supermarket/ajax/${supermarketId}/nodes/save`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
