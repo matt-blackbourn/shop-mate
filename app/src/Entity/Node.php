@@ -15,9 +15,6 @@ class Node
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column]
-    private ?int $number = null;
-
     #[ORM\Column(nullable: true)]
     private ?int $xValue = null;
 
@@ -55,18 +52,6 @@ class Node
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getNumber(): ?int
-    {
-        return $this->number;
-    }
-
-    public function setNumber(int $number): static
-    {
-        $this->number = $number;
-
-        return $this;
     }
 
     public function getXValue(): ?int

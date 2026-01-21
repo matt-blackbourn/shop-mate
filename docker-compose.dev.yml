@@ -1,0 +1,50 @@
+services:
+  php:
+    build: .
+    container_name: shopmate-php
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      DATABASE_URL: mysql://matt:404404@db:3306/shopmate
+    volumes:
+      - ./app:/var/www/html
+
+  web:
+    image: nginx:alpine
+    container_name: shopmate-web
+    depends_on:
+      - php
+    volumes:
+      - ./app:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
+
+  db:
+    image: mysql:8.0
+    container_name: shopmate-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 404404
+      MYSQL_DATABASE: shopmate
+      MYSQL_USER: matt
+      MYSQL_PASSWORD: 404404
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: shopmate-phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: 404404
+      PMA_ABSOLUTE_URI: http://127.0.0.1:8081/
+      PMA_FORCE_SSL: 0
+    ports:
+      - "8081:80"
+
+volumes:
+  db_data:

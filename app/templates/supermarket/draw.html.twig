@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Supermarket{% endblock %}
+
+{% block body %}
+    <h1>{{ supermarket.name }}</h1>
+
+    <div id="supermarket-wrapper">
+        <img
+            id="supermarket-img"
+            src="{{ asset('uploads/supermarkets/' ~ supermarket.imagePath) }}"
+            width="{{ supermarket.width }}"
+            length="{{ supermarket.length }}"
+            alt="Floor plan"
+        >
+    </div>
+
+    <a href="{{ path('app_supermarket_index') }}">back to list</a>
+
+<style>
+    #supermarket-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+</style>
+
+{% endblock %}

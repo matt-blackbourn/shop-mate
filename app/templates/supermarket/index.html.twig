@@ -20,7 +20,8 @@
                 <td>{{ supermarket.name }}</td>
                 <td>
                     <a href="{{ path('admin_assign_food_edges', {'id': supermarket.id}) }}">assign food</a>
-                    {# <a href="{{ path('app_supermarket_edit', {'id': supermarket.id}) }}">edit</a> #}
+                    <a href="{{ path('app_supermarket_edit', {'id': supermarket.id}) }}">edit</a>
+                    <a href="{{ path('app_supermarket_draw', {'id': supermarket.id}) }}">draw</a>
                 </td>
             </tr>
         {% else %}

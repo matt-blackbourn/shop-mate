@@ -45,6 +45,15 @@ class Supermarket
     #[ORM\OneToMany(targetEntity: Node::class, mappedBy: 'supermarket')]
     private Collection $nodes;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imagePath = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $length = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $width = null;
+
     public function __construct()
     {
         $this->productLocations = new ArrayCollection();
@@ -198,6 +207,42 @@ class Supermarket
                 $node->setSupermarket(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getImagePath(): ?string
+    {
+        return $this->imagePath;
+    }
+
+    public function setImagePath(?string $imagePath): static
+    {
+        $this->imagePath = $imagePath;
+
+        return $this;
+    }
+
+    public function getLength(): ?int
+    {
+        return $this->length;
+    }
+
+    public function setLength(?int $length): static
+    {
+        $this->length = $length;
+
+        return $this;
+    }
+
+    public function getWidth(): ?int
+    {
+        return $this->width;
+    }
+
+    public function setWidth(?int $width): static
+    {
+        $this->width = $width;
 
         return $this;
     }
