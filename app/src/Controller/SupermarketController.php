@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Edge;
 use App\Entity\Node;
 use App\Entity\ProductLocation;
 use App\Entity\Supermarket;
@@ -128,7 +129,7 @@ class SupermarketController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/draw/nodes', name: 'app_supermarket_draw_nodes', methods: ['GET', 'POST'])]
+    #[Route('/{id}/draw/nodes', name: 'app_supermarket_draw_nodes', methods: ['GET'])]
     public function nodes(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
     {
         return $this->render('supermarket/draw.html.twig', [
@@ -136,21 +137,83 @@ class SupermarketController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/draw/edges', name: 'app_supermarket_draw_edges', methods: ['GET', 'POST'])]
-    public function edges(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
+    #[Route('/{id}/draw/edges', name: 'app_supermarket_draw_edges', methods: ['GET'])]
+    public function edges(
+        Request $request, 
+        Supermarket $supermarket, 
+        NodeRepository $nodeRepository, 
+       
+    ): Response
     {
-        $nodes = $supermarket->getNodes(); // findall by supermarket???
-
-        $data = array_map(fn($n) => [
-            'id' => $n->getId(),
-            'x' => $n->getXValue(),
-            'y' => $n->getYValue()
-        ], $nodes->toArray());
+        $nodes = $nodeRepository->findBySupermarket($supermarket);
+        $data = []; 
+        foreach ($nodes as $node) {
+            $data[] = [
+                'id' => $node->getId(),
+                'x' => $node->getXValue(),
+                'y' => $node->getYValue()
+            ];
+        }
 
         return $this->render('supermarket/edges.html.twig', [
             'supermarket' => $supermarket,
-            'nodes' => $this->json($data),
+            'nodes' => $data,
         ]);
+    }
+
+    #[Route('/ajax/{id}/edges/save', methods: ['POST'])]
+    public function saveEdgesBulk(
+        Supermarket $supermarket,
+        Request $request,
+        EntityManagerInterface $em,
+        EdgeRepository $edgeRepo,
+        NodeRepository $nodeRepository, 
+    ) {
+        $data = json_decode($request->getContent(), true);
+
+        if (!is_array($data)) {
+            return $this->json(['error' => 'Invalid payload'], 400);
+        }
+
+        // OPTIONAL: clear existing edges first
+        $existingEdges = $edgeRepo->findBy(['supermarket' => $supermarket]);
+        foreach ($existingEdges as $edge) {
+            $em->remove($edge);
+        }
+
+        foreach ($data as $item) {
+            if (!isset($item['from'], $item['to'])) {
+                continue;
+            }
+
+            $from = $nodeRepository->find($item['from']);
+            $to   = $nodeRepository->find($item['to']);
+
+            if (!$from || !$to) {
+                continue;
+            }
+
+            // Safety: ensure nodes belong to this supermarket
+            if ($from->getSupermarket() !== $supermarket ||
+                $to->getSupermarket() !== $supermarket) {
+                continue;
+            }
+
+            $edge = new Edge();
+            $edge->setStart($from);
+            $edge->setEnd($to);
+            $edge->setSupermarket($supermarket);
+
+            $em->persist($edge);
+        }
+
+        $em->flush();
+
+        return $this->json([
+            'status' => 'ok',
+            'edges_saved' => count($data),
+        ]);
+ 
     }
 
     #[Route('/ajax/{id}/nodes/save', methods: ['POST'])]
