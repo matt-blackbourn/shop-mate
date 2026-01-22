@@ -12,6 +12,7 @@ use App\Repository\FoodItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductLocationRepository;
 use App\Repository\SupermarketRepository;
+use App\Service\PathFinder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -169,50 +170,63 @@ class SupermarketController extends AbstractController
         EdgeRepository $edgeRepo,
         NodeRepository $nodeRepository, 
     ) {
-        $data = json_decode($request->getContent(), true);
+        try{
 
-        if (!is_array($data)) {
-            return $this->json(['error' => 'Invalid payload'], 400);
-        }
-
-        // OPTIONAL: clear existing edges first
-        $existingEdges = $edgeRepo->findBy(['supermarket' => $supermarket]);
-        foreach ($existingEdges as $edge) {
-            $em->remove($edge);
-        }
-
-        foreach ($data as $item) {
-            if (!isset($item['from'], $item['to'])) {
-                continue;
+            $data = json_decode($request->getContent(), true);
+    
+            if (!is_array($data)) {
+                return $this->json(['error' => 'Invalid payload'], 400);
             }
-
-            $from = $nodeRepository->find($item['from']);
-            $to   = $nodeRepository->find($item['to']);
-
-            if (!$from || !$to) {
-                continue;
+    
+            // OPTIONAL: clear existing edges first
+            $existingEdges = $edgeRepo->findBy(['supermarket' => $supermarket]);
+            foreach ($existingEdges as $edge) {
+                $em->remove($edge);
             }
-
-            // Safety: ensure nodes belong to this supermarket
-            if ($from->getSupermarket() !== $supermarket ||
-                $to->getSupermarket() !== $supermarket) {
-                continue;
+    
+            foreach ($data as $item) {
+                if (!isset($item['from'], $item['to'])) {
+                    continue;
+                }
+    
+                $from = $nodeRepository->find($item['from']);
+                $to   = $nodeRepository->find($item['to']);
+    
+                if (!$from || !$to) {
+                    continue;
+                }
+    
+                // Safety: ensure nodes belong to this supermarket
+                if ($from->getSupermarket() !== $supermarket ||
+                    $to->getSupermarket() !== $supermarket) {
+                    continue;
+                }
+    
+                $edge = new Edge();
+                $edge->setStart($from);
+                $edge->setEnd($to);
+                $edge->setSupermarket($supermarket);
+                $edge->setPhase(1);
+                
+                $dx = $from->getXValue() - $to->getXValue();
+                $dy = $from->getYValue() - $to->getYValue();
+                $length = sqrt(($dx * $dx) + ($dy * $dy));
+                $edge->setLength($length);
+    
+                $em->persist($edge);
             }
-
-            $edge = new Edge();
-            $edge->setStart($from);
-            $edge->setEnd($to);
-            $edge->setSupermarket($supermarket);
-
-            $em->persist($edge);
+    
+            $em->flush();
+    
+            return $this->json([
+                'status' => 'ok',
+                'edges_saved' => count($data),
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'An error occurred: ' . $e->getMessage()
+            ], 500);
         }
-
-        $em->flush();
-
-        return $this->json([
-            'status' => 'ok',
-            'edges_saved' => count($data),
-        ]);
  
     }
 

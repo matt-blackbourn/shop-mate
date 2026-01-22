@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearSelection();
     });
 
-// Save edges button (bulk persist)
+    // Save edges button (bulk persist)
     document.getElementById('save-edges').addEventListener('click', async () => {
         const supermarketId = wrapper.dataset.supermarketId;
 
@@ -208,23 +208,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const res = await fetch(`/supermarket/ajax/${supermarketId}/edges/save`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(payload)
-                }
-            );
+            const res = await fetch(`/supermarket/ajax/${supermarketId}/edges/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            });
 
-            if (!res.ok) throw new Error('Failed');
+            // Try to read JSON no matter what
+            const text = await res.text();
+            let data = null;
+
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_) {
+                // response wasn't JSON (500 HTML page etc)
+            }
+
+            if (!res.ok) {
+                const message =
+                    data?.error ||
+                    data?.message ||
+                    `Request failed (${res.status})`;
+
+                throw new Error(message);
+            }
 
             alert('Edges saved');
         } catch (e) {
-            alert('Error saving edges');
-            console.error(e);
+            alert(`Error saving edges:\n\n${e.message}`);
+            console.error('Save edges error:', e);
         }
     });
 });
