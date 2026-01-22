@@ -143,47 +143,64 @@ class SupermarketController extends AbstractController
         Request $request, 
         Supermarket $supermarket, 
         NodeRepository $nodeRepository, 
-       
+        EdgeRepository $edgeRepository,
     ): Response
     {
-        $nodes = $nodeRepository->findBySupermarket($supermarket);
-        $data = []; 
-        foreach ($nodes as $node) {
-            $data[] = [
+        $nodes = []; 
+        foreach ($nodeRepository->findBySupermarket($supermarket) as $node) {
+            $nodes[] = [
                 'id' => $node->getId(),
                 'x' => $node->getXValue(),
                 'y' => $node->getYValue()
             ];
         }
 
+        $edges = []; 
+        foreach ($edgeRepository->findBySupermarket($supermarket) as $edge) {
+            $edges[] = [
+                'id' => $edge->getId(),
+                'from' => $edge->getStart()->getId(),
+                'to'   => $edge->getEnd()->getId(),
+                'x1'   => $edge->getStart()->getXValue(),
+                'y1'   => $edge->getStart()->getYValue(),
+                'x2'   => $edge->getEnd()->getXValue(),
+                'y2'   => $edge->getEnd()->getYValue(),
+                'phase'=> $edge->getPhase(),
+            ];
+        }
+
         return $this->render('supermarket/edges.html.twig', [
             'supermarket' => $supermarket,
-            'nodes' => $data,
+            'nodes' => $nodes,
+            'edges' => $edges,
         ]);
     }
 
-    #[Route('/ajax/{id}/edges/save', methods: ['POST'])]
+    #[Route('/{id}/edges/save', methods: ['POST'])]
     public function saveEdgesBulk(
         Supermarket $supermarket,
         Request $request,
         EntityManagerInterface $em,
-        EdgeRepository $edgeRepo,
+        EdgeRepository $edgeRepository,
         NodeRepository $nodeRepository, 
     ) {
         try{
 
-            $data = json_decode($request->getContent(), true);
-    
+            $raw = $request->request->get('edges');
+
+            if (!$raw) {
+                $this->addFlash('error', 'No edges submitted');
+                return $this->redirectToRoute('supermarket_edit', ['id' => $supermarket->getId()]);
+            }
+        
+            $data = json_decode($raw, true);
+        
             if (!is_array($data)) {
-                return $this->json(['error' => 'Invalid payload'], 400);
+                $this->addFlash('error', 'Invalid edge data');
+                return $this->redirectToRoute('supermarket_edit', ['id' => $supermarket->getId()]);
             }
     
-            // OPTIONAL: clear existing edges first
-            $existingEdges = $edgeRepo->findBy(['supermarket' => $supermarket]);
-            foreach ($existingEdges as $edge) {
-                $em->remove($edge);
-            }
-    
+
             foreach ($data as $item) {
                 if (!isset($item['from'], $item['to'])) {
                     continue;
@@ -202,7 +219,7 @@ class SupermarketController extends AbstractController
                     continue;
                 }
     
-                $edge = new Edge();
+                $edge = isset($item['id']) ? $edgeRepository->find($item['id']) : new Edge();
                 $edge->setStart($from);
                 $edge->setEnd($to);
                 $edge->setSupermarket($supermarket);
@@ -218,14 +235,18 @@ class SupermarketController extends AbstractController
     
             $em->flush();
     
-            return $this->json([
-                'status' => 'ok',
-                'edges_saved' => count($data),
+            $this->addFlash('success', 'Edges saved successfully!');
+
+            return $this->redirectToRoute('app_supermarket_draw_edges', [
+                'id' => $supermarket->getId(),
             ]);
+            
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'An error occurred: ' . $e->getMessage()
-            ], 500);
+            $this->addFlash('danger', 'Error saving edges: ' . $e->getMessage());
+
+            return $this->redirectToRoute('app_supermarket_draw_edges', [
+                'id' => $supermarket->getId(),
+            ]);
         }
  
     }

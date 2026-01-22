@@ -3,23 +3,50 @@
 {% block title %}Supermarket{% endblock %}
 
 {% block body %}
-    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-2">
-          <h1 class="h4 mb-0">{{ supermarket.name }}</h1>
+    <div class="d-flex flex-column mb-4 border-bottom pb-3">
 
-        <a href="{{ path('app_supermarket_index') }}"
-        class="btn btn-link btn-sm text-muted">
-            Back to list
-        </a>
-        <button
-            id="save-edges"
-            class="btn btn-success btn-sm ms-auto"
-        >
-            Save edges
-        </button>
+        {# Top row: title + back button #}
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-3">
+                <h1 class="h4 mb-0">{{ supermarket.name }}</h1>
+
+                <a href="{{ path('app_supermarket_index') }}"
+                class="btn btn-outline-secondary btn-sm">
+                    ← Back to list
+                </a>
+            </div>
+
+            {# Save edges form #}
+            <form method="POST" action="/supermarket/{{ supermarket.id }}/edges/save"
+                id="edgesForm" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="edges" id="edgesInput">
+
+                <button type="submit" class="btn btn-primary btn-sm">
+                    💾 Save edges
+                </button>
+            </form>
+        </div>
+
+        {# Flash messages #}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
     </div>
 
 
-    <div id="supermarket-wrapper" data-supermarket-id="{{ supermarket.id }}" data-nodes="{{ nodes|json_encode|e('html_attr') }}">
+
+    <div 
+        id="supermarket-wrapper" 
+        data-supermarket-id="{{ supermarket.id }}"  
+        data-nodes="{{ nodes|json_encode|e('html_attr') }}"
+        data-edges="{{ edges|json_encode|e('html_attr') }}"
+    >
         <img
             id="supermarket-img"
             src="{{ asset('uploads/supermarkets/' ~ supermarket.imagePath) }}"
@@ -48,25 +75,33 @@
         top: 0;
         left: 0;
     }
-  .node {
-    fill: #0d6efd;
-    cursor: pointer;
-    }
+    .node {
+        fill: #0d6efd;
+        cursor: pointer;
+    }      
 
     .node-selected {
-    fill: orange;
-    stroke: black;
-    stroke-width: 2;
+        fill: orange;
+        stroke: black;
+        stroke-width: 2;
     }
 
     .edge {
-    stroke: rgba(0, 123, 255, 0.6);
-    stroke-width: 3;
-    cursor: pointer;
+        stroke: rgba(0, 123, 255, 0.6);
+        stroke-width: 3;
+        cursor: pointer;
     }
 
     .edge:hover {
-    stroke: red;
+        stroke: red;
+    }
+    .edge[data-phase="2"] {
+        stroke: #4caf50;
+    }
+
+    .edge.selected {
+        stroke: #ff5252;
+        stroke-width: 3;
     }
 
 </style>
@@ -75,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wrapper = document.getElementById('supermarket-wrapper');
     const svg = document.getElementById('overlay');
     const nodesData = JSON.parse(wrapper.dataset.nodes);
+    const edgeData = JSON.parse(wrapper.dataset.edges);
 
     const nodes = {};   // id -> { id, x, y, element }
     const edges = [];
@@ -95,6 +131,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
         nodes[n.id] = { ...n, element: circle };
     });
+
+    edgeData.forEach(e => {
+        drawEdge(e);
+
+        edges.push(e); // Prefill edges array so these are resubmitted with any changes
+    });
+
+    document.getElementById('edgesForm').addEventListener('submit', (event) => {
+        if (!window.edges) {
+            window.edges = []; // fallback if edges not defined
+        }
+
+        // Make sure we actually have edges
+        document.getElementById('edgesInput').value = JSON.stringify(edges);
+
+        // Optional: prevent empty submission
+        if (edges.length === 0) {
+            event.preventDefault();
+            alert('No edges to save!');
+        }
+    });
+
+    function drawEdge(edge) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+
+        line.setAttribute('x1', edge.x1);
+        line.setAttribute('y1', edge.y1);
+        line.setAttribute('x2', edge.x2);
+        line.setAttribute('y2', edge.y2);
+
+        line.classList.add('edge');
+        line.dataset.id = edge.id;
+        line.dataset.phase = edge.phase;
+
+        line.addEventListener('click', () => {
+            line.classList.toggle('selected');
+        });
+
+        svg.insertBefore(line, svg.firstChild); // behind nodes
+    }
+
+    function changeEdgePhase(edgeId, newPhase) {
+        const edge = edges.find(e => e.id === edgeId);
+        if (edge) {
+            edge.phase = newPhase;
+
+            // optional: update SVG immediately
+            const line = svg.querySelector(`.edge[data-id="${edgeId}"]`);
+            if (line) {
+                line.dataset.phase = newPhase;
+                line.setAttribute('stroke', newPhase === '1' ? '#4caf50' : '#999');
+            }
+        }
+    }
 
     /* -----------------------------
      * Helpers
@@ -193,56 +283,8 @@ document.addEventListener('DOMContentLoaded', () => {
         clearSelection();
     });
 
-    // Save edges button (bulk persist)
-    document.getElementById('save-edges').addEventListener('click', async () => {
-        const supermarketId = wrapper.dataset.supermarketId;
 
-        const payload = edges.map(e => ({
-            from: e.from,
-            to: e.to
-        }));
-
-        if (!payload.length) {
-            alert('No edges to save');
-            return;
-        }
-
-        try {
-            const res = await fetch(`/supermarket/ajax/${supermarketId}/edges/save`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            // Try to read JSON no matter what
-            const text = await res.text();
-            let data = null;
-
-            try {
-                data = text ? JSON.parse(text) : null;
-            } catch (_) {
-                // response wasn't JSON (500 HTML page etc)
-            }
-
-            if (!res.ok) {
-                const message =
-                    data?.error ||
-                    data?.message ||
-                    `Request failed (${res.status})`;
-
-                throw new Error(message);
-            }
-
-            alert('Edges saved');
-        } catch (e) {
-            alert(`Error saving edges:\n\n${e.message}`);
-            console.error('Save edges error:', e);
-        }
-    });
-});
+}); 
    
 </script>
 
