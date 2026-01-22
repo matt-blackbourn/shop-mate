@@ -133,7 +133,7 @@ class SupermarketController extends AbstractController
     #[Route('/{id}/draw/nodes', name: 'app_supermarket_draw_nodes', methods: ['GET'])]
     public function nodes(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
     {
-        return $this->render('supermarket/draw.html.twig', [
+        return $this->render('supermarket/nodes.html.twig', [
             'supermarket' => $supermarket,
         ]);
     }

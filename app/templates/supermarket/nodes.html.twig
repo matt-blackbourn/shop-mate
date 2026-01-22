@@ -64,6 +64,13 @@
     const saveBtn = document.getElementById('save-nodes');
 
 
+    // Store shared X and Y coordinates
+    const sharedX = new Set();
+    const sharedY = new Set();
+
+    // Configurable snap distance (pixels)
+    const SNAP_DISTANCE = 30;
+
     svg.addEventListener('click', (e) => {
         // Ignore clicks on existing nodes
         if (e.target.tagName !== 'svg') return;
@@ -72,10 +79,75 @@
         pt.x = e.clientX;
         pt.y = e.clientY;
 
-        const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+        //  SVG coordinate transform
+        let { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
 
-        addNode(x, y);
+        // snap to shared X / Y coordinates
+        ({ x, y } = snapToSharedCoordinates(x, y));
+
+        // KEEP: add node
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', x);
+        circle.setAttribute('cy', y);
+        circle.setAttribute('r', 6);
+        circle.classList.add('node');
+
+        svg.appendChild(circle);
+
+        nodes.push({ x, y, element: circle });
+
+        // Shift-click declares this node's X and Y as shared
+        if (e.shiftKey) {
+            sharedX.add(x);
+            sharedY.add(y);
+            console.log('Added shared coordinates:', x, y);
+        }
+
+        updateNodeCount();
     });
+
+    function snapToSharedCoordinates(x, y) {
+        let snappedX = x;
+        let snappedY = y;
+
+        // Snap X
+        for (const sx of sharedX) {
+            if (Math.abs(x - sx) <= SNAP_DISTANCE) {
+                snappedX = sx;
+                break;
+            }
+        }
+
+        // Snap Y
+        for (const sy of sharedY) {
+            if (Math.abs(y - sy) <= SNAP_DISTANCE) {
+                snappedY = sy;
+                break;
+            }
+        }
+
+        return { x: snappedX, y: snappedY };
+    }
+
+    function drawGuideLine(x, y) {
+        const hLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        hLine.setAttribute('x1', 0);
+        hLine.setAttribute('y1', y);
+        hLine.setAttribute('x2', svg.clientWidth);
+        hLine.setAttribute('y2', y);
+        hLine.setAttribute('stroke', 'rgba(0,200,0,0.3)');
+        hLine.setAttribute('stroke-dasharray', '4 2');
+        svg.appendChild(hLine);
+
+        const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        vLine.setAttribute('x1', x);
+        vLine.setAttribute('y1', 0);
+        vLine.setAttribute('x2', x);
+        vLine.setAttribute('y2', svg.clientHeight);
+        vLine.setAttribute('stroke', 'rgba(0,200,0,0.3)');
+        vLine.setAttribute('stroke-dasharray', '4 2');
+        svg.appendChild(vLine);
+    }
 
     document.getElementById('save-nodes').addEventListener('click', () => {
         const wrapper = document.getElementById('supermarket-wrapper');
@@ -122,17 +194,7 @@
         updateNodeCount(); 
     }
 
-    function drawNode(x, y) {
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', x);
-        circle.setAttribute('cy', y);
-        circle.setAttribute('r', 6);
-        circle.setAttribute('fill', 'red');
-
-        svg.appendChild(circle);
-    }
-
-
+    // not used currently
     function addNode(x, y) {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 
