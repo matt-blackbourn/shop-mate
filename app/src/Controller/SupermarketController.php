@@ -199,7 +199,6 @@ class SupermarketController extends AbstractController
                 $this->addFlash('error', 'Invalid edge data');
                 return $this->redirectToRoute('supermarket_edit', ['id' => $supermarket->getId()]);
             }
-    
 
             foreach ($data as $item) {
                 if (!isset($item['from'], $item['to'])) {
@@ -219,7 +218,7 @@ class SupermarketController extends AbstractController
                     continue;
                 }
     
-                if(isset($item['id'])) {
+                if($item['id']) {
                     $edge = $edgeRepository->find($item['id']);
                     $edge->setPhase($item['phase']); // phase is all we can edit here
                 } else {

@@ -243,20 +243,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function createEdge(a, b) {
         if (edgeExists(a, b)) return;
 
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', a.x);
-        line.setAttribute('y1', a.y);
-        line.setAttribute('x2', b.x);
-        line.setAttribute('y2', b.y);
-        line.classList.add('edge');
+        if (!phaseSelector.value) {
+            alert('Select a phase before creating edges');
+            return;
+        }
 
-        svg.prepend(line);
-
-        edges.push({
+        const edge = {
+            id: null,
             from: a.id,
             to: b.id,
-            element: line
-        });
+            x1: a.x,
+            y1: a.y,
+            x2: b.x,
+            y2: b.y,
+            phase: phaseSelector.value,
+            selected: false
+        };
+
+        drawEdge(edge);
+        edges.push(edge);
     }
 
     /* -----------------------------
