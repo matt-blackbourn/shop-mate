@@ -5,7 +5,7 @@
 {% block body %}
     <div class="d-flex flex-column mb-4 border-bottom pb-3">
 
-        {# Top row: title + back button #}
+        {# Top row: title + back button + save form #}
         <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="d-flex align-items-center gap-3">
                 <h1 class="h4 mb-0">{{ supermarket.name }}</h1>
@@ -16,15 +16,27 @@
                 </a>
             </div>
 
-            {# Save edges form #}
-            <form method="POST" action="/supermarket/{{ supermarket.id }}/edges/save"
-                id="edgesForm" class="d-flex align-items-center gap-2">
-                <input type="hidden" name="edges" id="edgesInput">
+            <div class="d-flex align-items-center gap-2">
 
-                <button type="submit" class="btn btn-primary btn-sm">
-                    💾 Save edges
-                </button>
-            </form>
+                {# Phase selector for selected edges #}
+                <select id="phaseSelector" class="form-select form-select-sm">
+                    <option value="">Set phase...</option>
+                    <option value="1">Phase 1</option>
+                    <option value="2">Phase 2</option>
+                    <option value="3">Phase 3</option>
+                    <option value="4">Phase 4</option>
+                </select>
+
+                {# Save edges form #}
+                <form method="POST" action="/supermarket/{{ supermarket.id }}/edges/save"
+                    id="edgesForm" class="d-flex align-items-center gap-2">
+                    <input type="hidden" name="edges" id="edgesInput">
+
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        💾 Save edges
+                    </button>
+                </form>
+            </div>
         </div>
 
         {# Flash messages #}
@@ -38,6 +50,7 @@
         {% endfor %}
 
     </div>
+
 
 
 
@@ -87,21 +100,17 @@
     }
 
     .edge {
-        stroke: rgba(0, 123, 255, 0.6);
-        stroke-width: 3;
+        stroke-width: 5;
         cursor: pointer;
     }
 
     .edge:hover {
-        stroke: red;
-    }
-    .edge[data-phase="2"] {
-        stroke: #4caf50;
+        stroke-width: 6;
     }
 
     .edge.selected {
-        stroke: #ff5252;
-        stroke-width: 3;
+        stroke-width: 7;
+        stroke-dasharray: 6 4; /* optional but very nice */
     }
 
 </style>
@@ -133,8 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     edgeData.forEach(e => {
+        e.selected = false; // <-- add selected state
         drawEdge(e);
-
         edges.push(e); // Prefill edges array so these are resubmitted with any changes
     });
 
@@ -154,6 +163,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function drawEdge(edge) {
+        // Ensure the edge has a selected property
+        if (typeof edge.selected === 'undefined') {
+            edge.selected = false;
+        }
+
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 
         line.setAttribute('x1', edge.x1);
@@ -165,25 +179,24 @@ document.addEventListener('DOMContentLoaded', () => {
         line.dataset.id = edge.id;
         line.dataset.phase = edge.phase;
 
+          const colorMap = {
+            '1': '#4caf50', // green
+            '2': '#2196f3', // blue
+            '3': '#ff9800', // orange
+            '4': '#9c27b0'  // purple
+        };
+
+        // 🔑 THIS IS THE MISSING LINE
+        line.setAttribute('stroke', colorMap[edge.phase] || '#999');
+
+        // Click listener toggles selection
         line.addEventListener('click', () => {
-            line.classList.toggle('selected');
+            edge.selected = !edge.selected;                     // update JS state
+            line.classList.toggle('selected', edge.selected);   // visual highlight
         });
 
-        svg.insertBefore(line, svg.firstChild); // behind nodes
-    }
-
-    function changeEdgePhase(edgeId, newPhase) {
-        const edge = edges.find(e => e.id === edgeId);
-        if (edge) {
-            edge.phase = newPhase;
-
-            // optional: update SVG immediately
-            const line = svg.querySelector(`.edge[data-id="${edgeId}"]`);
-            if (line) {
-                line.dataset.phase = newPhase;
-                line.setAttribute('stroke', newPhase === '1' ? '#4caf50' : '#999');
-            }
-        }
+        // Insert behind nodes
+        svg.insertBefore(line, svg.firstChild);
     }
 
     /* -----------------------------
@@ -237,17 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
         line.setAttribute('y2', b.y);
         line.classList.add('edge');
 
-        // CLICK TO REMOVE
-        line.addEventListener('click', e => {
-            e.stopPropagation();
-
-            const index = edges.findIndex(ed => ed.element === line);
-            if (index !== -1) {
-                edges[index].element.remove();
-                edges.splice(index, 1);
-            }
-        });
-
         svg.prepend(line);
 
         edges.push({
@@ -284,7 +286,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
+    const phaseSelector = document.getElementById('phaseSelector');
+    phaseSelector.addEventListener('change', () => {
+        const newPhase = phaseSelector.value;
+        if (!newPhase) return;
+
+        const colorMap = { 
+            '1': '#4caf50',   // green
+            '2': '#2196f3',   // blue
+            '3': '#ff9800',   // orange
+            '4': '#9c27b0'    // purple
+        };
+
+        edges.forEach(edge => {
+            if (edge.selected) {
+                edge.phase = newPhase;
+
+                const line = svg.querySelector(`.edge[data-id="${edge.id}"]`);
+                if (line) {
+                    line.dataset.phase = newPhase;
+                    line.setAttribute('stroke', colorMap[newPhase]);
+                }
+            }
+        });
+
+        // ✅ DESELECT ALL EDGES
+        edges.forEach(edge => edge.selected = false);
+            svg.querySelectorAll('.edge.selected').forEach(line => {
+            line.classList.remove('selected');
+        });
+    });
+
+
 }); 
+
+
    
 </script>
 

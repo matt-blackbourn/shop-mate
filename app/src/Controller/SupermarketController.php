@@ -219,18 +219,23 @@ class SupermarketController extends AbstractController
                     continue;
                 }
     
-                $edge = isset($item['id']) ? $edgeRepository->find($item['id']) : new Edge();
-                $edge->setStart($from);
-                $edge->setEnd($to);
-                $edge->setSupermarket($supermarket);
-                $edge->setPhase(1);
-                
-                $dx = $from->getXValue() - $to->getXValue();
-                $dy = $from->getYValue() - $to->getYValue();
-                $length = sqrt(($dx * $dx) + ($dy * $dy));
-                $edge->setLength($length);
-    
-                $em->persist($edge);
+                if(isset($item['id'])) {
+                    $edge = $edgeRepository->find($item['id']);
+                    $edge->setPhase($item['phase']); // phase is all we can edit here
+                } else {
+                    $edge = new Edge();
+                    $edge->setPhase(Edge::MAIN_PHASE); // we can edit the phase later, but most of them will be main phase
+                    $edge->setSupermarket($supermarket);
+                    $edge->setStart($from);
+                    $edge->setEnd($to);
+                    
+                    $dx = $from->getXValue() - $to->getXValue();
+                    $dy = $from->getYValue() - $to->getYValue();
+                    $length = sqrt(($dx * $dx) + ($dy * $dy));
+                    $edge->setLength($length);
+        
+                    $em->persist($edge);
+                }
             }
     
             $em->flush();
