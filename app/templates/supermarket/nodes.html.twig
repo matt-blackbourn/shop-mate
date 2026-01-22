@@ -55,6 +55,11 @@
         stroke: white;
         stroke-width: 2;
     }
+    .guide {
+        stroke: rgba(0, 200, 0, 0.35);
+        stroke-dasharray: 4 3;
+        pointer-events: none;
+    }
 
 </style>
 <script>
@@ -71,6 +76,14 @@
     // Configurable snap distance (pixels)
     const SNAP_DISTANCE = 30;
 
+
+    // state for direction locking + guides
+    let lastNode = null;
+    let directionLock = null; // 'horizontal' | 'vertical' | null
+    const LOCK_THRESHOLD = 6;
+    let guideLineX = null;
+    let guideLineY = null;
+
     svg.addEventListener('click', (e) => {
         // Ignore clicks on existing nodes
         if (e.target.tagName !== 'svg') return;
@@ -81,6 +94,12 @@
 
         //  SVG coordinate transform
         let { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+         // Apply direction lock
+        if (lastNode) {
+            if (directionLock === 'horizontal') y = lastNode.y;
+            if (directionLock === 'vertical') x = lastNode.x;
+        }
 
         // snap to shared X / Y coordinates
         ({ x, y } = snapToSharedCoordinates(x, y));
@@ -103,7 +122,56 @@
             console.log('Added shared coordinates:', x, y);
         }
 
+        // Reset for next segment
+        directionLock = null;
+
         updateNodeCount();
+    });
+
+// mousemove for direction locking + snapping
+    svg.addEventListener('mousemove', (e) => {
+        if (!lastNode) return;
+
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+
+        let { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        const dx = Math.abs(x - lastNode.x);
+        const dy = Math.abs(y - lastNode.y);
+
+        // 🔒 Decide direction once
+        if (!directionLock && (dx > LOCK_THRESHOLD || dy > LOCK_THRESHOLD)) {
+            directionLock = dx > dy ? 'horizontal' : 'vertical';
+        }
+
+        // 🔒 Apply direction lock
+        if (directionLock === 'horizontal') {
+            y = lastNode.y;
+        } else if (directionLock === 'vertical') {
+            x = lastNode.x;
+        }
+
+        // 🧲 Snap to shared coordinates (non-locked axis)
+        if (directionLock !== 'vertical') {
+            for (const sy of sharedY) {
+                if (Math.abs(y - sy) <= SNAP_DISTANCE) {
+                    y = sy;
+                    break;
+                }
+            }
+        }
+
+
+        if (directionLock !== 'horizontal') {
+            for (const sx of sharedX) {
+                if (Math.abs(x - sx) <= SNAP_DISTANCE) {
+                    x = sx;
+                    break;
+                }
+            }
+        }
     });
 
     function snapToSharedCoordinates(x, y) {
@@ -127,26 +195,6 @@
         }
 
         return { x: snappedX, y: snappedY };
-    }
-
-    function drawGuideLine(x, y) {
-        const hLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        hLine.setAttribute('x1', 0);
-        hLine.setAttribute('y1', y);
-        hLine.setAttribute('x2', svg.clientWidth);
-        hLine.setAttribute('y2', y);
-        hLine.setAttribute('stroke', 'rgba(0,200,0,0.3)');
-        hLine.setAttribute('stroke-dasharray', '4 2');
-        svg.appendChild(hLine);
-
-        const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        vLine.setAttribute('x1', x);
-        vLine.setAttribute('y1', 0);
-        vLine.setAttribute('x2', x);
-        vLine.setAttribute('y2', svg.clientHeight);
-        vLine.setAttribute('stroke', 'rgba(0,200,0,0.3)');
-        vLine.setAttribute('stroke-dasharray', '4 2');
-        svg.appendChild(vLine);
     }
 
     document.getElementById('save-nodes').addEventListener('click', () => {
