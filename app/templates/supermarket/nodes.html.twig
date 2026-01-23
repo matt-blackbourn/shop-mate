@@ -3,25 +3,61 @@
 {% block title %}Supermarket{% endblock %}
 
 {% block body %}
-    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-2">
-        <!-- Left group: title + node count -->
-        <h1 class="h4 mb-0">{{ supermarket.name }}</h1>
-        <span id="node-count" class="badge bg-secondary">0 nodes</span>
+  <div class="d-flex flex-column mb-4 border-bottom pb-3">
 
-        <!-- Right buttons, inline with title -->
-        <button id="undo-node" type="button" class="btn btn-outline-secondary btn-sm">
-            Undo last node
-        </button>
-        <button id="save-nodes" class="btn btn-success btn-sm" disabled>
-            Save nodes
-        </button>
-        <a href="{{ path('app_supermarket_index') }}" class="btn btn-link btn-sm text-muted">
-            Back to list
-        </a>
+        {# Top row: title + back button + save form #}
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-3">
+                <h1 class="h4 mb-0">{{ supermarket.name }}</h1>
+
+                <a href="{{ path('app_supermarket_index') }}"
+                class="btn btn-outline-secondary btn-sm">
+                    ← Back to list
+                </a>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <label for="snapDistance">Snap Distance:</label>
+                <select id="snapDistance">
+                    <option value="5">5 px</option>
+                    <option value="10">10 px</option>
+                    <option value="15">15 px</option>
+                    <option value="20">20 px</option>
+                    <option value="30" selected>30 px</option>
+                    <option value="50">50 px</option>
+                </select>
+                <span id="node-count" class="badge bg-secondary">0 nodes</span>
+
+                <!-- Right buttons, inline with title -->
+                <button id="undo-node" type="button" class="btn btn-outline-secondary btn-sm">
+                    Undo last node
+                </button>
+
+                {# Save nodes form #}
+                <form method="POST" action="/supermarket/{{ supermarket.id }}/nodes/save"
+                    id="nodesForm" class="d-flex align-items-center gap-2">
+                    <input type="hidden" name="nodes" id="nodesInput">
+
+                    <button id="save-nodes" type="submit" class="btn btn-primary btn-sm">
+                        💾 Save nodes
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {# Flash messages #}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
     </div>
 
-
-    <div id="supermarket-wrapper" data-supermarket-id="{{ supermarket.id }}">
+    <div id="supermarket-wrapper" data-supermarket-id="{{ supermarket.id }}" data-nodes="{{ nodes|json_encode|e('html_attr') }}">
         <img
             id="supermarket-img"
             src="{{ asset('uploads/supermarkets/' ~ supermarket.imagePath) }}"
@@ -68,13 +104,53 @@
     const nodeCountEl = document.getElementById('node-count');
     const saveBtn = document.getElementById('save-nodes');
 
+    const wrapper = document.getElementById('supermarket-wrapper');
+    const nodesData = JSON.parse(wrapper.dataset.nodes);
 
     // Store shared X and Y coordinates
     const sharedX = new Set();
     const sharedY = new Set();
 
     // Configurable snap distance (pixels)
-    const SNAP_DISTANCE = 30;
+    let SNAP_DISTANCE = 30; // default
+    const snapSelect = document.getElementById('snapDistance');
+    snapSelect.addEventListener('change', (e) => {
+        SNAP_DISTANCE = parseInt(e.target.value, 10);
+    });
+
+    // on page load: draw the existing nodes and fill the array
+    nodesData.forEach(n => {
+        const circle = drawNode(n.x, n.y);
+        n.element = circle;
+        nodes.push(n);
+        updateNodeCount();
+    });
+
+
+    function createNode(x, y) {
+        const circle = drawNode(x, y);
+        const node = {
+            id: null, 
+            x: x, 
+            y: y, 
+            element: circle
+        }
+        nodes.push(node);
+        updateNodeCount();
+    }
+
+    function drawNode(x, y) {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+
+        circle.setAttribute('cx', x);
+        circle.setAttribute('cy', y);
+        circle.setAttribute('r', SNAP_DISTANCE/2);
+        circle.classList.add('node');
+
+        svg.appendChild(circle);
+
+        return circle;
+    }
 
 
     // state for direction locking + guides
@@ -104,22 +180,12 @@
         // snap to shared X / Y coordinates
         ({ x, y } = snapToSharedCoordinates(x, y));
 
-        // KEEP: add node
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', x);
-        circle.setAttribute('cy', y);
-        circle.setAttribute('r', 6);
-        circle.classList.add('node');
-
-        svg.appendChild(circle);
-
-        nodes.push({ x, y, element: circle });
+        createNode(x, y);
 
         // Shift-click declares this node's X and Y as shared
         if (e.shiftKey) {
             sharedX.add(x);
             sharedY.add(y);
-            console.log('Added shared coordinates:', x, y);
         }
 
         // Reset for next segment
@@ -197,34 +263,6 @@
         return { x: snappedX, y: snappedY };
     }
 
-    document.getElementById('save-nodes').addEventListener('click', () => {
-        const wrapper = document.getElementById('supermarket-wrapper');
-        const supermarketId = wrapper.dataset.supermarketId;        
-
-        fetch(`/supermarket/ajax/${supermarketId}/nodes/save`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                nodes: nodes.map(n => ({
-                    x: n.x,
-                    y: n.y
-                }))
-            })
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Save failed');
-            return res.json();
-        })
-        .then(() => {
-            alert('Nodes saved');
-        })
-        .catch(err => {
-            alert(err.message);
-        });
-    });
-
     document.getElementById('undo-node').addEventListener('click', () => {
         undoLastNode();
     });
@@ -242,21 +280,20 @@
         updateNodeCount(); 
     }
 
-    // not used currently
-    function addNode(x, y) {
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const form = document.getElementById('nodesForm');
+    const nodesInput = document.getElementById('nodesInput');
 
-        circle.setAttribute('cx', x);
-        circle.setAttribute('cy', y);
-        circle.setAttribute('r', 6);
-        circle.classList.add('node');
+    form.addEventListener('submit', (e) => {
+        // convert nodes array to simple [{x,y},{x,y}] format
+        const payload = nodes.map(n => ({ 
+            id: n.id,
+            x: n.x, 
+            y: n.y 
+        }));
+        nodesInput.value = JSON.stringify(payload);
+    });
 
-        svg.appendChild(circle);
-
-        nodes.push({ x, y, element: circle });
-
-        updateNodeCount();
-    }
+  
     </script>
 
 {% endblock %}

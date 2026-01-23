@@ -131,10 +131,20 @@ class SupermarketController extends AbstractController
     }
 
     #[Route('/{id}/draw/nodes', name: 'app_supermarket_draw_nodes', methods: ['GET'])]
-    public function nodes(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
+    public function nodes(Request $request, Supermarket $supermarket, NodeRepository $nodeRepository): Response
     {
+        $nodes = []; 
+        foreach ($nodeRepository->findBySupermarket($supermarket) as $node) {
+            $nodes[] = [
+                'id' => $node->getId(),
+                'x' => $node->getXValue(),
+                'y' => $node->getYValue()
+            ];
+        }
+
         return $this->render('supermarket/nodes.html.twig', [
             'supermarket' => $supermarket,
+            'nodes' => $nodes,
         ]);
     }
 
@@ -185,19 +195,16 @@ class SupermarketController extends AbstractController
         NodeRepository $nodeRepository, 
     ) {
         try{
-
             $raw = $request->request->get('edges');
-
             if (!$raw) {
                 $this->addFlash('error', 'No edges submitted');
-                return $this->redirectToRoute('supermarket_edit', ['id' => $supermarket->getId()]);
+                return $this->redirectToRoute('app_supermarket_draw_edges', ['id' => $supermarket->getId()]);
             }
         
             $data = json_decode($raw, true);
-        
             if (!is_array($data)) {
                 $this->addFlash('error', 'Invalid edge data');
-                return $this->redirectToRoute('supermarket_edit', ['id' => $supermarket->getId()]);
+                return $this->redirectToRoute('app_supermarket_draw_edges', ['id' => $supermarket->getId()]);
             }
 
             foreach ($data as $item) {
@@ -207,7 +214,6 @@ class SupermarketController extends AbstractController
     
                 $from = $nodeRepository->find($item['from']);
                 $to   = $nodeRepository->find($item['to']);
-    
                 if (!$from || !$to) {
                     continue;
                 }
@@ -223,7 +229,7 @@ class SupermarketController extends AbstractController
                     $edge->setPhase($item['phase']); // phase is all we can edit here
                 } else {
                     $edge = new Edge();
-                    $edge->setPhase(Edge::MAIN_PHASE); // we can edit the phase later, but most of them will be main phase
+                    $edge->setPhase($item['phase']);
                     $edge->setSupermarket($supermarket);
                     $edge->setStart($from);
                     $edge->setEnd($to);
@@ -238,7 +244,6 @@ class SupermarketController extends AbstractController
             }
     
             $em->flush();
-    
             $this->addFlash('success', 'Edges saved successfully!');
 
             return $this->redirectToRoute('app_supermarket_draw_edges', [
@@ -252,34 +257,58 @@ class SupermarketController extends AbstractController
                 'id' => $supermarket->getId(),
             ]);
         }
- 
     }
 
-    #[Route('/ajax/{id}/nodes/save', methods: ['POST'])]
+    #[Route('/{id}/nodes/save', methods: ['POST'])]
     public function saveNodesBulk(
         Supermarket $supermarket,
+        NodeRepository $nodeRepository,
         Request $request,
         EntityManagerInterface $em
     ) {
-        $data = json_decode($request->getContent(), true);
-
-        foreach ($data['nodes'] as $key => $nodeData) {
-            $node = new Node();
-            $node->setSupermarket($supermarket);
-            $node->setXValue($nodeData['x']);
-            $node->setYValue($nodeData['y']);
-
-            if($key === 0) {
-                $supermarket->setEntranceNode($node);
+        try{
+            $raw = $request->request->get('nodes');
+            if (!$raw) {
+                $this->addFlash('error', 'No nodes submitted');
+                return $this->redirectToRoute('app_supermarket_draw_nodes', ['id' => $supermarket->getId()]);
+            }
+        
+            $data = json_decode($raw, true);
+            if (!is_array($data)) {
+                $this->addFlash('error', 'Invalid edge data');
+                return $this->redirectToRoute('app_supermarket_draw_nodes', ['id' => $supermarket->getId()]);
             }
 
-            $em->persist($node);
+            foreach ($data as $key => $item) {
+                if($key === 0 && !$supermarket->getEntranceNode()) {
+                    $supermarket->setEntranceNode($node);
+                }
+                    
+                if(!$item['id']) {
+                    $node = new Node();
+                    $node->setSupermarket($supermarket);
+                    $node->setXValue($item['x']);
+                    $node->setYValue($item['y']);
+                    $em->persist($node);
+                } 
+            }
+    
+            $em->flush();
+            $this->addFlash('success', 'Nodes saved successfully!');
+
+            return $this->redirectToRoute('app_supermarket_draw_nodes', [
+                'id' => $supermarket->getId(),
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->addFlash('danger', 'Error saving nodes: ' . $e->getMessage());
+
+            return $this->redirectToRoute('app_supermarket_draw_nodes', [
+                'id' => $supermarket->getId(),
+            ]);
         }
-
-        $em->flush();
-
-        return $this->json(['status' => 'ok']);
     }
+
 
     #[Route('/ajax/{id}/edges/get', methods: ['GET'])]
     public function getEdgesBulk(
@@ -294,27 +323,6 @@ class SupermarketController extends AbstractController
         ], $nodes->toArray());
 
         return $this->json($data);
-    }
-
-    #[Route('/ajax/{id}/edges/delete', methods: ['POST'])]
-    public function deleteEdgesBulk(
-        Supermarket $supermarket,
-        Request $request,
-        EdgeRepository $edgeRepo,
-        EntityManagerInterface $em,
-    ) {
-        $data = json_decode($request->getContent(), true);
-
-        foreach ($data['edges'] as $edgeId) {
-            $edge = $edgeRepo->find($edgeId);
-            if ($edge && $edge->getSupermarket()->getId() === $supermarket->getId()) {
-                $em->remove($edge);
-            }
-        }
-
-        $em->flush();
-
-        return $this->json(['status' => 'ok']);
     }
 
 
