@@ -176,6 +176,7 @@ class SupermarketController extends AbstractController
                 'x2'   => $edge->getEnd()->getXValue(),
                 'y2'   => $edge->getEnd()->getYValue(),
                 'phase'=> $edge->getPhase(),
+                'element'=> null, // placeholder for front-end use
             ];
         }
 

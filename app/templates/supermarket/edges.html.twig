@@ -17,14 +17,25 @@
             </div>
 
             <div class="d-flex align-items-center gap-2">
+                 <!-- Right buttons, inline with title -->
+                <button id="undo-edge" type="button" class="btn btn-outline-secondary btn-sm">
+                    Undo last edge
+                </button>
+
+                <label for="strokeWidth">Stroke Width:</label>
+                <select id="strokeWidth">
+                    <option value="10">10 px</option>
+                    <option value="15"  selected>15 px</option>
+                    <option value="20">20 px</option>
+                    <option value="35">30 px</option>
+                </select>
 
                 {# Phase selector for selected edges #}
                 <select id="phaseSelector" class="form-select form-select-sm">
-                    <option value="">Set phase...</option>
-                    <option value="1">Phase 1</option>
-                    <option value="2">Phase 2</option>
-                    <option value="3">Phase 3</option>
-                    <option value="4">Phase 4</option>
+                    <option value="1">Entrance Phase</option>
+                    <option value="2">Post Entrance Phase</option>
+                    <option value="3">Main Phase</option>
+                    <option value="4">End Phase</option>
                 </select>
 
                 {# Save edges form #}
@@ -123,6 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedNode = null;
 
+    // Configurable stroke width (pixels)
+    let STROKE_WIDTH = 15; // default
+    const snapSelect = document.getElementById('strokeWidth');
+    snapSelect.addEventListener('change', (e) => {
+        STROKE_WIDTH = parseInt(e.target.value, 10);
+    });
+
     /* -----------------------------
      * Load & draw nodes
      * ----------------------------- */
@@ -130,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', n.x);
         circle.setAttribute('cy', n.y);
-        circle.setAttribute('r', 6);
+        circle.setAttribute('r', STROKE_WIDTH);
         circle.classList.add('node');
 
         svg.appendChild(circle);
@@ -144,20 +162,15 @@ document.addEventListener('DOMContentLoaded', () => {
         edges.push(e); // Prefill edges array so these are resubmitted with any changes
     });
 
-    document.getElementById('edgesForm').addEventListener('submit', (event) => {
-        if (!window.edges) {
-            window.edges = []; // fallback if edges not defined
-        }
-
-        // Make sure we actually have edges
-        document.getElementById('edgesInput').value = JSON.stringify(edges);
-
-        // Optional: prevent empty submission
-        if (edges.length === 0) {
-            event.preventDefault();
-            alert('No edges to save!');
-        }
+    document.getElementById('undo-edge').addEventListener('click', () => {
+        undoLastEdge();
     });
+    
+    function undoLastEdge() {
+        if (edges.length === 0) return;
+        const last = edges.pop();
+        last.element.remove();
+    }
 
     function drawEdge(edge) {
         // Ensure the edge has a selected property
@@ -183,8 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
             '4': '#9c27b0'  // purple
         };
 
-        // 🔑 THIS IS THE MISSING LINE
         line.setAttribute('stroke', colorMap[edge.phase] || '#999');
+        line.setAttribute('stroke-width', STROKE_WIDTH);
 
         // Click listener toggles selection
         line.addEventListener('click', () => {
@@ -194,11 +207,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Insert behind nodes
         svg.insertBefore(line, svg.firstChild);
+
+        return line;
     }
 
-    /* -----------------------------
-     * Helpers
-     * ----------------------------- */
+    svg.addEventListener('click', e => {
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        const nearest = findNearestNode(x, y);
+        if (!nearest) return;
+
+        if (!selectedNode) {
+            selectNode(nearest);
+            return;
+        }
+
+        if (selectedNode.id === nearest.id) {
+            clearSelection();
+            return;
+        }
+
+        createEdge(selectedNode, nearest);
+        clearSelection();
+    });
+
+    function createEdge(a, b) {
+        if (edgeExists(a, b)) return;
+
+        if (!phaseSelector.value) {
+            alert('Select a phase before creating edges');
+            return;
+        }
+
+        const edge = {
+            id: null,
+            from: a.id,
+            to: b.id,
+            x1: a.x,
+            y1: a.y,
+            x2: b.x,
+            y2: b.y,
+            phase: phaseSelector.value,
+            selected: false,
+            element: null
+        };
+
+        const line = drawEdge(edge);
+        edge.element = line; // add this in now for reference by undoLastEdge()
+        edges.push(edge);
+    }
+
     function findNearestNode(x, y, maxDistance = 20) {
         let nearest = null;
         let minDist = Infinity;
@@ -236,56 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
-    function createEdge(a, b) {
-        if (edgeExists(a, b)) return;
-
-        if (!phaseSelector.value) {
-            alert('Select a phase before creating edges');
-            return;
-        }
-
-        const edge = {
-            id: null,
-            from: a.id,
-            to: b.id,
-            x1: a.x,
-            y1: a.y,
-            x2: b.x,
-            y2: b.y,
-            phase: phaseSelector.value,
-            selected: false
-        };
-
-        drawEdge(edge);
-        edges.push(edge);
-    }
-
-    /* -----------------------------
-     * Click handling
-     * ----------------------------- */
-    svg.addEventListener('click', e => {
-        const pt = svg.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
-
-        const nearest = findNearestNode(x, y);
-        if (!nearest) return;
-
-        if (!selectedNode) {
-            selectNode(nearest);
-            return;
-        }
-
-        if (selectedNode.id === nearest.id) {
-            clearSelection();
-            return;
-        }
-
-        createEdge(selectedNode, nearest);
-        clearSelection();
-    });
-
 
     const phaseSelector = document.getElementById('phaseSelector');
     phaseSelector.addEventListener('change', () => {
@@ -318,7 +329,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.getElementById('edgesForm').addEventListener('submit', (event) => {
+        if (!window.edges) {
+            window.edges = []; // fallback if edges not defined
+        }
 
+        // Make sure we actually have edges
+        const payload = edges.map(({ element, ...data }) => data); // basically, pull out the element property
+        document.getElementById('edgesInput').value = JSON.stringify(payload);
+
+        // Optional: prevent empty submission
+        if (edges.length === 0) {
+            event.preventDefault();
+            alert('No edges to save!');
+        }
+    });
 }); 
 
 
