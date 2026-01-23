@@ -262,7 +262,6 @@ class SupermarketController extends AbstractController
     #[Route('/{id}/nodes/save', methods: ['POST'])]
     public function saveNodesBulk(
         Supermarket $supermarket,
-        NodeRepository $nodeRepository,
         Request $request,
         EntityManagerInterface $em
     ) {
@@ -279,17 +278,18 @@ class SupermarketController extends AbstractController
                 return $this->redirectToRoute('app_supermarket_draw_nodes', ['id' => $supermarket->getId()]);
             }
 
-            foreach ($data as $key => $item) {
-                if($key === 0 && !$supermarket->getEntranceNode()) {
-                    $supermarket->setEntranceNode($node);
-                }
-                    
+            foreach ($data as $item) {
                 if(!$item['id']) {
                     $node = new Node();
                     $node->setSupermarket($supermarket);
                     $node->setXValue($item['x']);
                     $node->setYValue($item['y']);
                     $em->persist($node);
+
+                    // Set the first node as entrance if none set
+                    if(!$supermarket->getEntranceNode()) {
+                        $supermarket->setEntranceNode($node);
+                    }
                 } 
             }
     

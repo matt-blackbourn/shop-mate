@@ -190,11 +190,27 @@
 
         // Reset for next segment
         directionLock = null;
+        ignoreNextSnapX = false;
+        ignoreNextSnapY = false;
 
         updateNodeCount();
     });
 
-// mousemove for direction locking + snapping
+    let ignoreNextSnapX = false;
+    let ignoreNextSnapY = false;
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'x') {
+            ignoreNextSnapX = true;
+        }
+
+        if (e.key.toLowerCase() === 'y') {
+            ignoreNextSnapY = true;
+        }
+
+    });
+
+    // mousemove for direction locking + snapping
     svg.addEventListener('mousemove', (e) => {
         if (!lastNode) return;
 
@@ -244,19 +260,23 @@
         let snappedX = x;
         let snappedY = y;
 
-        // Snap X
-        for (const sx of sharedX) {
-            if (Math.abs(x - sx) <= SNAP_DISTANCE) {
-                snappedX = sx;
-                break;
+        // Snap X (unless user is ignoring X snapping)
+        if (!ignoreNextSnapX) {
+            for (const sx of sharedX) {
+                if (Math.abs(x - sx) <= SNAP_DISTANCE) {
+                    snappedX = sx;
+                    break;
+                }
             }
         }
 
-        // Snap Y
-        for (const sy of sharedY) {
-            if (Math.abs(y - sy) <= SNAP_DISTANCE) {
-                snappedY = sy;
-                break;
+        // Snap Y (unless user is ignoring Y snapping)
+        if (!ignoreNextSnapY) {
+            for (const sy of sharedY) {
+                if (Math.abs(y - sy) <= SNAP_DISTANCE) {
+                    snappedY = sy;
+                    break;
+                }
             }
         }
 
@@ -278,6 +298,9 @@
         const last = nodes.pop();
         last.element.remove();
         updateNodeCount(); 
+
+        ignoreNextSnapX = false;
+        ignoreNextSnapY = false;
     }
 
     const form = document.getElementById('nodesForm');
