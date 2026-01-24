@@ -4,13 +4,13 @@ namespace App\Controller;
 
 use App\Entity\Edge;
 use App\Entity\Node;
-use App\Entity\ProductLocation;
+use App\Entity\ProductPlacement;
 use App\Entity\Supermarket;
 use App\Form\SupermarketType;
 use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
 use App\Repository\NodeRepository;
-use App\Repository\ProductLocationRepository;
+use App\Repository\ProductPlacementRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\PathFinder;
 use Doctrine\ORM\EntityManagerInterface;
@@ -59,7 +59,7 @@ class SupermarketController extends AbstractController
         NodeRepository $nodeRepo,
         EdgeRepository $edgeRepo,
         EntityManagerInterface $em,
-        ProductLocationRepository $locationRepo,
+        ProductPlacementRepository $locationRepo,
     ): Response {
         $foodItems = $foodRepo->findAll();
         $nodes = $nodeRepo->findBySupermarket($supermarket);
@@ -104,7 +104,7 @@ class SupermarketController extends AbstractController
                 }
         
                 // Find existing placement for this food in this supermarket or create new
-                $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket) ?? new ProductLocation();
+                $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket) ?? new ProductPlacement();
                 $placement->setFoodItem($food);
                 $placement->setEdge($edge);
                 $placement->setSupermarket($supermarket);

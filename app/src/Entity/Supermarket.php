@@ -19,12 +19,6 @@ class Supermarket
     private ?string $name = null;
 
     /**
-     * @var Collection<int, ProductLocation>
-     */
-    #[ORM\OneToMany(targetEntity: ProductLocation::class, mappedBy: 'supermarket')]
-    private Collection $productLocations;
-
-    /**
      * @var Collection<int, Edge>
      */
     #[ORM\OneToMany(targetEntity: Edge::class, mappedBy: 'supermarket')]
@@ -54,12 +48,18 @@ class Supermarket
     #[ORM\Column(nullable: true)]
     private ?int $width = null;
 
+    /**
+     * @var Collection<int, ProductPlacement>
+     */
+    #[ORM\OneToMany(targetEntity: ProductPlacement::class, mappedBy: 'supermarket')]
+    private Collection $productPlacements;
+
     public function __construct()
     {
-        $this->productLocations = new ArrayCollection();
         $this->edges = new ArrayCollection();
         $this->shoppingLists = new ArrayCollection();
         $this->nodes = new ArrayCollection();
+        $this->productPlacements = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -79,35 +79,6 @@ class Supermarket
         return $this;
     }
 
-    /**
-     * @return Collection<int, ProductLocation>
-     */
-    public function getProductLocations(): Collection
-    {
-        return $this->productLocations;
-    }
-
-    public function addProductLocation(ProductLocation $productLocation): static
-    {
-        if (!$this->productLocations->contains($productLocation)) {
-            $this->productLocations->add($productLocation);
-            $productLocation->setSupermarket($this);
-        }
-
-        return $this;
-    }
-
-    public function removeProductLocation(ProductLocation $productLocation): static
-    {
-        if ($this->productLocations->removeElement($productLocation)) {
-            // set the owning side to null (unless already changed)
-            if ($productLocation->getSupermarket() === $this) {
-                $productLocation->setSupermarket(null);
-            }
-        }
-
-        return $this;
-    }
 
     /**
      * @return Collection<int, Edge>
@@ -243,6 +214,36 @@ class Supermarket
     public function setWidth(?int $width): static
     {
         $this->width = $width;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ProductPlacement>
+     */
+    public function getProductPlacements(): Collection
+    {
+        return $this->productPlacements;
+    }
+
+    public function addProductPlacement(ProductPlacement $productPlacement): static
+    {
+        if (!$this->productPlacements->contains($productPlacement)) {
+            $this->productPlacements->add($productPlacement);
+            $productPlacement->setSupermarket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProductPlacement(ProductPlacement $productPlacement): static
+    {
+        if ($this->productPlacements->removeElement($productPlacement)) {
+            // set the owning side to null (unless already changed)
+            if ($productPlacement->getSupermarket() === $this) {
+                $productPlacement->setSupermarket(null);
+            }
+        }
 
         return $this;
     }

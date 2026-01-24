@@ -3,13 +3,12 @@
 namespace App\Service;
 
 use App\Entity\Edge;
-use App\Entity\FoodItem;
 use App\Entity\ListItem;
 use App\Entity\ShoppingList;
 use App\Entity\Supermarket;
 use App\Repository\EdgeRepository;
 use App\Repository\NodeRepository;
-use App\Repository\ProductLocationRepository;
+use App\Repository\ProductPlacementRepository;
 use SplPriorityQueue;
 use Doctrine\Common\Collections\Collection;
 
@@ -17,7 +16,7 @@ class PathFinder
 {
     public function __construct(
         private EdgeRepository $edgeRepository,
-        private ProductLocationRepository $productLocationRepository,
+        private ProductPlacementRepository $productPlacementRepository,
         private NodeRepository $nodeRepository,
     ){}
 
@@ -41,7 +40,7 @@ class PathFinder
                 continue; // Skip already picked items
             }
 
-            $location = $this->productLocationRepository->findOneBy([
+            $location = $this->productPlacementRepository->findOneBy([
                 'foodItem' => $listItem->getFoodItem(),
                 'supermarket' => $shoppingList->getSupermarket(),
             ]);
@@ -135,7 +134,7 @@ class PathFinder
      */
     private function getClosestNodeToListItem(array $distances, ListItem $listItem, Supermarket $supermarket): ?array
     {
-        $location = $this->productLocationRepository->findOneBy([
+        $location = $this->productPlacementRepository->findOneBy([
             'foodItem' => $listItem->getFoodItem(),
             'supermarket' => $supermarket,
         ]);

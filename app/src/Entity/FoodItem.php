@@ -26,12 +26,6 @@ class FoodItem
     private ?int $side = null;
 
     /**
-     * @var Collection<int, ProductLocation>
-     */
-    #[ORM\OneToMany(targetEntity: ProductLocation::class, mappedBy: 'foodItem')]
-    private Collection $productLocations;
-
-    /**
      * @var Collection<int, ListItem>
      */
     #[ORM\OneToMany(targetEntity: ListItem::class, mappedBy: 'foodItem')]
@@ -40,10 +34,16 @@ class FoodItem
     #[ORM\ManyToOne(inversedBy: 'foodItems')]
     private ?FoodCategory $category = null;
 
+    /**
+     * @var Collection<int, ProductPlacement>
+     */
+    #[ORM\OneToMany(targetEntity: ProductPlacement::class, mappedBy: 'foodItem')]
+    private Collection $productPlacements;
+
     public function __construct()
     {
-        $this->productLocations = new ArrayCollection();
         $this->listItems = new ArrayCollection();
+        $this->productPlacements = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -87,35 +87,6 @@ class FoodItem
         return $this;
     }
 
-    /**
-     * @return Collection<int, ProductLocation>
-     */
-    public function getProductLocations(): Collection
-    {
-        return $this->productLocations;
-    }
-
-    public function addProductLocation(ProductLocation $productLocation): static
-    {
-        if (!$this->productLocations->contains($productLocation)) {
-            $this->productLocations->add($productLocation);
-            $productLocation->setFoodItem($this);
-        }
-
-        return $this;
-    }
-
-    public function removeProductLocation(ProductLocation $productLocation): static
-    {
-        if ($this->productLocations->removeElement($productLocation)) {
-            // set the owning side to null (unless already changed)
-            if ($productLocation->getFoodItem() === $this) {
-                $productLocation->setFoodItem(null);
-            }
-        }
-
-        return $this;
-    }
 
     /**
      * @return Collection<int, ListItem>
@@ -155,6 +126,36 @@ class FoodItem
     public function setCategory(?FoodCategory $category): static
     {
         $this->category = $category;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ProductPlacement>
+     */
+    public function getProductPlacements(): Collection
+    {
+        return $this->productPlacements;
+    }
+
+    public function addProductPlacement(ProductPlacement $productPlacement): static
+    {
+        if (!$this->productPlacements->contains($productPlacement)) {
+            $this->productPlacements->add($productPlacement);
+            $productPlacement->setFoodItem($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProductPlacement(ProductPlacement $productPlacement): static
+    {
+        if ($this->productPlacements->removeElement($productPlacement)) {
+            // set the owning side to null (unless already changed)
+            if ($productPlacement->getFoodItem() === $this) {
+                $productPlacement->setFoodItem(null);
+            }
+        }
 
         return $this;
     }

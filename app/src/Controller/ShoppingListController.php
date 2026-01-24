@@ -35,8 +35,11 @@ final class ShoppingListController extends AbstractController
         ShoppingList $shoppingList,
         PathFinder $pathFinder,
     ): Response {
-        $orderedList = $pathFinder->buildShoppingRoute($shoppingList);
+        // here we want to look for any items that do not have a mapped location
+        // if those items have a category, we look for any item in this category in this supermarket that is mapped
+        // if we find one, we create and persist a new ProductPlacement for this item, type=category, and then run the pathfinder
 
+        $orderedList = $pathFinder->buildShoppingRoute($shoppingList);
         if(count($orderedList) === 0) {
             return $this->redirectToRoute('app_shopping_list_edit', ['id' => $shoppingList->getId()]);
         }

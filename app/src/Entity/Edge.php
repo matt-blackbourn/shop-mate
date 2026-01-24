@@ -37,22 +37,22 @@ class Edge
     #[ORM\OneToMany(targetEntity: FoodItem::class, mappedBy: 'edge')]
     private Collection $foodItems;
 
-    /**
-     * @var Collection<int, ProductLocation>
-     */
-    #[ORM\OneToMany(targetEntity: ProductLocation::class, mappedBy: 'edge')]
-    private Collection $productLocations;
-
     #[ORM\ManyToOne(inversedBy: 'edges')]
     private ?Supermarket $supermarket = null;
 
     #[ORM\Column]
     private ?int $phase = self::MAIN_PHASE;
 
+    /**
+     * @var Collection<int, ProductPlacement>
+     */
+    #[ORM\OneToMany(targetEntity: ProductPlacement::class, mappedBy: 'edge')]
+    private Collection $productPlacements;
+
     public function __construct()
     {
         $this->foodItems = new ArrayCollection();
-        $this->productLocations = new ArrayCollection();
+        $this->productPlacements = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -126,36 +126,6 @@ class Edge
         return $this;
     }
 
-    /**
-     * @return Collection<int, ProductLocation>
-     */
-    public function getProductLocations(): Collection
-    {
-        return $this->productLocations;
-    }
-
-    public function addProductLocation(ProductLocation $productLocation): static
-    {
-        if (!$this->productLocations->contains($productLocation)) {
-            $this->productLocations->add($productLocation);
-            $productLocation->setEdge($this);
-        }
-
-        return $this;
-    }
-
-    public function removeProductLocation(ProductLocation $productLocation): static
-    {
-        if ($this->productLocations->removeElement($productLocation)) {
-            // set the owning side to null (unless already changed)
-            if ($productLocation->getEdge() === $this) {
-                $productLocation->setEdge(null);
-            }
-        }
-
-        return $this;
-    }
-
     public function getSupermarket(): ?Supermarket
     {
         return $this->supermarket;
@@ -176,6 +146,36 @@ class Edge
     public function setPhase(int $phase): static
     {
         $this->phase = $phase;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ProductPlacement>
+     */
+    public function getProductPlacements(): Collection
+    {
+        return $this->productPlacements;
+    }
+
+    public function addProductPlacement(ProductPlacement $productPlacement): static
+    {
+        if (!$this->productPlacements->contains($productPlacement)) {
+            $this->productPlacements->add($productPlacement);
+            $productPlacement->setEdge($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProductPlacement(ProductPlacement $productPlacement): static
+    {
+        if ($this->productPlacements->removeElement($productPlacement)) {
+            // set the owning side to null (unless already changed)
+            if ($productPlacement->getEdge() === $this) {
+                $productPlacement->setEdge(null);
+            }
+        }
 
         return $this;
     }

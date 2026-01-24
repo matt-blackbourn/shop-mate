@@ -23,6 +23,13 @@ ALTER TABLE supermarket ADD CONSTRAINT FK_D51643A2E393F4C1 FOREIGN KEY (entrance
 
 ALTER TABLE supermarket ADD image_path VARCHAR(255) DEFAULT NULL, ADD length INT DEFAULT NULL, ADD width INT DEFAULT NULL;
 
+INSERT INTO user (email, password) VALUES ('dev@local.test', '$2y$13$somehashedpassword');
+
+INSERT INTO `placement_type` (`id`, `name`) VALUES
+(1, 'System'),
+(2, 'User'),
+(3, 'Category');
+
 SET FOREIGN_KEY_CHECKS=0;
 TRUNCATE TABLE edge;
 TRUNCATE TABLE node;
