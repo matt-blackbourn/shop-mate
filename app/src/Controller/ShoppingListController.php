@@ -7,6 +7,7 @@ use App\Entity\ListItem;
 use App\Entity\ShoppingList;
 use App\Form\FoodItemType;
 use App\Form\ShoppingListType;
+use App\Repository\EdgeRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\ShoppingListRepository;
 use App\Repository\SupermarketRepository;
@@ -56,17 +57,6 @@ final class ShoppingListController extends AbstractController
         return new JsonResponse(['ok' => true]);
     }
 
-    // maybe needs to go in list item controller later
-    // #[Route('/ajax/unpick/{id}', name: 'app_shopping_unpick', methods: ['POST'])]
-    // public function unpick(ListItem $item, EntityManagerInterface $em): JsonResponse
-    // {
-    //     $item->setPicked(false);
-    //     $item->setPickedAt(null);
-    //     $em->flush();
-
-    //     return new JsonResponse(['ok' => true]);
-    // }
-
     #[Route('/new', name: 'app_shopping_list_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
@@ -75,31 +65,40 @@ final class ShoppingListController extends AbstractController
     ): Response {
         $shoppingList = new ShoppingList();
         $shoppingList->setDateCreated(new \DateTimeImmutable());
+        $shoppingList->setSupermarket($supermarketRepository->find(1)); // Default supermarket for now
 
         $form = $this->createForm(ShoppingListType::class, $shoppingList);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $shoppingList->setSupermarket($supermarketRepository->find(1)); // Default supermarket for now
             $em->persist($shoppingList);
             $em->flush();
 
-            return $this->redirectToRoute('app_shopping_list_index');
+            $action = $request->request->get('action');
+
+            if($action === 'go_shopping') {
+                return $this->redirectToRoute('app_shopping_list_active', [
+                    'id' => $shoppingList->getId(),
+                ]);
+            }
+        
+            // default: save → home
+            return $this->redirectToRoute('app_home');
         }
+
+        // Create form for new food modal
+        $food = new FoodItem();
+        $foodForm = $this->createForm(FoodItemType::class, $food, [
+            'action' => $this->generateUrl('app_food_new_modal'),
+        ]);
 
         return $this->render('shopping_list/new.html.twig', [
             'form' => $form->createView(),
+            'foodForm' => $foodForm->createView(),
         ]);
     }
 
-    #[Route('/{id}', name: 'app_shopping_list_show', methods: ['GET'])]
-    public function show(ShoppingList $shoppingList, PathFinder $pathFinder): Response
-    {
-        return $this->render('shopping_list/show.html.twig', [
-            'shopping_list' => $shoppingList,
-            'orderedList' => $pathFinder->buildShoppingRoute($shoppingList),
-        ]);
-    }
+
 
     #[Route('/{id}/edit', name: 'app_shopping_list_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, ShoppingList $shoppingList, EntityManagerInterface $entityManager): Response
@@ -134,14 +133,12 @@ final class ShoppingListController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_shopping_list_delete', methods: ['POST'])]
-    public function delete(Request $request, ShoppingList $shoppingList, EntityManagerInterface $entityManager): Response
+    #[Route('/{id}', name: 'app_shopping_list_show', methods: ['GET'])]
+    public function show(ShoppingList $shoppingList, PathFinder $pathFinder): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$shoppingList->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($shoppingList);
-            $entityManager->flush();
-        }
-
-        return $this->redirectToRoute('app_shopping_list_index', [], Response::HTTP_SEE_OTHER);
+        return $this->render('shopping_list/show.html.twig', [
+            'shopping_list' => $shoppingList,
+            'orderedList' => $pathFinder->buildShoppingRoute($shoppingList),
+        ]);
     }
 }

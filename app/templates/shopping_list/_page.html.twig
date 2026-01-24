@@ -54,14 +54,6 @@
             <i class="bi bi-plus"></i>
             Add item
         </button>
-
-        {# Future: add new food
-        <button type="button" class="btn btn-outline-secondary">
-            <i class="bi bi-basket"></i>
-            Add new food
-        </button>
-        #}
-
     </div>
 
 
@@ -159,6 +151,12 @@
 .ts-control {
     min-height: 38px;
     padding: 0.375rem 0.75rem;
+    flex-wrap: nowrap;
+}
+.ts-control input {
+    width: auto !important;
+    min-width: 1ch;
+    flex: 1 1 auto;
 }
 .sticky-spacer {
     height: 56px;
@@ -172,6 +170,8 @@
 .ts-create-food:hover {
     background: #f8f9fa;
 }
+
+
 </style>
 
 <script>
@@ -386,7 +386,10 @@ document.addEventListener('submit', async function (e) {
     // Step 1: immediately close modal
     const modalEl = document.getElementById('addFoodModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
+    if (modal){
+        document.activeElement?.blur(); // make sure nothing is focused when the modal closes
+        modal.hide();
+    }
 
     // Step 2: update the row label and collapse it
     

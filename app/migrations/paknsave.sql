@@ -206,7 +206,7 @@ INSERT INTO `food_category` (`id`, `name`) VALUES
 (5, 'Deli'),
 (6, 'Bakery'),
 (7, 'Snacks & Crackers'),
-(8, 'Breakfast & Cerea'),
+(8, 'Breakfast & Cereal'),
 (9, 'Pasta, Rice & Grains'),
 (10, 'Canned Goods & Soups'),
 (11, 'Baking & Cooking'),

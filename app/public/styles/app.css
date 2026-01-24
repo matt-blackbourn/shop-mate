@@ -1,180 +1,147 @@
-/* Reset-ish */
+/* =================================
+   Minimal reset (safe)
+================================= */
 :root {
-    --app-bg: #f9fafb; /* soft off-white to match logo */
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-}
-
-main,
-footer {
-  padding-left: clamp(16px, 4vw, 24px);
-  padding-right: clamp(16px, 4vw, 24px);
-}
-
-
-/* App root */
-.app {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-
-  /* iOS safe areas */
-  padding:
-    env(safe-area-inset-top)
-    env(safe-area-inset-right)
-    env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
-}
-
-/* Basic typography */
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(15px, 4vw, 18px);
-  line-height: 1.4;
-}
-
-/* Main content */
-main {
-  flex: 1;
-  padding: clamp(16px, 4vw, 24px);
-}
-
-header {
-    /* Push below notch + give breathing room */
-    padding-top: calc(env(safe-area-inset-top) + 20px);
+    --app-bg: #f9fafb;
+  }
   
-    /* Bottom spacing to main */
-    padding-bottom: 16px;
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
   
-    /* Left/right breathing room */
-    padding-left: clamp(16px, 4vw, 24px);
-    padding-right: clamp(16px, 4vw, 24px);
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
   
-    /* optional styling */
-    text-align: left; /* align header text left for proper margin feel */
-}
+  /* =================================
+     App shell ONLY
+  ================================= */
+  .app {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    background: var(--app-bg);
   
-header h1 {
-    margin: 0;          /* remove default margins */
-    font-size: 1.5rem;
-    display: block;     /* ensure padding applies correctly */
-}
-
-/* Buttons */
-button,
-.btn {
-width: 100%;
-  min-height: 44px;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-}
-
-/* Forms */
-input,
-select,
-textarea {
-  width: 100%;
-  min-height: 44px;
-  font-size: 1rem;
-}
-
-.container {
+    padding:
+      env(safe-area-inset-top)
+      env(safe-area-inset-right)
+      env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+  
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.4;
+  }
+  
+  /* =================================
+     Layout helpers
+  ================================= */
+  .app main {
+    flex: 1;
+  }
+  
+  .container {
     max-width: 480px;
     margin: 0 auto;
     padding: clamp(16px, 4vw, 24px);
-}
-
-.centered {
-    flex: 1;
+  }
+  
+  .centered {
+    min-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: clamp(16px, 4vw, 24px);
-}
-
-/* Action buttons */
-.actions {
+  }
+  
+  /* =================================
+     Header (scoped)
+  ================================= */
+  .app header {
+    padding-top: calc(env(safe-area-inset-top) + 20px);
+    padding-bottom: 16px;
+    padding-left: clamp(16px, 4vw, 24px);
+    padding-right: clamp(16px, 4vw, 24px);
+  }
+  
+  .app header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  /* =================================
+     Forms & buttons (OPT-IN)
+  ================================= */
+  .form-control,
+  .btn-block {
+    width: 100%;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+  
+  input.form-control,
+  select.form-control,
+  textarea.form-control {
+    width: 100%;
+  }
+  
+  /* Leave native buttons alone unless opted in */
+  .btn {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  /* =================================
+     Action rows
+  ================================= */
+  .actions {
     display: flex;
     gap: 0.75rem;
     margin-bottom: 1rem;
     flex-wrap: wrap;
-}
-
-.actions .btn {
+  }
+  
+  .actions .btn {
     flex: 1;
     text-align: center;
-}
-
-/* Table safety on mobile */
-.table-wrap {
+  }
+  
+  /* =================================
+     Tables (safe wrapper only)
+  ================================= */
+  .table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-}
+  }
+
   
-  /* Table spacing */
-  table {
-    width: 100%;
-    margin-top: 0.5rem;
-}
-
-/* Food list */
-.food-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.food-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  display: flex;
-  align-items: center;
-}
-
-.food-name {
-  font-size: 1rem;
-}
-
-/* Empty state */
-.food-empty {
-  text-align: center;
-  color: #666;
-  padding: 2rem 0;
-}
-
-/* Floating action button */
-.fab {
-  position: fixed;
-  right: clamp(16px, 4vw, 24px);
-  bottom: calc(
-    clamp(16px, 4vw, 24px)
-    + env(safe-area-inset-bottom)
-  );
-
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-
-  background: #0d6efd;
-  color: white;
-  font-size: 2rem;
-  text-align: center;
-  line-height: 56px;
-
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  text-decoration: none;
-}
+  /* =================================
+     Floating action button
+  ================================= */
+  .fab {
+    position: fixed;
+    right: clamp(16px, 4vw, 24px);
+    bottom: calc(
+      clamp(16px, 4vw, 24px)
+      + env(safe-area-inset-bottom)
+    );
+  
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+  
+    background: #0d6efd;
+    color: white;
+    font-size: 2rem;
+    line-height: 56px;
+    text-align: center;
+  
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    text-decoration: none;
+  }
+  

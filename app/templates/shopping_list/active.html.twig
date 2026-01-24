@@ -85,17 +85,21 @@
 }
 
 .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+/* Allow title to truncate instead of pushing */
 .title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    padding-right: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding-right: 8px;
+  flex: 1;
+  min-width: 0;              /* IMPORTANT */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .qty, .notes {
@@ -105,16 +109,23 @@
 }
 
 .pick-btn {
-    font-size: 0.85rem;          /* slightly larger text */
-    padding: 6px 12px;           /* bigger tap target */
-    border-radius: 999px;
-    border: none;
-    background: #e6f4ea;
-    color: #1e7e34;
-    font-weight: 500;
-    min-height: 36px;            /* accessibility-friendly */
-    flex-shrink: 0;
+  all: unset;              /* nukes Bootstrap styles */
+  display: inline-flex;
+  align-items: center;
+
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e6f4ea;
+  color: #1e7e34;
+  font-weight: 500;
+  min-height: 32px;
+
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
+
 
 .pick-btn:active {
     transform: scale(0.96);
