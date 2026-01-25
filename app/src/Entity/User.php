@@ -39,9 +39,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: ProductPlacement::class, mappedBy: 'suggestedBy')]
     private Collection $productPlacements;
 
+    /**
+     * @var Collection<int, ShoppingList>
+     */
+    #[ORM\OneToMany(targetEntity: ShoppingList::class, mappedBy: 'user')]
+    private Collection $shoppingLists;
+
+    /**
+     * @var Collection<int, FoodItem>
+     */
+    #[ORM\OneToMany(targetEntity: FoodItem::class, mappedBy: 'user')]
+    private Collection $foodItems;
+
     public function __construct()
     {
         $this->productPlacements = new ArrayCollection();
+        $this->shoppingLists = new ArrayCollection();
+        $this->foodItems = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -149,6 +163,66 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($productPlacement->getSuggestedBy() === $this) {
                 $productPlacement->setSuggestedBy(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShoppingList>
+     */
+    public function getShoppingLists(): Collection
+    {
+        return $this->shoppingLists;
+    }
+
+    public function addShoppingList(ShoppingList $shoppingList): static
+    {
+        if (!$this->shoppingLists->contains($shoppingList)) {
+            $this->shoppingLists->add($shoppingList);
+            $shoppingList->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShoppingList(ShoppingList $shoppingList): static
+    {
+        if ($this->shoppingLists->removeElement($shoppingList)) {
+            // set the owning side to null (unless already changed)
+            if ($shoppingList->getUser() === $this) {
+                $shoppingList->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FoodItem>
+     */
+    public function getFoodItems(): Collection
+    {
+        return $this->foodItems;
+    }
+
+    public function addFoodItem(FoodItem $foodItem): static
+    {
+        if (!$this->foodItems->contains($foodItem)) {
+            $this->foodItems->add($foodItem);
+            $foodItem->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFoodItem(FoodItem $foodItem): static
+    {
+        if ($this->foodItems->removeElement($foodItem)) {
+            // set the owning side to null (unless already changed)
+            if ($foodItem->getUser() === $this) {
+                $foodItem->setUser(null);
             }
         }
 

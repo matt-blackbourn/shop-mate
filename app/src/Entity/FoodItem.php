@@ -40,6 +40,9 @@ class FoodItem
     #[ORM\OneToMany(targetEntity: ProductPlacement::class, mappedBy: 'foodItem')]
     private Collection $productPlacements;
 
+    #[ORM\ManyToOne(inversedBy: 'foodItems')]
+    private ?User $user = null;
+
     public function __construct()
     {
         $this->listItems = new ArrayCollection();
@@ -156,6 +159,18 @@ class FoodItem
                 $productPlacement->setFoodItem(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

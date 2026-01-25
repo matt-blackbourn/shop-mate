@@ -35,6 +35,9 @@ class ShoppingList
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dateModified = null;
 
+    #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
+    private ?User $user = null;
+
     
     #[ORM\PrePersist]
     public function updateDateModified(): void
@@ -131,6 +134,18 @@ class ShoppingList
     public function setDateModified(?\DateTimeImmutable $dateModified): static
     {
         $this->dateModified = $dateModified;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }
