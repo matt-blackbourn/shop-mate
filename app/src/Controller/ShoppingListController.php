@@ -4,11 +4,14 @@ namespace App\Controller;
 
 use App\Entity\FoodItem;
 use App\Entity\ListItem;
+use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
 use App\Form\FoodItemType;
 use App\Form\ShoppingListType;
 use App\Repository\EdgeRepository;
 use App\Repository\ListItemRepository;
+use App\Repository\PlacementTypeRepository;
+use App\Repository\ProductPlacementRepository;
 use App\Repository\ShoppingListRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\PathFinder;
@@ -34,10 +37,36 @@ final class ShoppingListController extends AbstractController
     public function active(
         ShoppingList $shoppingList,
         PathFinder $pathFinder,
+        ProductPlacementRepository $productPlacementRepository,
+        PlacementTypeRepository $placementTypeRepository,
+        EntityManagerInterface $em,
     ): Response {
         // here we want to look for any items that do not have a mapped location
         // if those items have a category, we look for any item in this category in this supermarket that is mapped
         // if we find one, we create and persist a new ProductPlacement for this item, type=category, and then run the pathfinder
+        foreach ($shoppingList->getListItems() as $listItem) {
+            $placement = $productPlacementRepository->findOneBy([
+                'foodItem' => $listItem->getFoodItem(),
+                'supermarket' => $shoppingList->getSupermarket(),
+            ]);
+
+            if(!$placement){
+                $category = $listItem->getFoodItem()->getCategory();
+                if($category) {
+                    $similarPlacement = $productPlacementRepository->findOnePlacedByCategoryInSupermarket($category, $shoppingList->getSupermarket());
+                    if($similarPlacement) {
+                        $newPlacement = new ProductPlacement();
+                        $newPlacement->setFoodItem($listItem->getFoodItem());
+                        $newPlacement->setSupermarket($shoppingList->getSupermarket());
+                        $newPlacement->setEdge($similarPlacement->getEdge());
+                        $newPlacement->setType($placementTypeRepository->find(3)); // type=category
+
+                        $em->persist($newPlacement);
+                        $em->flush();
+                    }
+                }
+            }
+        }
 
         $orderedList = $pathFinder->buildShoppingRoute($shoppingList);
         if(count($orderedList) === 0) {

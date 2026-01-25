@@ -25,6 +25,7 @@ class ListItemType extends AbstractType
                 'class' => FoodItem::class,
                 'choice_label' => 'name',
                 'placeholder' => '',
+                'required' => false,
                 'attr' => [
                     'class' => 'food-select',
                 ],

@@ -220,6 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const nearest = findNearestNode(x, y);
         if (!nearest) return;
 
+        console.log('Nearest node:', nearest);
+
         if (!selectedNode) {
             selectNode(nearest);
             return;

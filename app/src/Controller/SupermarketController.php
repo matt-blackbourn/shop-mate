@@ -10,6 +10,7 @@ use App\Form\SupermarketType;
 use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
 use App\Repository\NodeRepository;
+use App\Repository\PlacementTypeRepository;
 use App\Repository\ProductPlacementRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\PathFinder;
@@ -59,7 +60,8 @@ class SupermarketController extends AbstractController
         NodeRepository $nodeRepo,
         EdgeRepository $edgeRepo,
         EntityManagerInterface $em,
-        ProductPlacementRepository $locationRepo,
+        ProductPlacementRepository $productPlacementRepository,
+        PlacementTypeRepository $placementTypeRepository,
     ): Response {
         $foodItems = $foodRepo->findAll();
         $nodes = $nodeRepo->findBySupermarket($supermarket);
@@ -67,7 +69,7 @@ class SupermarketController extends AbstractController
         // Load existing placements properly
         $placements = [];
         foreach ($foodItems as $food) {
-            $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket);
+            $placement = $productPlacementRepository->findOneBy(['foodItem' => $food, 'supermarket' => $supermarket]);
             if ($placement) {
                 $placements[$food->getId()] = $placement;
             }
@@ -90,7 +92,7 @@ class SupermarketController extends AbstractController
 
                 if(!$startId && !$endId) {
                     // Remove existing placement if any
-                    $existingPlacement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket);
+                    $existingPlacement = $productPlacementRepository->findOneBy(['foodItem' => $food, 'supermarket' => $supermarket]);
                     if($existingPlacement) {
                         $em->remove($existingPlacement);
                     }
@@ -104,9 +106,10 @@ class SupermarketController extends AbstractController
                 }
         
                 // Find existing placement for this food in this supermarket or create new
-                $placement = $locationRepo->findOneByFoodAndSupermarket($food, $supermarket) ?? new ProductPlacement();
+                $placement = $productPlacementRepository->findOneBy(['foodItem' => $food, 'supermarket' => $supermarket]) ?? new ProductPlacement();
                 $placement->setFoodItem($food);
                 $placement->setEdge($edge);
+                $placement->setType($placementTypeRepository->find(1));
                 $placement->setSupermarket($supermarket);
                 $em->persist($placement);
             }

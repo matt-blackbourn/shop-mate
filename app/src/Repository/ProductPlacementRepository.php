@@ -2,7 +2,9 @@
 
 namespace App\Repository;
 
+use App\Entity\FoodCategory;
 use App\Entity\ProductPlacement;
+use App\Entity\Supermarket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +18,23 @@ class ProductPlacementRepository extends ServiceEntityRepository
         parent::__construct($registry, ProductPlacement::class);
     }
 
-    //    /**
-    //     * @return ProductPlacement[] Returns an array of ProductPlacement objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?ProductPlacement
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function findOnePlacedByCategoryInSupermarket(
+        FoodCategory $category,
+        Supermarket $supermarket
+    ): ?ProductPlacement
+    {
+        return $this->createQueryBuilder('pp')
+            ->innerJoin('pp.foodItem', 'fi')
+            ->andWhere('fi.category = :category')
+            ->andWhere('pp.supermarket = :supermarket')
+    
+            // IMPORTANT: only already-mapped placements
+            ->andWhere('pp.edge IS NOT NULL')
+    
+            ->setParameter('category', $category)
+            ->setParameter('supermarket', $supermarket)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }
