@@ -15,6 +15,7 @@ use App\Repository\ProductPlacementRepository;
 use App\Repository\ShoppingListRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\PathFinder;
+use App\Service\PlacementResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -40,6 +41,7 @@ final class ShoppingListController extends AbstractController
         ProductPlacementRepository $productPlacementRepository,
         PlacementTypeRepository $placementTypeRepository,
         EntityManagerInterface $em,
+        PlacementResolver $placementResolver,
     ): Response {
         // here we want to look for any items that do not have a mapped location
         // if those items have a category, we look for any item in this category in this supermarket that is mapped
@@ -66,6 +68,12 @@ final class ShoppingListController extends AbstractController
                     }
                 }
             }
+
+            // Get this working
+            $listItem->computePlacementStatus(
+                $placementResolver,
+                $shoppingList->getSupermarket()
+            );
         }
 
         $orderedList = $pathFinder->buildShoppingRoute($shoppingList);

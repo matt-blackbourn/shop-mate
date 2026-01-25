@@ -2,7 +2,9 @@
 
 namespace App\Entity;
 
+use App\Enum\PlacementStatus;
 use App\Repository\ListItemRepository;
+use App\Service\PlacementResolver;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ListItemRepository::class)]
@@ -32,6 +34,22 @@ class ListItem
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $pickedAt = null;
+
+
+    // Not mapped
+    private ?PlacementStatus $placementStatus = null;
+    public function computePlacementStatus(
+        PlacementResolver $resolver,
+        Supermarket $supermarket
+    ): void {
+        $this->placementStatus = $resolver->resolve(
+            $this->foodItem,
+            $supermarket
+        );
+    }
+    public function getPlacementStatus(): PlacementStatus {
+        return $this->placementStatus ?? PlacementStatus::MISSING;
+    }
 
     public function markPicked(): void
     {

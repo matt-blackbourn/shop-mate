@@ -35,32 +35,61 @@
     <!-- Spacer -->
     <div class="sticky-spacer"></div>
 
+    {% if showPlacementHint is defined and showPlacementHint %}
+    <div class="alert alert-warning alert-dismissible fade show small" role="alert">
+        Some items don’t have locations yet.
+        <strong>Long-press</strong> an item or tap <strong>⋯</strong> to add one.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
     <!-- Shopping items -->
     <div class="shopping-cards">
 
         {% for listItem in orderedList %}
             <div class="shopping-card" data-id="{{ listItem.id }}">
 
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div class="title">
-                        {{ listItem.foodItem.name }}
-                        {% if listItem.quantity %}
-                            <span class="text-muted">
-                                ({{ listItem.quantity }})
-                            </span>
+                <div class="card-header d-flex align-items-start justify-content-between">
+
+                    <!-- LEFT META -->
+                    <div class="card-meta">
+                        <button class="dots-btn" type="button" aria-label="Item options">
+                            ⋯
+                        </button>
+
+                        {# placement indicator #}
+                        {% if listItem.placementStatus == 'full' %}
+                            <span class="placement-indicator full" title="Placed"></span>
+                        {% elseif listItem.placementStatus == 'approx' %}
+                            <span class="placement-indicator approx" title="Approximate location"></span>
+                        {% else %}
+                            <span class="placement-indicator missing" title="No location"></span>
                         {% endif %}
                     </div>
 
-                    <button class="pick-btn btn btn-outline-success btn-sm" type="button">
+                    <!-- MAIN CONTENT -->
+                    <div class="card-main">
+                        <div class="title">
+                            {{ listItem.foodItem.name }}
+                            {% if listItem.quantity %}
+                                <span class="text-muted">({{ listItem.quantity }})</span>
+                            {% endif %}
+                        </div>
+
+                        {% if listItem.notes %}
+                            <div class="notes small text-muted">
+                                {{ listItem.notes }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- PICKED -->
+                    <button class="pick-btn" type="button">
                         Picked
                     </button>
+
                 </div>
 
-                {% if listItem.notes %}
-                    <div class="notes small text-muted mt-1">
-                        {{ listItem.notes }}
-                    </div>
-                {% endif %}
 
             </div>
         {% endfor %}
@@ -131,6 +160,71 @@
     transform: scale(0.96);
     background: #d7eddc;
 }
+
+.card-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+.dots-btn {
+    all: unset;
+    font-size: 18px;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.dots-btn:active {
+    opacity: 0.6;
+}
+.dots-btn {
+    all: unset;
+    font-size: 18px;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.dots-btn:active {
+    opacity: 0.6;
+}
+.placement-indicator {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+}
+
+/* Fully placed – green dot */
+.placement-indicator.full {
+    background: #2da44e;
+    border-radius: 50%;
+}
+
+/* Approximate – yellow hollow dot */
+.placement-indicator.approx {
+    border: 2px solid #f0ad4e;
+    border-radius: 50%;
+}
+
+/* Missing – warning triangle */
+.placement-indicator.missing {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 10px solid #d9534f;
+}
+.card-main {
+    flex: 1;
+    min-width: 0;
+}
+
+
 </style>
 
 <script>
@@ -141,6 +235,22 @@ document.querySelectorAll('.pick-btn').forEach(btn => {
         pickItem(card);
     });
 });
+
+// Long-press + dots menu (without breaking Picked)
+document.querySelectorAll('.shopping-card').forEach(card => {
+    addLongPress(card, e => {
+        if (e.target.closest('.pick-btn')) return;
+        openPlacementMenu(card);
+    });
+});
+
+document.querySelectorAll('.dots-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openPlacementMenu(e.target.closest('.shopping-card'));
+    });
+});
+
 
 
 function pickItem(card) {
