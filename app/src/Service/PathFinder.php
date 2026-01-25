@@ -40,13 +40,13 @@ class PathFinder
                 continue; // Skip already picked items
             }
 
-            $location = $this->productPlacementRepository->findOneBy([
+            $placement = $this->productPlacementRepository->findOneBy([
                 'foodItem' => $listItem->getFoodItem(),
                 'supermarket' => $shoppingList->getSupermarket(),
             ]);
 
-            if($location){
-                $mappedItems[$location->getEdge()->getPhase()][$listItem->getId()] = $listItem;
+            if($placement){
+                $mappedItems[$placement->getEdge()->getPhase()][$listItem->getId()] = $listItem;
             } else {
                 $unmappedItems[] = $listItem; // We'll add these at the end
             }
