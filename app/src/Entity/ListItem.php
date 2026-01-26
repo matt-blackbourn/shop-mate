@@ -38,17 +38,11 @@ class ListItem
 
     // Not mapped
     private ?PlacementStatus $placementStatus = null;
-    public function computePlacementStatus(
-        PlacementResolver $resolver,
-        Supermarket $supermarket
-    ): void {
-        $this->placementStatus = $resolver->resolve(
-            $this->foodItem,
-            $supermarket
-        );
+    public function setPlacementStatus(PlacementStatus $status): void {
+        $this->placementStatus = $status;
     }
     public function getPlacementStatus(): PlacementStatus {
-        return $this->placementStatus ?? PlacementStatus::MISSING;
+        return $this->placementStatus ?? PlacementStatus::NONE;
     }
 
     public function markPicked(): void

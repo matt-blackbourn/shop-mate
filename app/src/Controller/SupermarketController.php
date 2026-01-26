@@ -6,14 +6,13 @@ use App\Entity\Edge;
 use App\Entity\Node;
 use App\Entity\ProductPlacement;
 use App\Entity\Supermarket;
+use App\Enum\PlacementType;
 use App\Form\SupermarketType;
 use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
 use App\Repository\NodeRepository;
-use App\Repository\PlacementTypeRepository;
 use App\Repository\ProductPlacementRepository;
 use App\Repository\SupermarketRepository;
-use App\Service\PathFinder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -61,7 +60,6 @@ class SupermarketController extends AbstractController
         EdgeRepository $edgeRepo,
         EntityManagerInterface $em,
         ProductPlacementRepository $productPlacementRepository,
-        PlacementTypeRepository $placementTypeRepository,
     ): Response {
         $foodItems = $foodRepo->findAll();
         $nodes = $nodeRepo->findBySupermarket($supermarket);
@@ -109,7 +107,7 @@ class SupermarketController extends AbstractController
                 $placement = $productPlacementRepository->findOneBy(['foodItem' => $food, 'supermarket' => $supermarket]) ?? new ProductPlacement();
                 $placement->setFoodItem($food);
                 $placement->setEdge($edge);
-                $placement->setType($placementTypeRepository->find(1));
+                $placement->setType(PlacementType::SYSTEM);
                 $placement->setSupermarket($supermarket);
                 $em->persist($placement);
             }

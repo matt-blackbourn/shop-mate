@@ -3,8 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\FoodCategory;
+use App\Entity\FoodItem;
 use App\Entity\ProductPlacement;
 use App\Entity\Supermarket;
+use App\Enum\PlacementType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -36,5 +38,23 @@ class ProductPlacementRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+    
+    public function findUserPlacementsInSupermarket(
+        FoodItem $foodItem,
+        Supermarket $supermarket,
+        PlacementType $type,
+    ): array
+    {
+        return $this->createQueryBuilder('pp')
+            ->andWhere('pp.foodItem = :foodItem')
+            ->andWhere('pp.supermarket = :supermarket')
+            ->andWhere('pp.type = :type')
+            ->andWhere('pp.supersededBy IS NULL')
+            ->setParameter('foodItem', $foodItem)
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('type', $type)
+            ->getQuery()
+            ->getResult();
     }
 }

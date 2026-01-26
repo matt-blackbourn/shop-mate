@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\PlacementType;
 use App\Repository\ProductPlacementRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -40,9 +41,8 @@ class ProductPlacement
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'supersededBy')]
     private Collection $productPlacements;
 
-    #[ORM\ManyToOne(inversedBy: 'productPlacements')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?PlacementType $type = null;
+    #[ORM\Column(type: 'string', enumType: PlacementType::class)]
+    private PlacementType $type;
 
     #[ORM\ManyToOne(inversedBy: 'productPlacements')]
     private ?User $suggestedBy = null;

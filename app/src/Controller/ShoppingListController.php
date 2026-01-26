@@ -6,6 +6,7 @@ use App\Entity\FoodItem;
 use App\Entity\ListItem;
 use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
+use App\Enum\PlacementType;
 use App\Form\FoodItemType;
 use App\Form\ShoppingListType;
 use App\Repository\EdgeRepository;
@@ -39,7 +40,6 @@ final class ShoppingListController extends AbstractController
         ShoppingList $shoppingList,
         PathFinder $pathFinder,
         ProductPlacementRepository $productPlacementRepository,
-        PlacementTypeRepository $placementTypeRepository,
         EntityManagerInterface $em,
         PlacementResolver $placementResolver,
     ): Response {
@@ -61,7 +61,7 @@ final class ShoppingListController extends AbstractController
                         $newPlacement->setFoodItem($listItem->getFoodItem());
                         $newPlacement->setSupermarket($shoppingList->getSupermarket());
                         $newPlacement->setEdge($similarPlacement->getEdge());
-                        $newPlacement->setType($placementTypeRepository->find(3)); // type=category
+                        $newPlacement->setType(PlacementType::CATEGORY);
 
                         $em->persist($newPlacement);
                         $em->flush();
@@ -70,10 +70,7 @@ final class ShoppingListController extends AbstractController
             }
 
             // Get this working
-            $listItem->computePlacementStatus(
-                $placementResolver,
-                $shoppingList->getSupermarket()
-            );
+            $listItem->setPlacementStatus($placementResolver->resolvePlacementStatus($listItem, $shoppingList->getSupermarket(), $this->getUser()));
         }
 
         $orderedList = $pathFinder->buildShoppingRoute($shoppingList);

@@ -2,12 +2,12 @@
 
 namespace App\Service;
 
-use App\Entity\FoodItem;
 use App\Entity\ListItem;
-use App\Entity\PlacementType;
+use App\Entity\ProductPlacement;
 use App\Entity\Supermarket;
 use App\Entity\User;
 use App\Enum\PlacementStatus;
+use App\Enum\PlacementType;
 use App\Repository\ProductPlacementRepository;
 
 final class PlacementResolver
@@ -23,36 +23,23 @@ final class PlacementResolver
     ): PlacementStatus {
         $foodItem = $listItem->getFoodItem();
     
-        /*
-         * 1️⃣ USER placements (user-relative truth)
-         */
-        $userPlacements = $this->createQueryBuilder('pp')
-            ->andWhere('pp.foodItem = :foodItem')
-            ->andWhere('pp.supermarket = :supermarket')
-            ->andWhere('pp.type = :type')
-            ->andWhere('pp.supersededBy IS NULL')
-            ->setParameters([
-                'foodItem' => $foodItem,
-                'supermarket' => $supermarket,
-                'type' => PlacementType::USER,
-            ])
-            ->getQuery()
-            ->getResult();
+        // Find all user placements for this food item in this supermarket
+        $userPlacements = $this->productPlacementRepository->findUserPlacementsInSupermarket($foodItem, $supermarket, PlacementType::USER);
     
+        // If the placements user matches the current user, CONFIRMED
         foreach ($userPlacements as $placement) {
             if ($placement->getUser()?->getId() === $user->getId()) {
                 return PlacementStatus::CONFIRMED;
             }
         }
     
+        // If not, some other user has placed it, PROVISIONAL
         if (!empty($userPlacements)) {
             return PlacementStatus::PROVISIONAL;
         }
     
-        /*
-         * 2️⃣ SYSTEM placement (global truth unless user disagrees)
-         */
-        $systemPlacement = $this->findOneBy([
+        // Find system placement (there should only be one) for this food item in this supermarket
+        $systemPlacement = $this->productPlacementRepository->findOneBy([
             'foodItem' => $foodItem,
             'supermarket' => $supermarket,
             'type' => PlacementType::SYSTEM,
@@ -63,10 +50,8 @@ final class PlacementResolver
             return PlacementStatus::SYSTEM;
         }
     
-        /*
-         * 3️⃣ CATEGORY placement (fallback inference)
-         */
-        $categoryPlacement = $this->findOneBy([
+        // Find category placement for this food item in this supermarket
+        $categoryPlacement = $this->productPlacementRepository->findOneBy([
             'foodItem' => $foodItem,
             'supermarket' => $supermarket,
             'type' => PlacementType::CATEGORY,
@@ -77,9 +62,7 @@ final class PlacementResolver
             return PlacementStatus::CATEGORY;
         }
     
+        // This item has no placement
         return PlacementStatus::NONE;
     }
-    
-    
-    
 }

@@ -58,10 +58,16 @@
                         </button>
 
                         {# placement indicator #}
-                        {% if listItem.placementStatus == 'full' %}
-                            <span class="placement-indicator full" title="Placed"></span>
-                        {% elseif listItem.placementStatus == 'approx' %}
-                            <span class="placement-indicator approx" title="Approximate location"></span>
+                        {% set status = listItem.placementStatus.value %}
+
+                        {% if status == 'system' %}
+                            <span class="placement-indicator system" title="System placement"></span>
+                        {% elseif status == 'user_confirmed' %}
+                            <span class="placement-indicator confirmed" title="Your placement"></span>
+                        {% elseif status == 'user_provisional' %}
+                            <span class="placement-indicator provisional" title="Placed by another user (confirmable)"></span>
+                        {% elseif status == 'category' %}
+                            <span class="placement-indicator category" title="Category placement"></span>
                         {% else %}
                             <span class="placement-indicator missing" title="No location"></span>
                         {% endif %}
@@ -224,6 +230,40 @@
     min-width: 0;
 }
 
+/* Base placement indicator */
+.placement-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;  /* circular dot */
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* SYSTEM placement - highest authority / immutable */
+.placement-indicator.system {
+    background-color: #0d6efd; /* Bootstrap primary blue */
+}
+
+/* USER_CONFIRMED - placed by current user */
+.placement-indicator.confirmed {
+    background-color: #198754; /* Bootstrap green */
+}
+
+/* USER_PROVISIONAL - placed by another user, needs confirmation */
+.placement-indicator.provisional {
+    background-color: #ffc107; /* yellow / warning */
+}
+
+/* CATEGORY placement - inferred by category */
+.placement-indicator.category {
+    background-color: #6c757d; /* grey / neutral */
+}
+
+/* NONE - no placement at all */
+.placement-indicator.missing {
+    background-color: #dc3545; /* Bootstrap red */
+}
 
 </style>
 
