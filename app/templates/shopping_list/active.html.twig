@@ -60,16 +60,19 @@
                         {# placement indicator #}
                         {% set status = listItem.placementStatus.value %}
 
-                        {% if status == 'system' %}
-                            <span class="placement-indicator system" title="System placement"></span>
-                        {% elseif status == 'user_confirmed' %}
-                            <span class="placement-indicator confirmed" title="Your placement"></span>
-                        {% elseif status == 'user_provisional' %}
-                            <span class="placement-indicator provisional" title="Placed by another user (confirmable)"></span>
-                        {% elseif status == 'category' %}
-                            <span class="placement-indicator category" title="Category placement"></span>
+                        {% if status in ['system', 'confirmed'] %}
+                            <i class="bi bi-check-circle-fill placement-icon confirmed"
+                            title="{{ status == 'system' ? 'System placement' : 'Your placement' }}"></i>
+
+                        {% elseif status in ['provisional', 'category'] %}
+                            <i class="bi bi-question-circle-fill placement-icon provisional"
+                            title="{{ status == 'provisional'
+                                ? 'Placed by another user - please confirm'
+                                : 'Category-based placement only' }}"></i>
+
                         {% else %}
-                            <span class="placement-indicator missing" title="No location"></span>
+                            <i class="bi bi-exclamation-triangle-fill placement-icon missing"
+                            title="No location"></i>
                         {% endif %}
                     </div>
 
@@ -230,39 +233,21 @@
     min-width: 0;
 }
 
-/* Base placement indicator */
-.placement-indicator {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;  /* circular dot */
+.placement-icon {
+    font-size: 0.9rem;
     margin-right: 6px;
-    vertical-align: middle;
 }
 
-/* SYSTEM placement - highest authority / immutable */
-.placement-indicator.system {
-    background-color: #0d6efd; /* Bootstrap primary blue */
+.placement-icon.confirmed {
+    color: #198754;
 }
 
-/* USER_CONFIRMED - placed by current user */
-.placement-indicator.confirmed {
-    background-color: #198754; /* Bootstrap green */
+.placement-icon.provisional {
+    color: #ffc107;
 }
 
-/* USER_PROVISIONAL - placed by another user, needs confirmation */
-.placement-indicator.provisional {
-    background-color: #ffc107; /* yellow / warning */
-}
-
-/* CATEGORY placement - inferred by category */
-.placement-indicator.category {
-    background-color: #6c757d; /* grey / neutral */
-}
-
-/* NONE - no placement at all */
-.placement-indicator.missing {
-    background-color: #dc3545; /* Bootstrap red */
+.placement-icon.missing {
+    color: #dc3545;
 }
 
 </style>

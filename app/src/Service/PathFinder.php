@@ -18,6 +18,7 @@ class PathFinder
         private EdgeRepository $edgeRepository,
         private ProductPlacementRepository $productPlacementRepository,
         private NodeRepository $nodeRepository,
+        private PlacementResolver $placementResolver,
     ){}
 
     private $phases = [
@@ -30,7 +31,7 @@ class PathFinder
     /**
      * Nearest-neighbour route (the core algorithm)
      */
-    public function buildShoppingRoute(ShoppingList $shoppingList): array {
+    public function orderShoppingList(ShoppingList $shoppingList): array {
         // Convert collection to id-indexed array, and separate by phase and unmapped items
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
@@ -40,11 +41,7 @@ class PathFinder
                 continue; // Skip already picked items
             }
 
-            $placement = $this->productPlacementRepository->findOneBy([
-                'foodItem' => $listItem->getFoodItem(),
-                'supermarket' => $shoppingList->getSupermarket(),
-            ]);
-
+            $placement = $this->placementResolver->resolve($listItem, $shoppingList->getSupermarket());
             if($placement){
                 $mappedItems[$placement->getEdge()->getPhase()][$listItem->getId()] = $listItem;
             } else {

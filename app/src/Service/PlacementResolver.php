@@ -5,64 +5,65 @@ namespace App\Service;
 use App\Entity\ListItem;
 use App\Entity\ProductPlacement;
 use App\Entity\Supermarket;
-use App\Entity\User;
 use App\Enum\PlacementStatus;
-use App\Enum\PlacementType;
 use App\Repository\ProductPlacementRepository;
+use Symfony\Bundle\SecurityBundle\Security;
 
 final class PlacementResolver
 {
     public function __construct(
-        private ProductPlacementRepository $productPlacementRepository,
-    ){}
+        private ProductPlacementRepository $placements,
+        private Security $security,
+    ) {}
 
-    public function resolvePlacementStatus(
+    public function resolve(
         ListItem $listItem,
         Supermarket $supermarket,
-        User $user
-    ): PlacementStatus {
+    ): ?ProductPlacement {
         $foodItem = $listItem->getFoodItem();
-    
-        // Find all user placements for this food item in this supermarket
-        $userPlacements = $this->productPlacementRepository->findUserPlacementsInSupermarket($foodItem, $supermarket, PlacementType::USER);
-    
-        // If the placements user matches the current user, CONFIRMED
-        foreach ($userPlacements as $placement) {
-            if ($placement->getUser()?->getId() === $user->getId()) {
-                return PlacementStatus::CONFIRMED;
-            }
+        $user = $this->security->getUser();
+
+        /**
+         * 1️⃣ USER placement for THIS user (highest precedence)
+         */
+        $userPlacement = $this->placements->findActiveUserPlacement($foodItem, $supermarket, $user);
+        if ($userPlacement) {
+            $listItem->setPlacementStatus(PlacementStatus::CONFIRMED);
+            return $userPlacement;
         }
-    
-        // If not, some other user has placed it, PROVISIONAL
-        if (!empty($userPlacements)) {
-            return PlacementStatus::PROVISIONAL;
-        }
-    
-        // Find system placement (there should only be one) for this food item in this supermarket
-        $systemPlacement = $this->productPlacementRepository->findOneBy([
-            'foodItem' => $foodItem,
-            'supermarket' => $supermarket,
-            'type' => PlacementType::SYSTEM,
-            'supersededBy' => null,
-        ]);
-    
+
+        /**
+         * 2️⃣ SYSTEM placement
+         */
+        $systemPlacement = $this->placements->findActiveSystemPlacement($foodItem, $supermarket);
         if ($systemPlacement) {
-            return PlacementStatus::SYSTEM;
+            $listItem->setPlacementStatus(PlacementStatus::SYSTEM);
+            return $systemPlacement;
         }
-    
-        // Find category placement for this food item in this supermarket
-        $categoryPlacement = $this->productPlacementRepository->findOneBy([
-            'foodItem' => $foodItem,
-            'supermarket' => $supermarket,
-            'type' => PlacementType::CATEGORY,
-            'supersededBy' => null,
-        ]);
-    
+
+        /**
+         * 3️⃣ OTHER USER placement → provisional
+         */
+        $otherUserPlacement = $this->placements->findActiveOtherUserPlacement($foodItem, $supermarket, $user);
+        if ($otherUserPlacement) {
+            $listItem->setPlacementStatus(PlacementStatus::PROVISIONAL);
+            return $otherUserPlacement;
+        }
+
+        /**
+         * 4️⃣ CATEGORY placement
+         */
+        $categoryPlacement = $this->placements->findActiveCategoryPlacement($foodItem, $supermarket);
         if ($categoryPlacement) {
-            return PlacementStatus::CATEGORY;
+            $listItem->setPlacementStatus(PlacementStatus::CATEGORY);
+            return $categoryPlacement;
         }
-    
-        // This item has no placement
-        return PlacementStatus::NONE;
+
+        /**
+         * 5️⃣ Nothing
+         */
+        $listItem->setPlacementStatus(PlacementStatus::NONE);
+        return null;
     }
 }
+

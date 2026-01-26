@@ -41,7 +41,7 @@ final class ShoppingListController extends AbstractController
         PathFinder $pathFinder,
         ProductPlacementRepository $productPlacementRepository,
         EntityManagerInterface $em,
-        PlacementResolver $placementResolver,
+        SupermarketRepository $supermarketRepository,
     ): Response {
         // here we want to look for any items that do not have a mapped location
         // if those items have a category, we look for any item in this category in this supermarket that is mapped
@@ -68,12 +68,11 @@ final class ShoppingListController extends AbstractController
                     }
                 }
             }
-
-            // Get this working
-            $listItem->setPlacementStatus($placementResolver->resolvePlacementStatus($listItem, $shoppingList->getSupermarket(), $this->getUser()));
         }
 
-        $orderedList = $pathFinder->buildShoppingRoute($shoppingList);
+        $shoppingList->setSupermarket($supermarketRepository->find(1)); // Set this later based on user choice
+
+        $orderedList = $pathFinder->orderShoppingList($shoppingList);
         if(count($orderedList) === 0) {
             return $this->redirectToRoute('app_shopping_list_edit', ['id' => $shoppingList->getId()]);
         }
@@ -175,7 +174,7 @@ final class ShoppingListController extends AbstractController
     {
         return $this->render('shopping_list/show.html.twig', [
             'shopping_list' => $shoppingList,
-            'orderedList' => $pathFinder->buildShoppingRoute($shoppingList),
+            'orderedList' => $pathFinder->orderShoppingList($shoppingList),
         ]);
     }
 }

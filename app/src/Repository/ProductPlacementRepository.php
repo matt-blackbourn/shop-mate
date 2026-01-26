@@ -6,6 +6,7 @@ use App\Entity\FoodCategory;
 use App\Entity\FoodItem;
 use App\Entity\ProductPlacement;
 use App\Entity\Supermarket;
+use App\Entity\User;
 use App\Enum\PlacementType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -39,13 +40,31 @@ class ProductPlacementRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
-    
-    public function findUserPlacementsInSupermarket(
+
+    public function findActiveUserPlacement(
         FoodItem $foodItem,
         Supermarket $supermarket,
-        PlacementType $type,
-    ): array
-    {
+        User $user,
+    ): ?ProductPlacement {
+        return $this->createQueryBuilder('pp')
+            ->andWhere('pp.foodItem = :foodItem')
+            ->andWhere('pp.supermarket = :supermarket')
+            ->andWhere('pp.type = :type')
+            ->andWhere('pp.suggestedBy = :user')
+            ->andWhere('pp.supersededBy IS NULL')
+            ->setParameter('foodItem', $foodItem)
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('user', $user)
+            ->setParameter('type', PlacementType::USER)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function findActiveSystemPlacement(
+        FoodItem $foodItem,
+        Supermarket $supermarket,
+    ): ?ProductPlacement {
         return $this->createQueryBuilder('pp')
             ->andWhere('pp.foodItem = :foodItem')
             ->andWhere('pp.supermarket = :supermarket')
@@ -53,8 +72,46 @@ class ProductPlacementRepository extends ServiceEntityRepository
             ->andWhere('pp.supersededBy IS NULL')
             ->setParameter('foodItem', $foodItem)
             ->setParameter('supermarket', $supermarket)
-            ->setParameter('type', $type)
+            ->setParameter('type', PlacementType::SYSTEM)
+            ->setMaxResults(1)
             ->getQuery()
-            ->getResult();
+            ->getOneOrNullResult();
+    }
+
+    public function findActiveOtherUserPlacement(
+        FoodItem $foodItem,
+        Supermarket $supermarket,
+        User $user,
+    ): ?ProductPlacement {
+        return $this->createQueryBuilder('pp')
+            ->andWhere('pp.foodItem = :foodItem')
+            ->andWhere('pp.supermarket = :supermarket')
+            ->andWhere('pp.type = :type')
+            ->andWhere('pp.suggestedBy != :user')
+            ->andWhere('pp.supersededBy IS NULL')
+            ->setParameter('foodItem', $foodItem)
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('user', $user)
+            ->setParameter('type', PlacementType::USER)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function findActiveCategoryPlacement(
+        FoodItem $foodItem,
+        Supermarket $supermarket,
+    ): ?ProductPlacement {
+        return $this->createQueryBuilder('pp')
+            ->andWhere('pp.foodItem = :foodItem')
+            ->andWhere('pp.supermarket = :supermarket')
+            ->andWhere('pp.type = :type')
+            ->andWhere('pp.supersededBy IS NULL')
+            ->setParameter('foodItem', $foodItem)
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('type', PlacementType::CATEGORY)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }
