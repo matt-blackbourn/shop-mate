@@ -24,9 +24,9 @@ final class PlacementResolver
         $foodItem = $listItem->getFoodItem();
     
         /*
-         * 1️⃣ PRODUCT placements (user-relative)
+         * 1️⃣ USER placements (user-relative truth)
          */
-        $productPlacements = $this->createQueryBuilder('pp')
+        $userPlacements = $this->createQueryBuilder('pp')
             ->andWhere('pp.foodItem = :foodItem')
             ->andWhere('pp.supermarket = :supermarket')
             ->andWhere('pp.type = :type')
@@ -34,23 +34,23 @@ final class PlacementResolver
             ->setParameters([
                 'foodItem' => $foodItem,
                 'supermarket' => $supermarket,
-                'type' => PlacementType::PRODUCT,
+                'type' => PlacementType::USER,
             ])
             ->getQuery()
             ->getResult();
     
-        foreach ($productPlacements as $placement) {
+        foreach ($userPlacements as $placement) {
             if ($placement->getUser()?->getId() === $user->getId()) {
                 return PlacementStatus::CONFIRMED;
             }
         }
     
-        if (!empty($productPlacements)) {
+        if (!empty($userPlacements)) {
             return PlacementStatus::PROVISIONAL;
         }
     
         /*
-         * 2️⃣ SYSTEM placement (global truth)
+         * 2️⃣ SYSTEM placement (global truth unless user disagrees)
          */
         $systemPlacement = $this->findOneBy([
             'foodItem' => $foodItem,
@@ -64,7 +64,7 @@ final class PlacementResolver
         }
     
         /*
-         * 3️⃣ CATEGORY placement (inferred fallback)
+         * 3️⃣ CATEGORY placement (fallback inference)
          */
         $categoryPlacement = $this->findOneBy([
             'foodItem' => $foodItem,
@@ -79,6 +79,7 @@ final class PlacementResolver
     
         return PlacementStatus::NONE;
     }
+    
     
     
 }

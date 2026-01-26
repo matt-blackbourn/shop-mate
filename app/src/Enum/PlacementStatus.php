@@ -11,6 +11,8 @@ enum PlacementStatus: string
     case NONE = 'none';
 }
 
+// so confirmed/provisional describes how it feels to the current user
+
 // Correct precedence (from the current user’s perspective)
 
 // Highest → lowest
