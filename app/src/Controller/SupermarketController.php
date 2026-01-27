@@ -34,17 +34,66 @@ class SupermarketController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $supermarket = new Supermarket();
+
         $form = $this->createForm(SupermarketType::class, $supermarket);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($supermarket);
-            $entityManager->flush();
+
+            $image = $form->get('image')->getData();
+
+            $filename = uniqid().'.'.$image->guessExtension();
+            $image->move($this->getParameter('floorplans_dir'), $filename);
+
+            [$width, $height] = getimagesize(
+                $this->getParameter('floorplans_dir').'/'.$filename
+            );
+
+            $supermarket->setImagePath($filename);
+            $supermarket->setWidth($width);
+            $supermarket->setHeight($height);
+
+            $em->persist($supermarket);
+            $em->flush();
 
             return $this->redirectToRoute('app_supermarket_index', [], Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render('supermarket/new.html.twig', [
+        return $this->render('supermarket/edit.html.twig', [
+            'supermarket' => $supermarket,
+            'form' => $form,
+        ]);
+    }
+
+    
+    #[Route('/{id}/edit', name: 'app_supermarket_edit', methods: ['GET', 'POST'])]
+    public function edit(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
+    {
+        $form = $this->createForm(SupermarketType::class, $supermarket);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+
+            $image = $form->get('image')->getData();
+
+            $filename = uniqid().'.'.$image->guessExtension();
+            $image->move($this->getParameter('floorplans_dir'), $filename);
+
+            [$width, $height] = getimagesize(
+                $this->getParameter('floorplans_dir').'/'.$filename
+            );
+
+            $supermarket->setImagePath($filename);
+            $supermarket->setWidth($width);
+            $supermarket->setHeight($height);
+
+            $em->persist($supermarket);
+            $em->flush();
+
+            return $this->redirectToRoute('app_supermarket_index', [], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render('supermarket/edit.html.twig', [
             'supermarket' => $supermarket,
             'form' => $form,
         ]);
@@ -328,38 +377,6 @@ class SupermarketController extends AbstractController
     }
 
 
-    #[Route('/{id}/edit', name: 'app_supermarket_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response
-    {
-        $form = $this->createForm(SupermarketType::class, $supermarket);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-
-            $image = $form->get('image')->getData();
-
-            $filename = uniqid().'.'.$image->guessExtension();
-            $image->move($this->getParameter('supermarkets_dir'), $filename);
-
-            [$width, $height] = getimagesize(
-                $this->getParameter('supermarkets_dir').'/'.$filename
-            );
-
-            $supermarket->setImagePath($filename);
-            $supermarket->setWidth($width);
-            $supermarket->setHeight($height);
-
-            $em->persist($supermarket);
-            $em->flush();
-
-            return $this->redirectToRoute('app_supermarket_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render('supermarket/edit.html.twig', [
-            'supermarket' => $supermarket,
-            'form' => $form,
-        ]);
-    }
 
     #[Route('/{id}', name: 'app_supermarket_delete', methods: ['POST'])]
     public function delete(Request $request, Supermarket $supermarket, EntityManagerInterface $entityManager): Response

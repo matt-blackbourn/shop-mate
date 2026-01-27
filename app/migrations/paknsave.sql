@@ -1,5 +1,5 @@
 
-INSERT INTO `node` (`id`, `x_value`, `y_value`, `supermarket_id`) VALUES
+INSERT INTO node (id, x_value, y_value, supermarket_id) VALUES
 (2, 1295, 642, 1),
 (3, 1295, 472, 1),
 (4, 1295, 325, 1),
@@ -86,7 +86,7 @@ INSERT INTO `node` (`id`, `x_value`, `y_value`, `supermarket_id`) VALUES
 
 
 
-INSERT INTO `edge` (`id`, `length`, `phase`, `start_id`, `end_id`, `supermarket_id`) VALUES
+INSERT INTO edge (id, length, phase, start_id, end_id, supermarket_id) VALUES
 (1, 170, 1, 2, 3, 1),
 (2, 147, 1, 3, 4, 1),
 (3, 227, 1, 4, 5, 1),
@@ -198,7 +198,7 @@ INSERT INTO `edge` (`id`, `length`, `phase`, `start_id`, `end_id`, `supermarket_
 (109, 250, 4, 78, 77, 1),
 (110, 142, 4, 77, 80, 1);
 
-INSERT INTO `food_category` (`id`, `name`) VALUES
+INSERT INTO food_category (id, name) VALUES
 (1, 'Fruit & Vegetables'),
 (2, 'Meat'),
 (3, 'Fish & Seafood'),
