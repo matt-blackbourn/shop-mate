@@ -47,15 +47,27 @@
     <div class="shopping-cards">
 
         {% for listItem in orderedList %}
-            <div class="shopping-card" data-id="{{ listItem.id }}">
+            <div class="shopping-card" data-id="{{ listItem.id }}" data-placement-status="{{ listItem.placementStatus.value }}">
 
                 <div class="card-header d-flex align-items-start justify-content-between">
 
                     <!-- LEFT META -->
                     <div class="card-meta">
-                        <button class="dots-btn" type="button" aria-label="Item options">
-                            ⋯
-                        </button>
+                         <div class="dots-wrapper">
+                            <!-- dots button -->
+                            <button class="dots-btn" type="button" aria-label="Item options">
+                                ⋯
+                            </button>
+
+                            <!-- placement menu (hidden by default) -->
+                            <div class="dots-modal">
+                                <p class="modal-text"></p>
+                                <div class="modal-actions">
+                                    <button class="modal-btn primary"></button>
+                                    <button class="modal-btn secondary"></button>
+                                </div>
+                            </div>
+                        </div>
 
                         {# placement indicator #}
                         {% set status = listItem.placementStatus.value %}
@@ -98,78 +110,36 @@
                     </button>
 
                 </div>
-
-
             </div>
         {% endfor %}
-
     </div>
-
 </div>
 
 
 <style>
+/* Shopping card container */
 .shopping-card {
     background: white;
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,.1);
-    touch-action: pan-y;
+    user-select: none;        /* prevents text selection */
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    -moz-user-select: none;
+    touch-action: pan-y;      /* allows vertical scroll but prevents unwanted drag */
 }
 
-.notes {
-    margin-left: 0.25rem;
-}
-
+/* Card header layout */
 .card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
-/* Allow title to truncate instead of pushing */
-.title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding-right: 8px;
-  flex: 1;
-  min-width: 0;              /* IMPORTANT */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.qty, .notes {
-    font-size: .85rem;
-    color: #666;
-    margin-top: 4px;
-}
-
-.pick-btn {
-  all: unset;              /* nukes Bootstrap styles */
-  display: inline-flex;
-  align-items: center;
-
-  font-size: 0.8rem;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #e6f4ea;
-  color: #1e7e34;
-  font-weight: 500;
-  min-height: 32px;
-
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-
-.pick-btn:active {
-    transform: scale(0.96);
-    background: #d7eddc;
-}
-
+/* Left meta (dots + placement indicator) */
 .card-meta {
     display: flex;
     flex-direction: column;
@@ -178,6 +148,8 @@
     margin-right: 8px;
     flex-shrink: 0;
 }
+
+/* Dots button */
 .dots-btn {
     all: unset;
     font-size: 18px;
@@ -186,69 +158,113 @@
     cursor: pointer;
     padding: 4px;
 }
-
 .dots-btn:active {
     opacity: 0.6;
 }
-.dots-btn {
-    all: unset;
-    font-size: 18px;
-    line-height: 1;
-    color: #999;
-    cursor: pointer;
-    padding: 4px;
-}
 
-.dots-btn:active {
-    opacity: 0.6;
-}
-.placement-indicator {
-    width: 10px;
-    height: 10px;
-    display: inline-block;
-}
-
-/* Fully placed – green dot */
-.placement-indicator.full {
-    background: #2da44e;
-    border-radius: 50%;
-}
-
-/* Approximate – yellow hollow dot */
-.placement-indicator.approx {
-    border: 2px solid #f0ad4e;
-    border-radius: 50%;
-}
-
-/* Missing – warning triangle */
-.placement-indicator.missing {
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-bottom: 10px solid #d9534f;
-}
-.card-main {
-    flex: 1;
-    min-width: 0;
-}
-
+/* Placement indicator icons */
 .placement-icon {
     font-size: 0.9rem;
     margin-right: 6px;
 }
-
 .placement-icon.confirmed {
-    color: #198754;
+    color: #198754; /* green */
 }
-
 .placement-icon.provisional {
-    color: #ffc107;
+    color: #ffc107; /* yellow */
+}
+.placement-icon.missing {
+    color: #dc3545; /* red */
 }
 
-.placement-icon.missing {
-    color: #dc3545;
+/* Picked button */
+.pick-btn {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e6f4ea;
+    color: #1e7e34;
+    font-weight: 500;
+    min-height: 32px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
+.pick-btn:active {
+    transform: scale(0.96);
+    background: #d7eddc;
+}
+
+/* Card main title */
+.title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding-right: 8px;
+    flex: 1;
+    min-width: 0;              /* allows truncation */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Notes / quantity */
+.qty, .notes {
+    font-size: .85rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Dots modal (replaces previous dropdown menu) */
+.dots-wrapper {
+    position: relative;
+}
+.dots-modal {
+    display: none;
+    position: absolute;
+    top: 100%; /* below the button */
+    left: 0;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    padding: 12px;
+    width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    z-index: 100;
+}
+.dots-wrapper.active .dots-modal {
+    display: block;
+}
+
+/* Modal text and actions */
+.modal-text {
+    font-size: 0.875rem;
+    margin-bottom: 10px;
+}
+.modal-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.modal-btn {
+    flex: 1 1 auto;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: none;
+}
+.modal-btn.primary {
+    background-color: #0d6efd;
+    color: white;
+}
+.modal-btn.secondary {
+    background-color: #e2e6ea;
+    color: #333;
+}
+
 
 </style>
 
@@ -276,6 +292,112 @@ document.querySelectorAll('.dots-btn').forEach(btn => {
     });
 });
 
+function openPlacementMenu(card) {
+    const wrapper = card.querySelector('.dots-wrapper');
+    if (!wrapper) return;
+
+    const modal = wrapper.querySelector('.dots-modal');
+    const textEl = modal.querySelector('.modal-text');
+    const primaryBtn = modal.querySelector('.modal-btn.primary');
+    const secondaryBtn = modal.querySelector('.modal-btn.secondary');
+
+    // read placement status from data attribute or JS variable
+    const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'category', 'none'
+
+    // reset buttons
+    primaryBtn.style.display = 'inline-block';
+    secondaryBtn.style.display = 'inline-block';
+
+    switch (status) {
+        case 'system':
+        case 'confirmed':
+            textEl.textContent = "This item has already been placed. Does it belong somewhere else?";
+            primaryBtn.textContent = "Place somewhere else";
+            secondaryBtn.style.display = 'none'; // optional, only 1 action
+            break;
+        case 'provisional':
+            textEl.textContent = "This item has been placed by another user.";
+            primaryBtn.textContent = "Confirm placement";
+            secondaryBtn.textContent = "Place somewhere else";
+            break;
+        case 'category':
+            textEl.textContent = "This item is located with other items in this category. Help us place it properly.";
+            primaryBtn.textContent = "Place somewhere else";
+            secondaryBtn.style.display = 'none';
+            break;
+        case 'none':
+        default:
+            textEl.textContent = "We don’t know where this item belongs.";
+            primaryBtn.textContent = "Place somewhere";
+            secondaryBtn.style.display = 'none';
+            break;
+    }
+
+    wrapper.classList.add('active');
+
+    // close when clicking outside
+    const closeOutside = (e) => {
+        if (!wrapper.contains(e.target)) {
+            wrapper.classList.remove('active');
+            document.removeEventListener('click', closeOutside);
+        }
+    };
+    document.addEventListener('click', closeOutside);
+
+    // wire buttons
+    primaryBtn.onclick = () => {
+        console.log('Primary action clicked for', card.dataset.id);
+        wrapper.classList.remove('active');
+        document.removeEventListener('click', closeOutside);
+        // TODO: navigate to placement screen or open placement form
+    };
+    secondaryBtn.onclick = () => {
+        console.log('Secondary action clicked for', card.dataset.id);
+        wrapper.classList.remove('active');
+        document.removeEventListener('click', closeOutside);
+        // TODO: navigate to placement screen or open placement form
+    };
+}
+
+
+function addLongPress(element, callback, duration = 500) {
+    let timer;
+
+    const start = (e) => {
+        // Prevent context menu on right-click / touch
+        if (e.type === 'mousedown' && e.button !== 0) return;
+
+        timer = setTimeout(() => {
+            // trigger a tiny haptic feedback (on supported devices)
+            if (navigator.vibrate) {
+                navigator.vibrate(10); // vibrate 10ms
+            }
+
+            // scale animation
+            element.style.transition = 'transform 0.08s ease, box-shadow 0.08s ease';
+            element.style.transform = 'scale(0.97)';
+            element.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+
+            // reset after 150ms
+            setTimeout(() => {
+                element.style.transform = '';
+                element.style.boxShadow = '';
+            }, 300);
+
+            callback(e);
+        }, duration);
+    };
+
+    const cancel = () => clearTimeout(timer);
+
+    element.addEventListener('mousedown', start);
+    element.addEventListener('touchstart', start);
+
+    element.addEventListener('mouseup', cancel);
+    element.addEventListener('mouseleave', cancel);
+    element.addEventListener('touchend', cancel);
+    element.addEventListener('touchcancel', cancel);
+}
 
 
 function pickItem(card) {
