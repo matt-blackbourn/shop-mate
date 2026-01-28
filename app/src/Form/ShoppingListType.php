@@ -20,6 +20,7 @@ class ShoppingListType extends AbstractType
                 'by_reference' => false,
                 'prototype' => true,
                 'prototype_name' => '__name__',
+                'data' => $options['unpickedItems'],
             ])
         ;
     }
@@ -28,6 +29,7 @@ class ShoppingListType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => ShoppingList::class,
+            'unpickedItems' => [],
         ]);
     }
 }

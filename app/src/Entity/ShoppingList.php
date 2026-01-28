@@ -22,9 +22,6 @@ class ShoppingList
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dateCompleted = null;
 
-    #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
-    private ?Supermarket $supermarket = null;
-
     /**
      * @var Collection<int, ListItem>
      */
@@ -80,17 +77,6 @@ class ShoppingList
         return $this;
     }
 
-    public function getSupermarket(): ?Supermarket
-    {
-        return $this->supermarket;
-    }
-
-    public function setSupermarket(?Supermarket $supermarket): static
-    {
-        $this->supermarket = $supermarket;
-
-        return $this;
-    }
 
     /**
      * @return Collection<int, ListItem>

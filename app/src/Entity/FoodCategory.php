@@ -24,6 +24,9 @@ class FoodCategory
     #[ORM\OneToMany(targetEntity: FoodItem::class, mappedBy: 'category')]
     private Collection $foodItems;
 
+    #[ORM\Column]
+    private ?int $orderBy = null;
+
     public function __construct()
     {
         $this->foodItems = new ArrayCollection();
@@ -72,6 +75,18 @@ class FoodCategory
                 $foodItem->setCategory(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getOrderBy(): ?int
+    {
+        return $this->orderBy;
+    }
+
+    public function setOrderBy(int $orderBy): static
+    {
+        $this->orderBy = $orderBy;
 
         return $this;
     }

@@ -7,10 +7,10 @@ use App\Entity\ListItem;
 use App\Entity\ShoppingList;
 use App\Entity\Supermarket;
 use App\Repository\EdgeRepository;
+use App\Repository\ListItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductPlacementRepository;
 use SplPriorityQueue;
-use Doctrine\Common\Collections\Collection;
 
 class PathFinder
 {
@@ -19,6 +19,7 @@ class PathFinder
         private ProductPlacementRepository $productPlacementRepository,
         private NodeRepository $nodeRepository,
         private PlacementResolver $placementResolver,
+        private ListItemRepository $listItemRepository,
     ){}
 
     private $phases = [
@@ -31,17 +32,13 @@ class PathFinder
     /**
      * Nearest-neighbour route (the core algorithm)
      */
-    public function orderShoppingList(ShoppingList $shoppingList): array {
+    public function orderShoppingList(ShoppingList $shoppingList, Supermarket $supermarket): array {
         // Convert collection to id-indexed array, and separate by phase and unmapped items
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
 
-        foreach ($shoppingList->getListItems() as $listItem) {
-            if($listItem->isPicked()) {
-                continue; // Skip already picked items
-            }
-
-            $placement = $this->placementResolver->resolve($listItem, $shoppingList->getSupermarket());
+        foreach ($this->listItemRepository->findByShoppingListOrderedByCategory($shoppingList) as $listItem) {
+            $placement = $this->placementResolver->resolve($listItem, $supermarket);
             if($placement){
                 $mappedItems[$placement->getEdge()->getPhase()][$listItem->getId()] = $listItem;
             } else {
@@ -58,8 +55,8 @@ class PathFinder
 
         // Set some variables before building the route
         $orderedList = [];
-        $currentNodeId = $shoppingList->getSupermarket()->getEntranceNode()->getId();
-        $graph = $this->buildGraph($shoppingList->getSupermarket());
+        $currentNodeId = $supermarket->getEntranceNode()->getId();
+        $graph = $this->buildGraph($supermarket);
 
         // Process each phase in order
         foreach($this->phases as $phase) {
@@ -74,7 +71,7 @@ class PathFinder
     
                  // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
-                    $result = $this->getClosestNodeToListItem($distances, $listItem, $shoppingList->getSupermarket());
+                    $result = $this->getClosestNodeToListItem($distances, $listItem, $supermarket);
                     if ($result === null) {
                         continue;
                     }

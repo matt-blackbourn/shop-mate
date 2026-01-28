@@ -29,9 +29,6 @@ class ListItem
     #[ORM\JoinColumn(nullable: false)]
     private ?FoodItem $foodItem = null;
 
-    #[ORM\Column]
-    private ?bool $picked = false;
-
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $pickedAt = null;
 
@@ -47,7 +44,6 @@ class ListItem
 
     public function markPicked(): void
     {
-        $this->picked = true;
         $this->pickedAt = new \DateTimeImmutable();
     }
 
@@ -100,18 +96,6 @@ class ListItem
     public function setFoodItem(?FoodItem $foodItem): static
     {
         $this->foodItem = $foodItem;
-
-        return $this;
-    }
-
-    public function isPicked(): ?bool
-    {
-        return $this->picked;
-    }
-
-    public function setPicked(bool $picked): static
-    {
-        $this->picked = $picked;
 
         return $this;
     }

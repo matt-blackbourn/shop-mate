@@ -24,12 +24,6 @@ class Supermarket
     #[ORM\OneToMany(targetEntity: Edge::class, mappedBy: 'supermarket')]
     private Collection $edges;
 
-    /**
-     * @var Collection<int, ShoppingList>
-     */
-    #[ORM\OneToMany(targetEntity: ShoppingList::class, mappedBy: 'supermarket')]
-    private Collection $shoppingLists;
-
     #[ORM\ManyToOne(inversedBy: 'supermarkets')]
     private ?Node $entranceNode = null;
 
@@ -57,7 +51,6 @@ class Supermarket
     public function __construct()
     {
         $this->edges = new ArrayCollection();
-        $this->shoppingLists = new ArrayCollection();
         $this->nodes = new ArrayCollection();
         $this->productPlacements = new ArrayCollection();
     }
@@ -104,36 +97,6 @@ class Supermarket
             // set the owning side to null (unless already changed)
             if ($edge->getSupermarket() === $this) {
                 $edge->setSupermarket(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, ShoppingList>
-     */
-    public function getShoppingLists(): Collection
-    {
-        return $this->shoppingLists;
-    }
-
-    public function addShoppingList(ShoppingList $shoppingList): static
-    {
-        if (!$this->shoppingLists->contains($shoppingList)) {
-            $this->shoppingLists->add($shoppingList);
-            $shoppingList->setSupermarket($this);
-        }
-
-        return $this;
-    }
-
-    public function removeShoppingList(ShoppingList $shoppingList): static
-    {
-        if ($this->shoppingLists->removeElement($shoppingList)) {
-            // set the owning side to null (unless already changed)
-            if ($shoppingList->getSupermarket() === $this) {
-                $shoppingList->setSupermarket(null);
             }
         }
 

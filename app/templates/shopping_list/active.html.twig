@@ -19,7 +19,7 @@
 
             <!-- Heading -->
             <h1 class="h6 mb-0 text-center flex-grow-1">
-                Shopping @ {{ shoppingList.supermarket.name }}
+                Shopping @ {{ supermarket.name }}
             </h1>
 
             <!-- Edit list -->
@@ -263,7 +263,7 @@
 .modal-btn.secondary {
     background-color: #e2e6ea;
     color: #333;
-}
+}g                                               nmmmmmmmmmmmmmmmmmmmnmmmmmmmmmmmmmmmmm un
 
 
 </style>
@@ -274,14 +274,6 @@ document.querySelectorAll('.pick-btn').forEach(btn => {
     btn.addEventListener('click', e => {
         const card = e.target.closest('.shopping-card');
         pickItem(card);
-    });
-});
-
-// Long-press + dots menu (without breaking Picked)
-document.querySelectorAll('.shopping-card').forEach(card => {
-    addLongPress(card, e => {
-        if (e.target.closest('.pick-btn')) return;
-        openPlacementMenu(card);
     });
 });
 
@@ -359,45 +351,6 @@ function openPlacementMenu(card) {
     };
 }
 
-
-function addLongPress(element, callback, duration = 500) {
-    let timer;
-
-    const start = (e) => {
-        // Prevent context menu on right-click / touch
-        if (e.type === 'mousedown' && e.button !== 0) return;
-
-        timer = setTimeout(() => {
-            // trigger a tiny haptic feedback (on supported devices)
-            if (navigator.vibrate) {
-                navigator.vibrate(10); // vibrate 10ms
-            }
-
-            // scale animation
-            element.style.transition = 'transform 0.08s ease, box-shadow 0.08s ease';
-            element.style.transform = 'scale(0.97)';
-            element.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-
-            // reset after 150ms
-            setTimeout(() => {
-                element.style.transform = '';
-                element.style.boxShadow = '';
-            }, 300);
-
-            callback(e);
-        }, duration);
-    };
-
-    const cancel = () => clearTimeout(timer);
-
-    element.addEventListener('mousedown', start);
-    element.addEventListener('touchstart', start);
-
-    element.addEventListener('mouseup', cancel);
-    element.addEventListener('mouseleave', cancel);
-    element.addEventListener('touchend', cancel);
-    element.addEventListener('touchcancel', cancel);
-}
 
 
 function pickItem(card) {

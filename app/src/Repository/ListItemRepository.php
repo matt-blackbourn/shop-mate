@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\ListItem;
+use App\Entity\ShoppingList;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +17,19 @@ class ListItemRepository extends ServiceEntityRepository
         parent::__construct($registry, ListItem::class);
     }
 
-    //    /**
-    //     * @return ListItem[] Returns an array of ListItem objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('l')
-    //            ->andWhere('l.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('l.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?ListItem
-    //    {
-    //        return $this->createQueryBuilder('l')
-    //            ->andWhere('l.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function findByShoppingListOrderedByCategory(ShoppingList $shoppingList): array {
+        return $this->createQueryBuilder('li')
+            ->addSelect('fi', 'c')
+            ->innerJoin('li.foodItem', 'fi')
+            ->leftJoin('fi.category', 'c')
+            ->where('li.shoppingList = :shoppingList')
+            ->andWhere('li.pickedAt IS NULL')
+            ->setParameter('shoppingList', $shoppingList)
+            // Push NULL categories to the end
+            ->orderBy('CASE WHEN c.id IS NULL THEN 1 ELSE 0 END', 'ASC')
+            ->addOrderBy('c.orderBy', 'ASC')
+            ->addOrderBy('fi.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
