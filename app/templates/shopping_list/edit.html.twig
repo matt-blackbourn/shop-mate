@@ -42,7 +42,7 @@
             <!-- Go shopping (primary action) -->
             <button
                 type="submit"
-                name="action"
+                name="intent"
                 value="go_shopping"
                 class="btn btn-success btn-sm d-flex align-items-center gap-1 px-3 shadow-sm"
                 title="Save changes and start shopping"
@@ -57,18 +57,27 @@
     <!-- Spacer so content doesn't slide under sticky header -->
     {# <div class="sticky-spacer"></div> #}
 
-    <!-- Workflow actions (extensible) -->
-    <div class="d-grid gap-2 mb-3">
-
-        <!-- Add item -->
+<div class="px-2">
+    <div class="d-flex gap-2 mb-3">
         <button
             type="button"
             id="add-item"
-            class="btn btn-primary"
+            class="btn btn-primary flex-grow-1"
         >
             <i class="bi bi-plus"></i>
             Add item
         </button>
+
+        <button
+            type="button"
+            id="save-list"
+            class="btn btn-outline-secondary"
+            disabled
+            title="Save changes"
+        >
+            <i class="bi bi-save"></i>
+        </button>
+    </div>
     </div>
 
 
@@ -89,7 +98,7 @@
 
                     <div class="d-flex align-items-center gap-2">
                         <button type="button" class="btn btn-sm btn-outline-danger remove-item">
-                            <i class="bi bi-x"></i>
+                            <i class="bi bi-trash"></i>
                         </button>
                     </div>
                 </div>
@@ -570,6 +579,62 @@ document.addEventListener('keydown', (e) => {
         closeMenu();
     }
 });
+
+
+const form = document.querySelector('form');
+const saveButton = document.getElementById('save-list');
+
+let isDirty = false;
+
+// Any change marks the form dirty
+form.addEventListener('input', () => {
+    if (isDirty) return;
+
+    isDirty = true;
+    saveButton.disabled = false;
+    saveButton.classList.remove('btn-outline-secondary');
+    saveButton.classList.add('btn-outline-primary');
+});
+
+
+
+// Save handler
+saveButton.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch(form.action, {
+            method: form.method || 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error('Save failed');
+        }
+
+        // Saved state
+        isDirty = false;
+        saveButton.disabled = true;
+        saveButton.classList.remove('btn-outline-primary');
+        saveButton.classList.add('btn-outline-secondary');
+        saveButton.innerHTML = '<i class="bi bi-check-lg"></i>';
+
+        // Reset icon after a moment
+        setTimeout(() => {
+            saveButton.innerHTML = '<i class="bi bi-save"></i>';
+        }, 1500);
+
+    } catch (err) {
+        console.error(err);
+        alert('Could not save changes. Please try again.');
+    }
+});
+
+
+
 </script>
 
 {% endblock %}

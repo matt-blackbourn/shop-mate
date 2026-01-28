@@ -44,19 +44,30 @@ final class ShoppingListController extends AbstractController
         ]);
         $form->handleRequest($request);
 
+        
+        // For AJAX save: the form isn’t submitted via normal POST
+        if ($request->isXmlHttpRequest() && !$form->isSubmitted()) {
+            // Manually submit the form with the posted data
+            $form->submit($request->request->all());
+        }
+
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
 
-            $action = $request->request->get('action');
+            // $action = $request->request->get('intent');
 
-            if($action === 'go_shopping') {
+            if ($request->request->get('intent') === 'go_shopping') {
                 return $this->redirectToRoute('app_shopping_list_active', [
                     'id' => $shoppingList->getId(),
                 ]);
             }
+
+            if ($request->isXmlHttpRequest()) {
+                return new Response(null, 204);
+            }
         
             // default: save → home
-            return $this->redirectToRoute('app_home');
+            // return $this->redirectToRoute('app_home');
         }
 
         // Create form for new food modal

@@ -10,23 +10,19 @@
     <div class="sticky-top bg-white border-bottom z-3">
         <div class="d-flex align-items-center justify-content-between px-2 py-2">
 
-            <!-- Exit shopping -->
             <a href="{{ path('app_home') }}"
-               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-                <i class="bi bi-arrow-left"></i>
-                <span class="d-none d-sm-inline">Done</span>
+               class="btn btn-outline-success btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-check-circle-fill"></i>
+                <span class="d-none d-sm-inline">Finished</span>
             </a>
 
-            <!-- Heading -->
             <h1 class="h6 mb-0 text-center flex-grow-1">
-                Shopping @ {{ supermarket.name }}
+                @ {{ supermarket.name }}
             </h1>
 
-            <!-- Edit list -->
-            <a href=""
-               class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
-                <i class="bi bi-pencil"></i>
-                <span class="d-none d-sm-inline">Edit</span>
+            <a href="" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span class="d-none d-sm-inline">Map</span>
             </a>
 
         </div>
@@ -92,7 +88,7 @@
                     <div class="card-main">
                         <div class="title">
                             {{ listItem.foodItem.name }}
-                            {% if listItem.quantity %}
+                            {% if listItem.quantity and listItem.quantity > 1 %}
                                 <span class="text-muted">({{ listItem.quantity }})</span>
                             {% endif %}
                         </div>
