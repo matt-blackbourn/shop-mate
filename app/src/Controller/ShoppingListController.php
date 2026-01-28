@@ -50,7 +50,7 @@ final class ShoppingListController extends AbstractController
             $action = $request->request->get('action');
 
             if($action === 'go_shopping') {
-                return $this->redirectToRoute('app_home', [
+                return $this->redirectToRoute('app_shopping_list_active', [
                     'id' => $shoppingList->getId(),
                 ]);
             }

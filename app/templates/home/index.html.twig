@@ -278,9 +278,21 @@ body {
         overlay.hidden = true;
     }
 
-    menuButton.addEventListener('click', openMenu);
+    // Prevent default click behavior to avoid form submission
+    menuButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        openMenu();
+    });
+
     closeButton.addEventListener('click', closeMenu);
     overlay.addEventListener('click', closeMenu);
+
+    // Optional: close menu with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeMenu();
+        }
+    });
 </script>
 
 {% endblock %}
