@@ -19,8 +19,9 @@ class FoodItemType extends AbstractType
             ->add('category', EntityType::class, [
                 'class' => FoodCategory::class,
                 'choice_label' => 'name',
-                'placeholder' => 'Select a category',
+                'placeholder' => 'Add to Group',
                 'required' => false,
+                'label' => 'Put this item in one of the groups below to help organise your list:',
             ])
         ;
     }
