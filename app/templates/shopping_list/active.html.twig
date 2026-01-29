@@ -43,7 +43,12 @@
     <div class="shopping-cards">
 
         {% for listItem in orderedList %}
-            <div class="shopping-card" data-id="{{ listItem.id }}" data-placement-status="{{ listItem.placementStatus.value }}">
+            <div 
+                class="shopping-card" 
+                data-id="{{ listItem.id }}" 
+                data-placement-status="{{ listItem.placementStatus.value }}" 
+                data-food-item-id="{{ listItem.foodItem.id }}"
+            >
 
                 <div class="card-header d-flex align-items-start justify-content-between">
 
@@ -110,6 +115,7 @@
         {% endfor %}
     </div>
 </div>
+{% include 'supermarket/_place_food_modal.html.twig' %}
 
 
 <style>
@@ -259,12 +265,77 @@
 .modal-btn.secondary {
     background-color: #e2e6ea;
     color: #333;
-}g                                               nmmmmmmmmmmmmmmmmmmmnmmmmmmmmmmmmmmmmm un
+}
 
 
 </style>
 
 <script>
+let activePlacement = {
+    foodItemId: null,
+    selectedEdgeId: null
+};
+
+function openPlacementModal() {
+    // reset previous selection
+    document.getElementById('savePlacement').disabled = true;
+
+    document.querySelectorAll('.edge.selected').forEach(e => {
+        e.classList.remove('selected');
+    });
+
+    const modalEl = document.getElementById('placementModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+}
+
+function selectEdge(edgeId) {
+    activePlacement.selectedEdgeId = edgeId;
+
+    document.querySelectorAll('.edge').forEach(e => {
+        e.classList.toggle(
+            'selected',
+            e.dataset.edgeId === String(edgeId)
+        );
+    });
+
+    document.getElementById('savePlacement').disabled = false;
+}
+
+document.getElementById('savePlacement').addEventListener('click', () => {
+    if (!activePlacement.selectedEdgeId) return;
+
+    fetch('/placements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            list_item_id: activePlacement.listItemId,
+            food_item_id: activePlacement.foodItemId,
+            edge_id: activePlacement.selectedEdgeId
+        })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Failed');
+        return res.json();
+    })
+    .then(() => {
+        bootstrap.Modal
+            .getInstance(document.getElementById('placementModal'))
+            .hide();
+    });
+});
+
+// Reset state when the modal closes so you don’t leak selections:
+document
+    .getElementById('placementModal')
+    .addEventListener('hidden.bs.modal', () => {
+        activePlacement = {
+            foodItemId: null,
+            selectedEdgeId: null
+        };
+    });
+
+
 // Pick item function
 document.querySelectorAll('.pick-btn').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -334,11 +405,17 @@ function openPlacementMenu(card) {
 
     // wire buttons
     primaryBtn.onclick = () => {
-        console.log('Primary action clicked for', card.dataset.id);
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
-        // TODO: navigate to placement screen or open placement form
+
+        const itemEl = primaryBtn.closest('.shopping-card');
+
+        activePlacement.foodItemId = itemEl.dataset.foodItemId;
+        activePlacement.selectedEdgeId = null;
+
+        openPlacementModal();
     };
+
     secondaryBtn.onclick = () => {
         console.log('Secondary action clicked for', card.dataset.id);
         wrapper.classList.remove('active');

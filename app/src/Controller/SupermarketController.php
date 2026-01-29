@@ -31,7 +31,7 @@ class SupermarketController extends AbstractController
     }
 
     #[Route('/new', name: 'app_supermarket_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $em): Response
     {
         $supermarket = new Supermarket();
 

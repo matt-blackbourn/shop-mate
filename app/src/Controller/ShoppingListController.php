@@ -12,6 +12,7 @@ use App\Form\FoodItemType;
 use App\Form\ShoppingListType;
 use App\Repository\EdgeRepository;
 use App\Repository\ListItemRepository;
+use App\Repository\NodeRepository;
 use App\Repository\PlacementTypeRepository;
 use App\Repository\ProductPlacementRepository;
 use App\Repository\ShoppingListRepository;
@@ -99,6 +100,8 @@ final class ShoppingListController extends AbstractController
         ProductPlacementRepository $productPlacementRepository,
         EntityManagerInterface $em,
         SupermarketRepository $supermarketRepository,
+        NodeRepository $nodeRepository,
+        EdgeRepository $edgeRepository,
         int $supermarketId,
     ): Response {
         $shoppingList = $shoppingListRepository->findOneByUser($this->getUser());
@@ -140,10 +143,37 @@ final class ShoppingListController extends AbstractController
             return $this->redirectToRoute('app_home');
         }
 
+        $nodes = []; 
+        foreach ($nodeRepository->findBySupermarket($supermarket) as $node) {
+            $nodes[] = [
+                'id' => $node->getId(),
+                'x' => $node->getXValue(),
+                'y' => $node->getYValue()
+            ];
+        }
+
+        $edges = []; 
+        foreach ($edgeRepository->findBySupermarket($supermarket) as $edge) {
+            $edges[] = [
+                'id' => $edge->getId(),
+                'from' => $edge->getStart()->getId(),
+                'to'   => $edge->getEnd()->getId(),
+                'x1'   => $edge->getStart()->getXValue(),
+                'y1'   => $edge->getStart()->getYValue(),
+                'x2'   => $edge->getEnd()->getXValue(),
+                'y2'   => $edge->getEnd()->getYValue(),
+                'phase'=> $edge->getPhase(),
+                'element'=> null, // placeholder for front-end use
+            ];
+        }
+
         return $this->render('shopping_list/active.html.twig', [
             'orderedList' => $orderedList,
             'shoppingList' => $shoppingList,
             'supermarket' => $supermarket,
+            'nodes' => $nodes,
+            'edges' => $edges,
+            'map' => [$supermarket->getWidth(), $supermarket->getHeight()],
         ]);
     }
 

@@ -1,4 +1,12 @@
-<div class="modal fade" id="placementModal" tabindex="-1">
+<div 
+    class="modal fade" 
+    id="placementModal" 
+    tabindex="-1"
+    data-supermarket-id="{{ supermarket.id }}"  
+    data-nodes="{{ nodes|json_encode|e('html_attr') }}"
+    data-edges="{{ edges|json_encode|e('html_attr') }}"
+    data-map="{{ map|json_encode|e('html_attr') }}"
+>
     <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
         <div class="modal-content">
 
@@ -19,8 +27,8 @@
                 </button>
 
                 <button id="savePlacement"
-                        class="btn btn-primary"
-                        disabled>
+                    class="btn btn-primary"
+                    disabled>
                     Save placement
                 </button>
             </div>
@@ -58,4 +66,60 @@
     stroke-width: 20;
     cursor: pointer;
 }
+
+.edge.selected {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { stroke-width: 6; }
+    50% { stroke-width: 9; }
+    100% { stroke-width: 6; }
+}
 </style>
+
+<script>
+const svg = document.getElementById('placement-map');
+const mapWrapper = document.getElementById('placementModal');
+const nodesData = JSON.parse(mapWrapper.dataset.nodes);
+const edgesData = JSON.parse(mapWrapper.dataset.edges);
+const [mapWidth, mapHeight] = JSON.parse(mapWrapper.dataset.map);
+
+const nodes = {};
+
+// set viewBox so SVG scales cleanly
+svg.setAttribute('viewBox', `0 0 ${mapWidth} ${mapHeight}`);
+
+nodesData.forEach(n => {
+    nodes[n.id] = n;
+});
+
+edgesData.forEach(e => {
+    const from = nodes[e.from];
+    const to   = nodes[e.to];
+
+    // visible edge
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.classList.add('edge');
+    line.dataset.edgeId = e.id;
+
+    // hit target (fat invisible line)
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hit.setAttribute('x1', from.x);
+    hit.setAttribute('y1', from.y);
+    hit.setAttribute('x2', to.x);
+    hit.setAttribute('y2', to.y);
+    hit.classList.add('edge-hit');
+    hit.dataset.edgeId = e.id;
+
+    hit.addEventListener('click', () => selectEdge(e.id));
+
+    svg.appendChild(line);
+    svg.appendChild(hit);
+});
+
+</script>
