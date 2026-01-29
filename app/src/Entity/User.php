@@ -51,6 +51,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: FoodItem::class, mappedBy: 'user')]
     private Collection $foodItems;
 
+    #[ORM\ManyToOne(inversedBy: 'users')]
+    private ?Supermarket $lastUsedSupermarket = null;
+
     public function __construct()
     {
         $this->productPlacements = new ArrayCollection();
@@ -225,6 +228,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $foodItem->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getLastUsedSupermarket(): ?Supermarket
+    {
+        return $this->lastUsedSupermarket;
+    }
+
+    public function setLastUsedSupermarket(?Supermarket $lastUsedSupermarket): static
+    {
+        $this->lastUsedSupermarket = $lastUsedSupermarket;
 
         return $this;
     }

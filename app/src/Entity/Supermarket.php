@@ -48,11 +48,18 @@ class Supermarket
     #[ORM\OneToMany(targetEntity: ProductPlacement::class, mappedBy: 'supermarket')]
     private Collection $productPlacements;
 
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'lastUsedSupermarket')]
+    private Collection $users;
+
     public function __construct()
     {
         $this->edges = new ArrayCollection();
         $this->nodes = new ArrayCollection();
         $this->productPlacements = new ArrayCollection();
+        $this->users = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -205,6 +212,36 @@ class Supermarket
             // set the owning side to null (unless already changed)
             if ($productPlacement->getSupermarket() === $this) {
                 $productPlacement->setSupermarket(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getUsers(): Collection
+    {
+        return $this->users;
+    }
+
+    public function addUser(User $user): static
+    {
+        if (!$this->users->contains($user)) {
+            $this->users->add($user);
+            $user->setLastUsedSupermarket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUser(User $user): static
+    {
+        if ($this->users->removeElement($user)) {
+            // set the owning side to null (unless already changed)
+            if ($user->getLastUsedSupermarket() === $this) {
+                $user->setLastUsedSupermarket(null);
             }
         }
 

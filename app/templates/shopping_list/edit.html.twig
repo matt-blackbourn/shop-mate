@@ -41,7 +41,8 @@
 
             <!-- Go shopping (primary action) -->
             <button
-                type="submit"
+                id="go-shopping-btn"
+                type="button"
                 name="intent"
                 value="go_shopping"
                 class="btn btn-success btn-sm d-flex align-items-center gap-1 px-3 shadow-sm"
@@ -156,6 +157,7 @@
     {% include 'food_item/_new_food_modal.html.twig' with {
         foodForm: foodForm
     } %}
+    {% include 'supermarket/_select_supermarket_modal.html.twig' %}
 </div>
 
 <style>
@@ -277,6 +279,44 @@ const saveButton = document.getElementById('save-list');
 const refreshButton = document.getElementById('refresh-page');
 
 updateActionButtons();
+
+const goShoppingBtn = document.getElementById('go-shopping-btn');
+const selectModalEl = document.getElementById('selectSupermarketModal');
+const selectModal = new bootstrap.Modal(selectModalEl);
+const confirmBtn = document.getElementById('confirm-supermarket-btn');
+const shoppingForm = document.querySelector('form[name="shopping_list"]');
+
+goShoppingBtn.addEventListener('click', async () => {
+    // 1️⃣ Submit the main form via AJAX or normal submit if you prefer
+    // If using AJAX:
+    const formData = new FormData(shoppingForm);
+    try {
+        await fetch(shoppingForm.action, {
+            method: 'POST',
+            body: formData,
+        });
+
+        // 2️⃣ Open the supermarket selection modal
+        selectModal.show();
+    } catch (err) {
+        console.error('Failed to save list', err);
+        alert('Could not save your list. Try again.');
+    }
+});
+
+// 3️⃣ Handle confirmation
+confirmBtn.addEventListener('click', () => {
+    const selected = selectModalEl.querySelector('input[name="supermarketId"]:checked');
+    if (!selected) {
+        alert('Please select a supermarket.');
+        return;
+    }
+
+    const supermarketId = selected.value;
+
+    // redirect to the shopping page with supermarketId in URL
+    window.location.href = `/active/${supermarketId}`;
+});
 
 document.getElementById('add-item').addEventListener('click', () => {
     // Get fully-named prototype
@@ -487,9 +527,11 @@ document.addEventListener('submit', async function (e) {
     const modalEl = document.getElementById('addFoodModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal){
-        // Move focus somewhere safe BEFORE hiding
-        const fallback = document.querySelector('[data-bs-toggle="modal"]') || document.body;
+        // move focus somewhere safe (best-effort)
+        const fallback = document.getElementById('add-item') || document.body;
         fallback.focus();
+
+        // hide the modal
         modal.hide();
     }
 
