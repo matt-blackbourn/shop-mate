@@ -1,0 +1,242 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Supermarket{% endblock %}
+
+{% block body %}
+<div class="toolbar">
+  <button id="auto-generate">Auto-generate shelves</button>
+  <button id="draw-mode">Draw shelf</button>
+  <button id="select-mode" class="active">Select</button>
+  <button id="delete-shelf">Delete</button>
+  <button id="save-shelves">Save</button>
+</div>
+
+<svg id="shelf-editor" width="1200" height="800">
+  <g id="edges-layer"></g>
+  <g id="shelves-layer"></g>
+</svg>
+
+<style>
+.toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+}
+
+.toolbar button.active {
+  background: #ffd54f;
+}
+
+#shelf-editor {
+  background: #fafafa;
+  cursor: crosshair;
+}
+
+.edge {
+  stroke: #bbb;
+  stroke-width: 4;
+}
+
+.shelf {
+  fill: #e0e0e0;
+  stroke: #999;
+  cursor: move;
+}
+
+.shelf.selected {
+  stroke: #ff9800;
+  stroke-width: 2;
+}
+
+.shelf.draft {
+  fill: rgba(200,200,200,0.4);
+  stroke-dasharray: 4;
+}
+
+</style>
+<script>
+const svg = document.getElementById('shelf-editor');
+const edgesLayer = document.getElementById('edges-layer');
+const shelvesLayer = document.getElementById('shelves-layer');
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+let mode = 'select'; // 'draw' | 'select'
+let shelves = [];
+let activeShelfId = null;
+
+let tempRect = null;
+let startX = 0;
+let startY = 0;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+// Render edges
+const edges = [
+  { x1: 100, y1: 100, x2: 500, y2: 100 },
+  { x1: 100, y1: 200, x2: 500, y2: 200 }
+];
+
+function drawEdges() {
+  edges.forEach(e => {
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', e.x1);
+    line.setAttribute('y1', e.y1);
+    line.setAttribute('x2', e.x2);
+    line.setAttribute('y2', e.y2);
+    line.classList.add('edge');
+    edgesLayer.appendChild(line);
+  });
+}
+
+drawEdges();
+
+// auto generate shelves from edges
+function autoGenerateShelves() {
+  shelvesLayer.innerHTML = '';
+  shelves = [];
+
+  const aisleWidth = 80;
+  const shelfDepth = 30;
+  const offset = aisleWidth / 2 + shelfDepth / 2;
+
+  edges.forEach(edge => {
+    const dx = edge.x2 - edge.x1;
+    const dy = edge.y2 - edge.y1;
+
+    // horizontal aisles only
+    if (Math.abs(dy) > 5) return;
+
+    const length = Math.abs(dx);
+    if (length < 150) return;
+
+    const x = Math.min(edge.x1, edge.x2);
+    const y = edge.y1;
+
+    [-1, 1].forEach(side => {
+      shelves.push({
+        id: crypto.randomUUID(),
+        x,
+        y: y + side * offset - shelfDepth / 2,
+        width: length,
+        height: shelfDepth
+      });
+    });
+  });
+
+  shelves.forEach(drawShelf);
+}
+
+
+function drawShelf(shelf) {
+  const rect = document.createElementNS(SVG_NS, 'rect');
+
+  rect.setAttribute('x', shelf.x);
+  rect.setAttribute('y', shelf.y);
+  rect.setAttribute('width', shelf.width);
+  rect.setAttribute('height', shelf.height);
+  rect.dataset.id = shelf.id;
+  rect.classList.add('shelf');
+
+  shelvesLayer.appendChild(rect);
+}
+
+// Drawing new shelves (drag to create)
+svg.addEventListener('pointerdown', e => {
+  if (mode !== 'draw') return;
+
+  startX = e.offsetX;
+  startY = e.offsetY;
+
+  tempRect = document.createElementNS(SVG_NS, 'rect');
+  tempRect.classList.add('shelf', 'draft');
+  shelvesLayer.appendChild(tempRect);
+});
+
+svg.addEventListener('pointermove', e => {
+  if (!tempRect) return;
+
+  const x = Math.min(startX, e.offsetX);
+  const y = Math.min(startY, e.offsetY);
+  const w = Math.abs(e.offsetX - startX);
+  const h = Math.abs(e.offsetY - startY);
+
+  tempRect.setAttribute('x', x);
+  tempRect.setAttribute('y', y);
+  tempRect.setAttribute('width', w);
+  tempRect.setAttribute('height', h);
+});
+
+svg.addEventListener('pointerup', () => {
+  if (!tempRect) return;
+
+  const shelf = {
+    id: crypto.randomUUID(),
+    x: +tempRect.getAttribute('x'),
+    y: +tempRect.getAttribute('y'),
+    width: +tempRect.getAttribute('width'),
+    height: +tempRect.getAttribute('height')
+  };
+
+  shelves.push(shelf);
+  tempRect.dataset.id = shelf.id;
+  tempRect.classList.remove('draft');
+  tempRect = null;
+});
+
+// selecting and moving shelves
+shelvesLayer.addEventListener('pointerdown', e => {
+  if (mode !== 'select') return;
+  if (e.target.tagName !== 'rect') return;
+
+  activeShelfId = e.target.dataset.id;
+  document.querySelectorAll('.shelf').forEach(r => r.classList.remove('selected'));
+  e.target.classList.add('selected');
+
+  dragOffsetX = e.offsetX - e.target.x.baseVal.value;
+  dragOffsetY = e.offsetY - e.target.y.baseVal.value;
+});
+
+svg.addEventListener('pointermove', e => {
+  if (!activeShelfId || mode !== 'select') return;
+
+  const rect = document.querySelector(`[data-id="${activeShelfId}"]`);
+  rect.x.baseVal.value = e.offsetX - dragOffsetX;
+  rect.y.baseVal.value = e.offsetY - dragOffsetY;
+});
+
+svg.addEventListener('pointerup', () => {
+  activeShelfId = null;
+});
+
+// delete and mode buttons
+document.getElementById('draw-mode').onclick = () => setMode('draw');
+document.getElementById('select-mode').onclick = () => setMode('select');
+
+function setMode(newMode) {
+  mode = newMode;
+  document.querySelectorAll('.toolbar button').forEach(b => b.classList.remove('active'));
+  document.getElementById(`${newMode}-mode`).classList.add('active');
+}
+
+document.getElementById('delete-shelf').onclick = () => {
+  if (!activeShelfId) return;
+
+  shelves = shelves.filter(s => s.id !== activeShelfId);
+  document.querySelector(`[data-id="${activeShelfId}"]`)?.remove();
+  activeShelfId = null;
+};
+
+// save shelves
+document.getElementById('save-shelves').onclick = () => {
+  console.log('Shelves to save:', shelves);
+
+  // POST shelves to backend here
+};
+
+
+
+</script>
+
+{% endblock %}

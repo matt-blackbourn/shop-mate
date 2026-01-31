@@ -22,13 +22,27 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/supermarket')]
 class SupermarketController extends AbstractController
 {
-    #[Route(name: 'app_supermarket_index', methods: ['GET'])]
+
+    #[Route('/index', name: 'app_supermarket_index', methods: ['GET'])]
     public function index(SupermarketRepository $supermarketRepository): Response
     {
         return $this->render('supermarket/index.html.twig', [
             'supermarkets' => $supermarketRepository->findAll(),
         ]);
     }
+
+    #[Route('/shelves/{id}', name: 'app_supermarket_shelves', methods: ['GET'])]
+    public function shelves(SupermarketRepository $supermarketRepository): Response
+    {
+        return $this->render('supermarket/shelves.html.twig');
+    }
+
+    #[Route('/map', name: 'app_supermarket_map', methods: ['GET'])]
+    public function map(SupermarketRepository $supermarketRepository): Response
+    {
+        return $this->render('supermarket/map.html.twig');
+    }
+
 
     #[Route('/new', name: 'app_supermarket_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $em): Response

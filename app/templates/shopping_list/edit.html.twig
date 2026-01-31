@@ -31,6 +31,9 @@
                     <li>
                         <a href="{{ path('app_supermarket_index') }}">Supermarkets</a>
                     </li>
+                    <li>
+                        <a href="{{ path('app_supermarket_map') }}">Mapper</a>
+                    </li>
                 </ul>
             </nav>
 
@@ -70,11 +73,11 @@
             <button
                 type="button"
                 id="save-list"
-                class="btn btn-outline-secondary"
+                class="btn btn-warning"
                 disabled
                 title="Save changes"
             >
-                <i class="bi bi-save"></i>
+                <i class="bi bi-check-lg"></i>
             </button>
             
             <button
@@ -452,30 +455,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (select.tomselect) return; // prevent double-init
 
             const ts = new TomSelect(select, {
-                create: false,
                 maxItems: 1,
                 preload: true,
                 placeholder: 'Search food…',
                 allowEmptyOption: true,
                 closeAfterSelect: true,
+                create: true,
+                persist: false, // required for <select>
+                createFilter: function (input) {
+                    const value = input.trim().toLowerCase();
+
+                    return !Object.values(this.options).some(option => {
+                        const name = (option.name ?? option.text ?? '').trim().toLowerCase();
+                        return name === value;
+                    });
+                },
 
                 render: {
                     no_results(data, escape) {
-
                         activeFoodSelect = this;
-
                         const query = escape(data.input);
 
                         return `
                             <div class="ts-no-results">
-                                <div class="text-muted small mb-1">
-                                    No foods found
-                                </div>
-                                <div
-                                    class="ts-create-food text-primary"
-                                    data-name="${query}"
-                                >
-                                    ➕ Add "${query}" as a new food
+                                <div class="ts-create-food text-primary" data-name="${query}">
+                                    ➕ Add <strong>"${query}"</strong>
                                 </div>
                             </div>
                         `;
@@ -633,10 +637,6 @@ document.addEventListener('keydown', (e) => {
 });
 
 
-
-
-
-
 // Any change marks the form dirty
 form.addEventListener('input', () => {
     if (isDirty) return;
@@ -644,7 +644,7 @@ form.addEventListener('input', () => {
     isDirty = true;
     saveButton.disabled = false;
     saveButton.classList.remove('btn-outline-secondary');
-    saveButton.classList.add('btn-outline-primary');
+    saveButton.classList.add('btn-outline-secondary');
     updateActionButtons();
 });
 
@@ -658,8 +658,6 @@ function updateActionButtons() {
         refreshButton.classList.remove('d-none');
     }
 }
-
-
 
 
 // Save handler
@@ -690,7 +688,7 @@ saveButton.addEventListener('click', async (e) => {
 
         // Reset icon after a moment
         setTimeout(() => {
-            saveButton.innerHTML = '<i class="bi bi-save"></i>';
+            saveButton.innerHTML = '<i class="bi bi-check-lg"></i>';
         }, 1500);
 
     } catch (err) {

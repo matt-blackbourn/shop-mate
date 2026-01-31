@@ -1,0 +1,210 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Supermarket{% endblock %}
+
+{% block body %}
+<div id="supermarket-mapper" class="mapper-screen">
+  <div class="mapper-map-container">
+    <svg class="mapper-svg"></svg>
+    <svg class="mapper-arrow" viewBox="-10 -10 20 20">
+      <polygon points="0,-10 5,5 -5,5" fill="black" />
+    </svg>
+  </div>
+  <div class="mapper-controls">
+    <button class="mapper-btn" data-action="left">⬅️ Left</button>
+    <button class="mapper-btn" data-action="right">➡️ Right</button>
+    <input type="number" class="mapper-steps" placeholder="Steps">
+    <button class="mapper-btn" data-action="undo">↩️ Undo</button>
+    <button class="mapper-btn" data-action="go">▶️ Go</button>
+  </div>
+</div>
+
+<style>
+#supermarket-mapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  font-family: sans-serif;
+}
+#supermarket-mapper .mapper-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px;
+  background: #f0f0f0;
+  z-index: 10;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+}
+#supermarket-mapper .mapper-map-container {
+    position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px; /* leave space for buttons */
+}
+#supermarket-mapper .mapper-svg {
+  width: 100%;
+  height: 100%;
+}
+#supermarket-mapper .mapper-arrow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+#supermarket-mapper .mapper-btn {
+  padding: 10px;
+  font-size: 16px;
+}
+#supermarket-mapper .mapper-steps {
+  width: 60px;
+  text-align: center;
+  font-size: 16px;
+}
+</style>
+
+<script>
+(function() {
+  const container = document.getElementById('supermarket-mapper');
+  const svg = container.querySelector('.mapper-svg');
+  const arrowSVG = container.querySelector('.mapper-arrow');
+  const arrow = arrowSVG.querySelector('polygon');
+  const stepsInput = container.querySelector('.mapper-steps');
+
+  let path = [{ x: 0, y: 0 }]; // initial point
+  let headings = [0]; // initial heading (up)
+  let bounds = { minX:0, maxX:0, minY:0, maxY:0 };
+  let currentHeading = 0; // in radians
+
+  function updateArrow() {
+    arrowSVG.style.transform = `translate(-50%, -50%) rotate(${currentHeading * 180/Math.PI}deg)`;
+  }
+
+  function updateBounds(x,y){
+    bounds.minX = Math.min(bounds.minX, x);
+    bounds.maxX = Math.max(bounds.maxX, x);
+    bounds.minY = Math.min(bounds.minY, y);
+    bounds.maxY = Math.max(bounds.maxY, y);
+  }
+
+  function drawPath(){
+    svg.innerHTML = '';
+    for(let i=1;i<path.length;i++){
+      const p1 = path[i-1];
+      const p2 = path[i];
+
+      // line
+      const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+      line.setAttribute('x1',p1.x);
+      line.setAttribute('y1',p1.y);
+      line.setAttribute('x2',p2.x);
+      line.setAttribute('y2',p2.y);
+      line.setAttribute('stroke','black');
+      line.setAttribute('stroke-width','2');
+      svg.appendChild(line);
+
+      // waypoint/turn marker as blue dot
+        const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+        dot.setAttribute('cx', p2.x);
+        dot.setAttribute('cy', p2.y);
+        dot.setAttribute('r', 3); // size of dot
+        dot.setAttribute('fill', 'blue');
+        svg.appendChild(dot);
+
+      // step label
+      const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+      text.setAttribute('x',(p1.x+p2.x)/2);
+      text.setAttribute('y',(p1.y+p2.y)/2 - 5);
+      text.setAttribute('text-anchor','middle');
+      text.setAttribute('font-size','8');
+      text.setAttribute('fill','black');
+      const stepCount = Math.round(Math.hypot(p2.x-p1.x,p2.y-p1.y));
+      text.textContent = p2.steps; // use original step count entered by user
+      svg.appendChild(text);
+    }
+
+    // auto-center
+    updateViewBox();
+  }
+
+  function updateViewBox() {
+    if(path.length === 0) return;
+    const padding = 40;
+    let minX = path[0].x, maxX = path[0].x;
+    let minY = path[0].y, maxY = path[0].y;
+
+    for(let p of path){
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+    }
+
+    const width = maxX - minX + padding*2;
+    const height = maxY - minY + padding*2;
+
+    svg.setAttribute('viewBox', `${minX - padding} ${minY - padding} ${width} ${height}`);
+}
+
+  function turn(dir){
+    if(dir==='left') currentHeading -= Math.PI/2;
+    if(dir==='right') currentHeading += Math.PI/2;
+    updateArrow();
+  }
+
+  function addLeg(){
+    const steps = parseInt(stepsInput.value);
+    if(!steps || steps<=0) return;
+    const last = path[path.length-1];
+    const scale = 2; // multiply leg length by 2
+    const newX = last.x + steps * scale * Math.sin(currentHeading);
+    const newY = last.y - steps * scale * Math.cos(currentHeading);
+    path.push({ x: newX, y: newY, steps: steps });
+    headings.push(currentHeading);
+    updateBounds(newX,newY);
+    drawPath();
+    stepsInput.value = '';
+  }
+
+  function markIntersection(){
+    const last = path[path.length-1];
+    const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    circle.setAttribute('cx',last.x);
+    circle.setAttribute('cy',last.y);
+    circle.setAttribute('r',5);
+    circle.setAttribute('fill','blue');
+    svg.appendChild(circle);
+  }
+
+container.addEventListener('click',(e)=>{
+  const action = e.target.dataset.action;
+  if(!action) return;
+  if(action==='left' || action==='right') turn(action);
+  else if(action==='go') addLeg();
+  else if(action==='undo') undoLeg();
+});
+
+function undoLeg(){
+  if(path.length > 1){
+    path.pop();           // remove last point
+    headings.pop();       // remove last heading
+    const last = path[path.length-1];
+    updateBounds(last.x,last.y);
+    drawPath();
+  }
+}
+
+  // initial arrow pointing up
+  updateArrow();
+})();
+</script>
+
+
+{% endblock %}
