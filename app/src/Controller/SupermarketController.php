@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Edge;
 use App\Entity\Node;
 use App\Entity\ProductPlacement;
+use App\Entity\Shelf;
 use App\Entity\Supermarket;
 use App\Enum\PlacementType;
 use App\Form\SupermarketType;
@@ -29,16 +30,6 @@ class SupermarketController extends AbstractController
     {
         return $this->render('supermarket/index.html.twig', [
             'supermarkets' => $supermarketRepository->findAll(),
-        ]);
-    }
-
-    #[Route('/shelves/{id}', name: 'app_supermarket_shelves', methods: ['GET'])]
-    public function shelves(MapBuilder $mapBuilder, Supermarket $supermarket): Response
-    {
-        return $this->render('supermarket/shelves.html.twig', [
-            'nodes' => $mapBuilder->getAllNodes($supermarket),
-            'edges' => $mapBuilder->getAllEdges($supermarket),
-            'map' => [$supermarket->getWidth(), $supermarket->getHeight()],
         ]);
     }
 
@@ -222,6 +213,17 @@ class SupermarketController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/draw/shelves', name: 'app_supermarket_draw_shelves', methods: ['GET'])]
+    public function shelves(MapBuilder $mapBuilder, Supermarket $supermarket): Response
+    {
+        return $this->render('supermarket/shelves.html.twig', [
+            'nodes' => $mapBuilder->getAllNodes($supermarket),
+            'edges' => $mapBuilder->getAllEdges($supermarket),
+            'map' => [$supermarket->getWidth(), $supermarket->getHeight()],
+            'supermarket' => $supermarket,
+        ]);
+    }
+
 
 
     #[Route('/{id}/edges/save', methods: ['POST'])]
@@ -345,6 +347,32 @@ class SupermarketController extends AbstractController
                 'id' => $supermarket->getId(),
             ]);
         }
+    }
+
+    #[Route('/{id}/shelves/save', methods: ['POST'])]
+    public function saveShelves(
+        Supermarket $supermarket,
+        Request $request,
+        EntityManagerInterface $em
+    ) {
+        $shelves = json_decode($request->request->get('shelf'), true);
+
+        foreach ($shelves as $item) {
+            $shelf = new Shelf();
+            $shelf->setSupermarket($supermarket);
+            $shelf->setX($item['x']);
+            $shelf->setY($item['y']);
+            $shelf->setWidth($item['width']);
+            $shelf->setHeight($item['height']);
+            $em->persist($shelf);
+        }
+
+        $em->flush();
+        $this->addFlash('success', 'Shelves saved successfully!');
+
+        return $this->redirectToRoute('app_supermarket_draw_shelves', [
+            'id' => $supermarket->getId(),
+        ]);
     }
 
 

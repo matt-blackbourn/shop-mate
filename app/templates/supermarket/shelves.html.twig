@@ -4,10 +4,29 @@
 
 {% block body %}
 <div class="toolbar">
+    <a href="{{ path('app_supermarket_index') }}" class="btn btn-outline-secondary btn-sm">← Back to list</a>
+
     <button id="auto-generate">Auto-generate shelves</button>
     <button id="undoGroupsBtn" class="btn btn-outline-secondary">Undo</button>
     <button id="saveGroupsBtn" class="btn btn-warning">Save shelving groups</button>
-    <div id="saveFlash" class="save-flash"></div>
+    {# Save shelves form #}
+    <form method="POST" action="/supermarket/{{ supermarket.id }}/shelves/save"
+        id="shelfForm" class="d-flex align-items-center gap-2">
+        <input type="hidden" name="shelf" id="shelfInput">
+
+        <button type="submit" class="btn btn-primary btn-sm">
+            💾 Save shelves
+        </button>
+    </form>
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
 </div>
 
 <svg 
@@ -96,6 +115,12 @@ let startY = 0;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
+const shelfForm  = document.getElementById('shelfForm');
+const shelfInput = document.getElementById('shelfInput');
+
+shelfForm.addEventListener('submit', () => {
+  shelfInput.value = JSON.stringify(shelfGroups);
+});
 
 
 // set viewBox so SVG scales cleanly
@@ -278,20 +303,20 @@ document.getElementById('undoGroupsBtn').addEventListener('click', restoreUndoSt
 document.getElementById('saveGroupsBtn').addEventListener('click', saveGroups);
 
 function saveGroups() {
-  fetch('/api/shelf-groups', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      groups: shelfGroups
+    fetch('/api/shelf-groups', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+        groups: shelfGroups
+        })
     })
-  })
-  .then(r => {
-    if (!r.ok) throw new Error();
-    flashSaved();
-  })
-  .catch(() => flashError());
+    .then(r => {
+        if (!r.ok) throw new Error();
+        flashSaved();
+    })
+    .catch(() => flashError());
 }
 
 function flashSaved() {

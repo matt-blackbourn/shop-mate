@@ -54,12 +54,19 @@ class Supermarket
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'lastUsedSupermarket')]
     private Collection $users;
 
+    /**
+     * @var Collection<int, Shelf>
+     */
+    #[ORM\OneToMany(targetEntity: Shelf::class, mappedBy: 'supermarket')]
+    private Collection $shelves;
+
     public function __construct()
     {
         $this->edges = new ArrayCollection();
         $this->nodes = new ArrayCollection();
         $this->productPlacements = new ArrayCollection();
         $this->users = new ArrayCollection();
+        $this->shelves = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -242,6 +249,36 @@ class Supermarket
             // set the owning side to null (unless already changed)
             if ($user->getLastUsedSupermarket() === $this) {
                 $user->setLastUsedSupermarket(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Shelf>
+     */
+    public function getShelves(): Collection
+    {
+        return $this->shelves;
+    }
+
+    public function addShelf(Shelf $shelf): static
+    {
+        if (!$this->shelves->contains($shelf)) {
+            $this->shelves->add($shelf);
+            $shelf->setSupermarket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShelf(Shelf $shelf): static
+    {
+        if ($this->shelves->removeElement($shelf)) {
+            // set the owning side to null (unless already changed)
+            if ($shelf->getSupermarket() === $this) {
+                $shelf->setSupermarket(null);
             }
         }
 
