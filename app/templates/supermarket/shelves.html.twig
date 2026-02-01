@@ -109,7 +109,87 @@ edgesData.forEach(e => {
     edgesLayer.appendChild(line);
 });
 
+const nodeMap = new Map();
+edgesData.forEach(edge => {
+  const a = `${edge.x1},${edge.y1}`;
+  const b = `${edge.x2},${edge.y2}`;
+
+  if (!nodeMap.has(a)) nodeMap.set(a, []);
+  if (!nodeMap.has(b)) nodeMap.set(b, []);
+
+  nodeMap.get(a).push(edge);
+  nodeMap.get(b).push(edge);
+});
+
 autoGenerateBtn.onclick = autoGenerateShelves;
+
+function getPerpendicularIntersections(edge, edgesData, TOLERANCE) {
+  const intersections = [];
+
+  const isHorizontal = Math.abs(edge.y2 - edge.y1) <= TOLERANCE;
+  const isVertical   = Math.abs(edge.x2 - edge.x1) <= TOLERANCE;
+
+  edgesData.forEach(other => {
+    if (other === edge) return;
+
+    const otherHorizontal = Math.abs(other.y2 - other.y1) <= TOLERANCE;
+    const otherVertical   = Math.abs(other.x2 - other.x1) <= TOLERANCE;
+
+    // horizontal ↔ vertical only
+    if (isHorizontal && otherVertical) {
+      const y = edge.y1;
+      const x = other.x1;
+
+      const oxMin = Math.min(other.y1, other.y2);
+      const oxMax = Math.max(other.y1, other.y2);
+      const exMin = Math.min(edge.x1, edge.x2);
+      const exMax = Math.max(edge.x1, edge.x2);
+
+      if (y >= oxMin && y <= oxMax && x >= exMin && x <= exMax) {
+        intersections.push(x);
+      }
+    }
+
+    if (isVertical && otherHorizontal) {
+      const x = edge.x1;
+      const y = other.y1;
+
+      const oxMin = Math.min(other.x1, other.x2);
+      const oxMax = Math.max(other.x1, other.x2);
+      const exMin = Math.min(edge.y1, edge.y2);
+      const exMax = Math.max(edge.y1, edge.y2);
+
+      if (x >= oxMin && x <= oxMax && y >= exMin && y <= exMax) {
+        intersections.push(y);
+      }
+    }
+  });
+
+  return intersections;
+}
+
+function hasPerpendicularAtPoint(x, y, currentEdge) {
+  const key = `${x},${y}`;
+  const connected = nodeMap.get(key) || [];
+
+  const dx = Math.abs(currentEdge.x2 - currentEdge.x1);
+  const dy = Math.abs(currentEdge.y2 - currentEdge.y1);
+
+  const isHorizontal = dy < dx;
+
+  return connected.some(edge => {
+    if (edge === currentEdge) return false;
+
+    const edx = Math.abs(edge.x2 - edge.x1);
+    const edy = Math.abs(edge.y2 - edge.y1);
+
+    const otherIsHorizontal = edy < edx;
+
+    return isHorizontal !== otherIsHorizontal;
+  });
+}
+
+
 
 // auto generate shelves from edges
 function autoGenerateShelves() {
@@ -119,8 +199,9 @@ function autoGenerateShelves() {
   const aisleWidth = 80;
   const shelfDepth = 30;
   const offset = aisleWidth / 2 + shelfDepth / 2;
-  const MIN_LENGTH = 150;
+  const MIN_LENGTH = 0;
   const TOLERANCE = 5;
+  const END_CLEARANCE = 40; // half aisle width is a good start
 
   edgesData.forEach(edge => {
     const dx = edge.x2 - edge.x1;
@@ -131,66 +212,93 @@ function autoGenerateShelves() {
 
     // ---------- HORIZONTAL AISLE ----------
     if (absDy <= TOLERANCE && absDx >= MIN_LENGTH) {
-      const x = Math.min(edge.x1, edge.x2);
-      const y = edge.y1;
-      const width = absDx;
+        const y = edge.y1;
 
-      // shelves above & below
-      shelves.push(
-        {
-          id: crypto.randomUUID(),
-          x,
-          y: y - offset - shelfDepth / 2,
-          width,
-          height: shelfDepth,
-          edgeId: edge.id
-        },
-        {
-          id: crypto.randomUUID(),
-          x,
-          y: y + offset - shelfDepth / 2,
-          width,
-          height: shelfDepth,
-          edgeId: edge.id
+        let startX = Math.min(edge.x1, edge.x2);
+        let endX   = Math.max(edge.x1, edge.x2);
+
+        if (hasPerpendicularAtPoint(startX, y, edge)) {
+            startX += END_CLEARANCE;
         }
-      );
 
-      return;
-    }
+        if (hasPerpendicularAtPoint(endX, y, edge)) {
+            endX -= END_CLEARANCE;
+        }
+
+        const width = endX - startX;
+        if (width <= 0) return;
+
+        shelves.push(
+            {
+            id: crypto.randomUUID(),
+            x: startX,
+            y: y - offset - shelfDepth / 2,
+            width,
+            height: shelfDepth,
+            edgeId: edge.id
+            },
+            {
+            id: crypto.randomUUID(),
+            x: startX,
+            y: y + offset - shelfDepth / 2,
+            width,
+            height: shelfDepth,
+            edgeId: edge.id
+            }
+        );
+
+        return;
+        }
+
+
+
 
     // ---------- VERTICAL AISLE ----------
     if (absDx <= TOLERANCE && absDy >= MIN_LENGTH) {
-      const x = edge.x1;
-      const y = Math.min(edge.y1, edge.y2);
-      const height = absDy;
+        const x = edge.x1;
 
-      // shelves left & right
-      shelves.push(
-        {
-          id: crypto.randomUUID(),
-          x: x - offset - shelfDepth / 2,
-          y,
-          width: shelfDepth,
-          height,
-          edgeId: edge.id
-        },
-        {
-          id: crypto.randomUUID(),
-          x: x + offset - shelfDepth / 2,
-          y,
-          width: shelfDepth,
-          height,
-          edgeId: edge.id
+        let startY = Math.min(edge.y1, edge.y2);
+        let endY   = Math.max(edge.y1, edge.y2);
+
+        if (hasPerpendicularAtPoint(x, startY, edge)) {
+            startY += END_CLEARANCE;
         }
-      );
 
-      return;
-    }
+        if (hasPerpendicularAtPoint(x, endY, edge)) {
+            endY -= END_CLEARANCE;
+        }
+
+        const height = endY - startY;
+        if (height <= 0) return;
+
+        shelves.push(
+            {
+            id: crypto.randomUUID(),
+            x: x - offset - shelfDepth / 2,
+            y: startY,
+            width: shelfDepth,
+            height,
+            edgeId: edge.id
+            },
+            {
+            id: crypto.randomUUID(),
+            x: x + offset - shelfDepth / 2,
+            y: startY,
+            width: shelfDepth,
+            height,
+            edgeId: edge.id
+            }
+        );
+
+        return;
+        }
+
 
     // ---------- DIAGONAL / SHORT EDGE ----------
     // ignored for shelf generation
   });
 
+console.log('Auto-generated shelves:', shelves);
   shelves.forEach(drawShelf);
 }
 
