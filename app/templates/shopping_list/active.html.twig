@@ -424,6 +424,38 @@ function openPlacementMenu(card) {
     };
 }
 
+const pickQueue = [];
+let processingQueue = false;
+
+function enqueuePick(card) {
+    pickQueue.push(card);
+    processPickQueue();
+}
+
+async function processPickQueue() {
+    if (processingQueue) return;
+    processingQueue = true;
+
+    while (pickQueue.length > 0) {
+        const card = pickQueue.shift();
+        const id = card.dataset.id;
+
+        try {
+            await fetch(`/shoppinglist/ajax/pick/${id}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (e) {
+            console.error('Failed to mark item as picked', id);
+            // optional: stash failed IDs for retry
+        }
+    }
+
+    processingQueue = false;
+}
 
 
 function pickItem(card) {
@@ -438,17 +470,7 @@ function pickItem(card) {
     // Remove from DOM after animation
     setTimeout(() => card.remove(), 200);
 
-    // Fire-and-forget request
-    fetch(`/shoppinglist/ajax/pick/${card.dataset.id}`, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json'
-        }
-    }).catch(() => {
-        // Later: show toast / undo
-        console.error('Failed to mark item as picked');
-    });
+    enqueuePick(card);  
 }
 </script>
 {% endblock %}

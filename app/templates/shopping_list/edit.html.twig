@@ -471,6 +471,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 },
 
+                onItemAdd(value, item) {
+                    const row = this.input.closest('.list-item');
+                    if (!row) return;
+
+                    row.classList.remove('expanded');
+                    row.classList.add('collapsed');
+                },
+
                 render: {
                     no_results(data, escape) {
                         activeFoodSelect = this;
