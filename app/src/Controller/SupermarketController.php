@@ -13,6 +13,7 @@ use App\Repository\FoodItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductPlacementRepository;
 use App\Repository\SupermarketRepository;
+use App\Service\MapBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,9 +33,13 @@ class SupermarketController extends AbstractController
     }
 
     #[Route('/shelves/{id}', name: 'app_supermarket_shelves', methods: ['GET'])]
-    public function shelves(SupermarketRepository $supermarketRepository): Response
+    public function shelves(MapBuilder $mapBuilder, Supermarket $supermarket): Response
     {
-        return $this->render('supermarket/shelves.html.twig');
+        return $this->render('supermarket/shelves.html.twig', [
+            'nodes' => $mapBuilder->getAllNodes($supermarket),
+            'edges' => $mapBuilder->getAllEdges($supermarket),
+            'map' => [$supermarket->getWidth(), $supermarket->getHeight()],
+        ]);
     }
 
     #[Route('/map', name: 'app_supermarket_map', methods: ['GET'])]
@@ -195,20 +200,11 @@ class SupermarketController extends AbstractController
     }
 
     #[Route('/{id}/draw/nodes', name: 'app_supermarket_draw_nodes', methods: ['GET'])]
-    public function nodes(Request $request, Supermarket $supermarket, NodeRepository $nodeRepository): Response
+    public function nodes(Request $request, Supermarket $supermarket, MapBuilder $mapBuilder): Response
     {
-        $nodes = []; 
-        foreach ($nodeRepository->findBySupermarket($supermarket) as $node) {
-            $nodes[] = [
-                'id' => $node->getId(),
-                'x' => $node->getXValue(),
-                'y' => $node->getYValue()
-            ];
-        }
-
         return $this->render('supermarket/nodes.html.twig', [
             'supermarket' => $supermarket,
-            'nodes' => $nodes,
+            'nodes' => $mapBuilder->getAllNodes($supermarket),
         ]);
     }
 
@@ -216,40 +212,17 @@ class SupermarketController extends AbstractController
     public function edges(
         Request $request, 
         Supermarket $supermarket, 
-        NodeRepository $nodeRepository, 
-        EdgeRepository $edgeRepository,
+        MapBuilder $mapBuilder,
     ): Response
     {
-        $nodes = []; 
-        foreach ($nodeRepository->findBySupermarket($supermarket) as $node) {
-            $nodes[] = [
-                'id' => $node->getId(),
-                'x' => $node->getXValue(),
-                'y' => $node->getYValue()
-            ];
-        }
-
-        $edges = []; 
-        foreach ($edgeRepository->findBySupermarket($supermarket) as $edge) {
-            $edges[] = [
-                'id' => $edge->getId(),
-                'from' => $edge->getStart()->getId(),
-                'to'   => $edge->getEnd()->getId(),
-                'x1'   => $edge->getStart()->getXValue(),
-                'y1'   => $edge->getStart()->getYValue(),
-                'x2'   => $edge->getEnd()->getXValue(),
-                'y2'   => $edge->getEnd()->getYValue(),
-                'phase'=> $edge->getPhase(),
-                'element'=> null, // placeholder for front-end use
-            ];
-        }
-
         return $this->render('supermarket/edges.html.twig', [
             'supermarket' => $supermarket,
-            'nodes' => $nodes,
-            'edges' => $edges,
+            'nodes' => $mapBuilder->getAllNodes($supermarket),
+            'edges' => $mapBuilder->getAllEdges($supermarket),
         ]);
     }
+
+
 
     #[Route('/{id}/edges/save', methods: ['POST'])]
     public function saveEdgesBulk(

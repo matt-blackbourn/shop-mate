@@ -11,7 +11,14 @@
   <button id="save-shelves">Save</button>
 </div>
 
-<svg id="shelf-editor" width="1200" height="800">
+<svg 
+    id="shelf-editor" 
+    width="1200" 
+    height="800"
+    data-nodes="{{ nodes|json_encode|e('html_attr') }}"
+    data-edges="{{ edges|json_encode|e('html_attr') }}"
+    data-map="{{ map|json_encode|e('html_attr') }}"
+>
   <g id="edges-layer"></g>
   <g id="shelves-layer"></g>
 </svg>
@@ -34,7 +41,7 @@
 }
 
 .edge {
-  stroke: #bbb;
+  stroke: #0d6efd;
   stroke-width: 4;
 }
 
@@ -54,11 +61,13 @@
   stroke-dasharray: 4;
 }
 
+
 </style>
 <script>
 const svg = document.getElementById('shelf-editor');
 const edgesLayer = document.getElementById('edges-layer');
 const shelvesLayer = document.getElementById('shelves-layer');
+const autoGenerateBtn = document.getElementById('auto-generate');
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -72,25 +81,35 @@ let startY = 0;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
-// Render edges
-const edges = [
-  { x1: 100, y1: 100, x2: 500, y2: 100 },
-  { x1: 100, y1: 200, x2: 500, y2: 200 }
-];
 
-function drawEdges() {
-  edges.forEach(e => {
-    const line = document.createElementNS(SVG_NS, 'line');
-    line.setAttribute('x1', e.x1);
-    line.setAttribute('y1', e.y1);
-    line.setAttribute('x2', e.x2);
-    line.setAttribute('y2', e.y2);
+
+// set viewBox so SVG scales cleanly
+const edgesData = JSON.parse(svg.dataset.edges);
+const nodesData = JSON.parse(svg.dataset.nodes);
+const [mapWidth, mapHeight] = JSON.parse(svg.dataset.map);
+svg.setAttribute('viewBox', `0 0 ${mapWidth} ${mapHeight}`);
+
+const nodes = {};
+nodesData.forEach(n => {
+    nodes[n.id] = n;
+});
+
+edgesData.forEach(e => {
+    const from = nodes[e.from];
+    const to   = nodes[e.to];
+
+    // visible edge
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
     line.classList.add('edge');
-    edgesLayer.appendChild(line);
-  });
-}
 
-drawEdges();
+    edgesLayer.appendChild(line);
+});
+
+autoGenerateBtn.onclick = autoGenerateShelves;
 
 // auto generate shelves from edges
 function autoGenerateShelves() {
@@ -100,33 +119,81 @@ function autoGenerateShelves() {
   const aisleWidth = 80;
   const shelfDepth = 30;
   const offset = aisleWidth / 2 + shelfDepth / 2;
+  const MIN_LENGTH = 150;
+  const TOLERANCE = 5;
 
-  edges.forEach(edge => {
+  edgesData.forEach(edge => {
     const dx = edge.x2 - edge.x1;
     const dy = edge.y2 - edge.y1;
 
-    // horizontal aisles only
-    if (Math.abs(dy) > 5) return;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
 
-    const length = Math.abs(dx);
-    if (length < 150) return;
+    // ---------- HORIZONTAL AISLE ----------
+    if (absDy <= TOLERANCE && absDx >= MIN_LENGTH) {
+      const x = Math.min(edge.x1, edge.x2);
+      const y = edge.y1;
+      const width = absDx;
 
-    const x = Math.min(edge.x1, edge.x2);
-    const y = edge.y1;
+      // shelves above & below
+      shelves.push(
+        {
+          id: crypto.randomUUID(),
+          x,
+          y: y - offset - shelfDepth / 2,
+          width,
+          height: shelfDepth,
+          edgeId: edge.id
+        },
+        {
+          id: crypto.randomUUID(),
+          x,
+          y: y + offset - shelfDepth / 2,
+          width,
+          height: shelfDepth,
+          edgeId: edge.id
+        }
+      );
 
-    [-1, 1].forEach(side => {
-      shelves.push({
-        id: crypto.randomUUID(),
-        x,
-        y: y + side * offset - shelfDepth / 2,
-        width: length,
-        height: shelfDepth
-      });
-    });
+      return;
+    }
+
+    // ---------- VERTICAL AISLE ----------
+    if (absDx <= TOLERANCE && absDy >= MIN_LENGTH) {
+      const x = edge.x1;
+      const y = Math.min(edge.y1, edge.y2);
+      const height = absDy;
+
+      // shelves left & right
+      shelves.push(
+        {
+          id: crypto.randomUUID(),
+          x: x - offset - shelfDepth / 2,
+          y,
+          width: shelfDepth,
+          height,
+          edgeId: edge.id
+        },
+        {
+          id: crypto.randomUUID(),
+          x: x + offset - shelfDepth / 2,
+          y,
+          width: shelfDepth,
+          height,
+          edgeId: edge.id
+        }
+      );
+
+      return;
+    }
+
+    // ---------- DIAGONAL / SHORT EDGE ----------
+    // ignored for shelf generation
   });
 
   shelves.forEach(drawShelf);
 }
+
 
 
 function drawShelf(shelf) {
@@ -137,7 +204,8 @@ function drawShelf(shelf) {
   rect.setAttribute('width', shelf.width);
   rect.setAttribute('height', shelf.height);
   rect.dataset.id = shelf.id;
-  rect.classList.add('shelf');
+    rect.dataset.edgeId = shelf.edgeId ?? '';
+  rect.classList.add('shelf', 'auto');
 
   shelvesLayer.appendChild(rect);
 }
