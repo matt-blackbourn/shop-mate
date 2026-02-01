@@ -4,11 +4,10 @@
 
 {% block body %}
 <div class="toolbar">
-  <button id="auto-generate">Auto-generate shelves</button>
-  <button id="draw-mode">Draw shelf</button>
-  <button id="select-mode" class="active">Select</button>
-  <button id="delete-shelf">Delete</button>
-  <button id="save-shelves">Save</button>
+    <button id="auto-generate">Auto-generate shelves</button>
+    <button id="undoGroupsBtn" class="btn btn-outline-secondary">Undo</button>
+    <button id="saveGroupsBtn" class="btn btn-warning">Save shelving groups</button>
+    <div id="saveFlash" class="save-flash"></div>
 </div>
 
 <svg 
@@ -61,6 +60,22 @@
   stroke-dasharray: 4;
 }
 
+.save-flash {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #198754;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+
+.save-flash.show {
+  opacity: 1;
+}
 
 </style>
 <script>
@@ -122,6 +137,180 @@ edgesData.forEach(edge => {
 });
 
 autoGenerateBtn.onclick = autoGenerateShelves;
+
+// Edge Grouping
+let shelfGroups = [];   // persisted later
+let undoStack = [];
+let isSelecting = false;
+let selectStart = null;
+let selectionRectEl = null;
+
+function rectIntersects(a, b) {
+  return !(
+    a.x + a.width < b.x ||
+    b.x + b.width < a.x ||
+    a.y + a.height < b.y ||
+    b.y + b.height < a.y
+  );
+}
+
+svg.addEventListener('mousedown', e => {
+  if (e.button !== 0) return; // left mouse only
+
+  isSelecting = true;
+  selectStart = getSvgPoint(e);
+
+  selectionRectEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  selectionRectEl.setAttribute("x", selectStart.x);
+  selectionRectEl.setAttribute("y", selectStart.y);
+  selectionRectEl.setAttribute("width", 0);
+  selectionRectEl.setAttribute("height", 0);
+  selectionRectEl.setAttribute("fill", "rgba(255,0,0,0.1)");
+  selectionRectEl.setAttribute("stroke", "red");
+  selectionRectEl.setAttribute("stroke-dasharray", "4");
+
+  svg.appendChild(selectionRectEl);
+});
+
+svg.addEventListener('mousemove', e => {
+  if (!isSelecting || !selectionRectEl) return;
+
+  const p = getSvgPoint(e);
+
+  const x = Math.min(selectStart.x, p.x);
+  const y = Math.min(selectStart.y, p.y);
+  const w = Math.abs(p.x - selectStart.x);
+  const h = Math.abs(p.y - selectStart.y);
+
+  selectionRectEl.setAttribute("x", x);
+  selectionRectEl.setAttribute("y", y);
+  selectionRectEl.setAttribute("width", w);
+  selectionRectEl.setAttribute("height", h);
+});
+
+svg.addEventListener('mouseup', () => {
+  if (!isSelecting || !selectionRectEl) return;
+
+  isSelecting = false;
+
+  const groupRect = {
+    x: parseFloat(selectionRectEl.getAttribute("x")),
+    y: parseFloat(selectionRectEl.getAttribute("y")),
+    width: parseFloat(selectionRectEl.getAttribute("width")),
+    height: parseFloat(selectionRectEl.getAttribute("height"))
+  };
+
+  svg.removeChild(selectionRectEl);
+  selectionRectEl = null;
+
+  createShelfGroup(groupRect);
+});
+
+function createShelfGroup(selectionRect) {
+  const groupedShelves = shelves.filter(shelf =>
+    rectIntersects(selectionRect, shelf)
+  );
+
+  if (!groupedShelves.length) return;
+
+  pushUndoState();
+
+  // Compute bounding box of group
+  const x1 = Math.min(...groupedShelves.map(s => s.x));
+  const y1 = Math.min(...groupedShelves.map(s => s.y));
+  const x2 = Math.max(...groupedShelves.map(s => s.x + s.width));
+  const y2 = Math.max(...groupedShelves.map(s => s.y + s.height));
+
+  const group = {
+    id: crypto.randomUUID(),
+    shelves: groupedShelves.map(s => s.id),
+    x: x1,
+    y: y1,
+    width: x2 - x1,
+    height: y2 - y1
+  };
+
+  shelfGroups.push(group);
+  console.log('Created shelf group:', group);
+  drawShelfGroup(group);
+}
+
+function drawShelfGroup(group) {
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+
+  rect.setAttribute("x", group.x);
+  rect.setAttribute("y", group.y);
+  rect.setAttribute("width", group.width);
+  rect.setAttribute("height", group.height);
+  rect.setAttribute("fill", "none");
+  rect.setAttribute("stroke", "red");
+  rect.setAttribute("stroke-width", "2");
+
+  rect.dataset.groupId = group.id;
+
+  shelvesLayer.appendChild(rect);
+}
+
+function getSvgPoint(evt) {
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+function pushUndoState() {
+  undoStack.push(JSON.stringify(shelfGroups));
+}
+
+function restoreUndoState() {
+  if (!undoStack.length) return;
+
+  shelfGroups = JSON.parse(undoStack.pop());
+  redrawShelfGroups();
+}
+
+function redrawShelfGroups() {
+  document.querySelectorAll('[data-group-id]').forEach(el => el.remove());
+  shelfGroups.forEach(drawShelfGroup);
+}
+
+document.getElementById('undoGroupsBtn').addEventListener('click', restoreUndoState);
+document.getElementById('saveGroupsBtn').addEventListener('click', saveGroups);
+
+function saveGroups() {
+  fetch('/api/shelf-groups', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      groups: shelfGroups
+    })
+  })
+  .then(r => {
+    if (!r.ok) throw new Error();
+    flashSaved();
+  })
+  .catch(() => flashError());
+}
+
+function flashSaved() {
+  const el = document.getElementById('saveFlash');
+  el.textContent = 'Shelving groups saved';
+  el.style.background = '#198754';
+  el.classList.add('show');
+
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function flashError() {
+  const el = document.getElementById('saveFlash');
+  el.textContent = 'Save failed';
+  el.style.background = '#dc3545';
+  el.classList.add('show');
+
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
 
 function getPerpendicularIntersections(edge, edgesData, TOLERANCE) {
   const intersections = [];
@@ -248,10 +437,7 @@ function autoGenerateShelves() {
         );
 
         return;
-        }
-
-
-
+    }
 
     // ---------- VERTICAL AISLE ----------
     if (absDx <= TOLERANCE && absDy >= MIN_LENGTH) {
@@ -291,14 +477,10 @@ function autoGenerateShelves() {
         );
 
         return;
-        }
+    }
 
-
-    // ---------- DIAGONAL / SHORT EDGE ----------
-    // ignored for shelf generation
   });
 
-console.log('Auto-generated shelves:', shelves);
   shelves.forEach(drawShelf);
 }
 
@@ -317,99 +499,6 @@ function drawShelf(shelf) {
 
   shelvesLayer.appendChild(rect);
 }
-
-// Drawing new shelves (drag to create)
-svg.addEventListener('pointerdown', e => {
-  if (mode !== 'draw') return;
-
-  startX = e.offsetX;
-  startY = e.offsetY;
-
-  tempRect = document.createElementNS(SVG_NS, 'rect');
-  tempRect.classList.add('shelf', 'draft');
-  shelvesLayer.appendChild(tempRect);
-});
-
-svg.addEventListener('pointermove', e => {
-  if (!tempRect) return;
-
-  const x = Math.min(startX, e.offsetX);
-  const y = Math.min(startY, e.offsetY);
-  const w = Math.abs(e.offsetX - startX);
-  const h = Math.abs(e.offsetY - startY);
-
-  tempRect.setAttribute('x', x);
-  tempRect.setAttribute('y', y);
-  tempRect.setAttribute('width', w);
-  tempRect.setAttribute('height', h);
-});
-
-svg.addEventListener('pointerup', () => {
-  if (!tempRect) return;
-
-  const shelf = {
-    id: crypto.randomUUID(),
-    x: +tempRect.getAttribute('x'),
-    y: +tempRect.getAttribute('y'),
-    width: +tempRect.getAttribute('width'),
-    height: +tempRect.getAttribute('height')
-  };
-
-  shelves.push(shelf);
-  tempRect.dataset.id = shelf.id;
-  tempRect.classList.remove('draft');
-  tempRect = null;
-});
-
-// selecting and moving shelves
-shelvesLayer.addEventListener('pointerdown', e => {
-  if (mode !== 'select') return;
-  if (e.target.tagName !== 'rect') return;
-
-  activeShelfId = e.target.dataset.id;
-  document.querySelectorAll('.shelf').forEach(r => r.classList.remove('selected'));
-  e.target.classList.add('selected');
-
-  dragOffsetX = e.offsetX - e.target.x.baseVal.value;
-  dragOffsetY = e.offsetY - e.target.y.baseVal.value;
-});
-
-svg.addEventListener('pointermove', e => {
-  if (!activeShelfId || mode !== 'select') return;
-
-  const rect = document.querySelector(`[data-id="${activeShelfId}"]`);
-  rect.x.baseVal.value = e.offsetX - dragOffsetX;
-  rect.y.baseVal.value = e.offsetY - dragOffsetY;
-});
-
-svg.addEventListener('pointerup', () => {
-  activeShelfId = null;
-});
-
-// delete and mode buttons
-document.getElementById('draw-mode').onclick = () => setMode('draw');
-document.getElementById('select-mode').onclick = () => setMode('select');
-
-function setMode(newMode) {
-  mode = newMode;
-  document.querySelectorAll('.toolbar button').forEach(b => b.classList.remove('active'));
-  document.getElementById(`${newMode}-mode`).classList.add('active');
-}
-
-document.getElementById('delete-shelf').onclick = () => {
-  if (!activeShelfId) return;
-
-  shelves = shelves.filter(s => s.id !== activeShelfId);
-  document.querySelector(`[data-id="${activeShelfId}"]`)?.remove();
-  activeShelfId = null;
-};
-
-// save shelves
-document.getElementById('save-shelves').onclick = () => {
-  console.log('Shelves to save:', shelves);
-
-  // POST shelves to backend here
-};
 
 
 
