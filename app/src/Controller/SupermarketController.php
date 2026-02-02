@@ -228,35 +228,14 @@ class SupermarketController extends AbstractController
     #[Route('/{id}/shelves/edit', name: 'app_supermarket_edit_shelves', methods: ['GET'])]
     public function shelvesEdit(MapBuilder $mapBuilder, Supermarket $supermarket): Response
     {
-        $minX = 0;
-        $minY = 0;
-        $maxX = 0;
-        $maxY = 0;
-        $padding = 40;
-
-        foreach ($mapBuilder->getAllShelves($supermarket) as $shelf) {
-            $minX = min($minX, $shelf['x']);
-            $minY = min($minY, $shelf['y']);
-            $maxX = max($maxX, $shelf['x'] + $shelf['width']);
-            $maxY = max($maxY, $shelf['y'] + $shelf['height']);
-        }
-
-        $viewBox = [
-            'minX' => $minX - $padding,
-            'minY' => $minY - $padding,
-            'width' => ($maxX - $minX) + $padding * 2,
-            'height' => ($maxY - $minY) + $padding * 2,
-        ];
-
         return $this->render('supermarket/shelvesEdit.html.twig', [
             'nodes' => $mapBuilder->getAllNodes($supermarket),
             'edges' => $mapBuilder->getAllEdges($supermarket),
             'shelves' => $mapBuilder->getAllShelves($supermarket),
-            'viewBox' => $viewBox,
+            'viewBox' => $mapBuilder->getViewBox($supermarket),
             'supermarket' => $supermarket,
         ]);
     }
-
 
 
     #[Route('/{id}/edges/save', methods: ['POST'])]

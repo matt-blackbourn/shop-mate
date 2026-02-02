@@ -60,5 +60,29 @@ final class MapBuilder
         }
         return $shelves;
     }
+
+    public function getViewBox($supermarket){
+        $minX = 0;
+        $minY = 0;
+        $maxX = 0;
+        $maxY = 0;
+        $padding = 40;
+
+        foreach ($this->getAllShelves($supermarket) as $shelf) {
+            $minX = min($minX, $shelf['x']);
+            $minY = min($minY, $shelf['y']);
+            $maxX = max($maxX, $shelf['x'] + $shelf['width']);
+            $maxY = max($maxY, $shelf['y'] + $shelf['height']);
+        }
+
+        $viewBox = [
+            'minX' => $minX - $padding,
+            'minY' => $minY - $padding,
+            'width' => ($maxX - $minX) + $padding * 2,
+            'height' => ($maxY - $minY) + $padding * 2,
+        ];
+
+        return $viewBox;
+    }
 }
 
