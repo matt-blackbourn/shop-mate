@@ -128,9 +128,10 @@
 
 /* keep hit targets working */
 .edge-hit {
-    stroke: transparent;
-    stroke-width: 22;
+    stroke: transparent;   /* invisible but still exists */
+    stroke-width: 50;      /* big enough to tap */
     cursor: pointer;
+    pointer-events: stroke; /* allow clicks on invisible line */
 }
 
 .edge:hover {
@@ -140,7 +141,7 @@
 .edge.selected {
     stroke: #4dabf7;      /* soft electric blue */
     animation: pulse 1.2s infinite;
-    stroke-width: 50;
+    stroke-width: 20;
 }
 
 
@@ -161,7 +162,11 @@
     filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
 }
 
-
+.edge-side {
+    fill:rgba(255, 193, 7, 0.38);       /* warm highlight */
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
 
 @keyframes pulse {
     0%   { stroke-width: 8;  opacity: 0.7; }
@@ -172,14 +177,17 @@
 
 <script>
 const svg = document.getElementById('placement-map');
+
+const edgeEls = new Map(); // Keep references to all edges
 const mapWrapper = document.getElementById('placementModal');
 const nodesData = JSON.parse(mapWrapper.dataset.nodes);
 const edgesData = JSON.parse(mapWrapper.dataset.edges);
 const shelvesData = JSON.parse(mapWrapper.dataset.shelves);
 const SVG_NS = "http://www.w3.org/2000/svg";
+let selectedEdgeId = null;
+let selectedAisleSide = null; // -1 or 1
 
 const nodes = {};
-
 nodesData.forEach(n => {
     nodes[n.id] = n;
 });
@@ -205,10 +213,20 @@ edgesData.forEach(e => {
     hit.setAttribute('y2', to.y);
     hit.classList.add('edge-hit');
     hit.dataset.edgeId = e.id;
-
     hit.addEventListener('click', () => selectEdge(e.id));
+    
+
+    // side indicator (initially invisible)
+    const sideRect = document.createElementNS(SVG_NS, 'rect');
+    sideRect.classList.add('edge-side');
+    sideRect.dataset.edgeId = e.id;
+    sideRect.style.opacity = 0;
+
+
+    edgeEls.set(e.id, { line, hit, sideRect, from, to });
 
     svg.appendChild(line);
+    svg.appendChild(sideRect);
     svg.appendChild(hit);
 });
 
@@ -226,4 +244,68 @@ function renderShelves() {
     });
 }
 
+// Vector math to offset left/right
+function updateAisleSide(edgeId, side) {
+    const edge = edgeEls.get(edgeId);
+    if (!edge) return;
+
+    const { from, to, sideRect } = edge;
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.hypot(dx, dy);
+    if (len === 0) return;
+
+    // rectangle thickness (distance from aisle center to side)
+    const offset = len * 0.15 * side; // adjust 0.15 to your taste
+
+    // compute perpendicular vector
+    const px = -dy / len;
+    const py = dx / len;
+
+    // rectangle center = middle of aisle, offset toward side
+    const cx = (from.x + to.x)/2 + px * offset/2;
+    const cy = (from.y + to.y)/2 + py * offset/2;
+
+    // rectangle rotation angle
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    sideRect.setAttribute('width', len);          // along aisle
+    sideRect.setAttribute('height', Math.abs(offset)); // perpendicular
+    sideRect.setAttribute('x', cx - len/2);       // center it
+    sideRect.setAttribute('y', cy - Math.abs(offset)/2);
+    sideRect.setAttribute('transform', `rotate(${angle}, ${cx}, ${cy})`);
+
+    sideRect.style.opacity = 1;
+}
+
+
+function selectEdge(edgeId) {
+    if (selectedEdgeId === edgeId) {
+        selectedAisleSide *= -1;
+    } else {
+        clearSelection();
+        selectedEdgeId = edgeId;
+        selectedAisleSide = -1;
+    }
+
+    const edge = edgeEls.get(edgeId);
+    edge.line.classList.add('selected');
+
+    updateAisleSide(edgeId, selectedAisleSide);
+        console.log('placement:', {
+        edgeId,
+        aisleSide: selectedAisleSide
+    });
+}
+
+function clearSelection() {
+    edgeEls.forEach(({ line, sideRect }) => {
+        line.classList.remove('selected');
+        if (sideRect) sideRect.style.opacity = 0;
+    });
+
+    selectedEdgeId = null;
+    selectedAisleSide = null;
+}
 </script>

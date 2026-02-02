@@ -289,18 +289,6 @@ function openPlacementModal() {
     modal.show();
 }
 
-function selectEdge(edgeId) {
-    activePlacement.selectedEdgeId = edgeId;
-
-    document.querySelectorAll('.edge').forEach(e => {
-        e.classList.toggle(
-            'selected',
-            e.dataset.edgeId === String(edgeId)
-        );
-    });
-
-    document.getElementById('savePlacement').disabled = false;
-}
 
 document.getElementById('savePlacement').addEventListener('click', () => {
     if (!activePlacement.selectedEdgeId) return;
