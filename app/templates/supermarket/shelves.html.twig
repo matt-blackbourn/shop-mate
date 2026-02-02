@@ -8,7 +8,6 @@
 
     <button id="auto-generate">Auto-generate shelves</button>
     <button id="undoGroupsBtn" class="btn btn-outline-secondary">Undo</button>
-    <button id="saveGroupsBtn" class="btn btn-warning">Save shelving groups</button>
     {# Save shelves form #}
     <form method="POST" action="/supermarket/{{ supermarket.id }}/shelves/save"
         id="shelfForm" class="d-flex align-items-center gap-2">
@@ -118,8 +117,16 @@ let dragOffsetY = 0;
 const shelfForm  = document.getElementById('shelfForm');
 const shelfInput = document.getElementById('shelfInput');
 
-shelfForm.addEventListener('submit', () => {
-  shelfInput.value = JSON.stringify(shelfGroups);
+shelfForm.addEventListener('submit', (e) => {
+    // Create a new array with only the fields you want to submit
+    const sanitized = shelfGroups.map(shelf => ({
+        x: shelf.x,
+        y: shelf.y,
+        width: shelf.width,
+        height: shelf.height
+    }));
+
+    shelfInput.value = JSON.stringify(sanitized);
 });
 
 
@@ -300,42 +307,6 @@ function redrawShelfGroups() {
 }
 
 document.getElementById('undoGroupsBtn').addEventListener('click', restoreUndoState);
-document.getElementById('saveGroupsBtn').addEventListener('click', saveGroups);
-
-function saveGroups() {
-    fetch('/api/shelf-groups', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-        groups: shelfGroups
-        })
-    })
-    .then(r => {
-        if (!r.ok) throw new Error();
-        flashSaved();
-    })
-    .catch(() => flashError());
-}
-
-function flashSaved() {
-  const el = document.getElementById('saveFlash');
-  el.textContent = 'Shelving groups saved';
-  el.style.background = '#198754';
-  el.classList.add('show');
-
-  setTimeout(() => el.classList.remove('show'), 2000);
-}
-
-function flashError() {
-  const el = document.getElementById('saveFlash');
-  el.textContent = 'Save failed';
-  el.style.background = '#dc3545';
-  el.classList.add('show');
-
-  setTimeout(() => el.classList.remove('show'), 2000);
-}
 
 function getPerpendicularIntersections(edge, edgesData, TOLERANCE) {
   const intersections = [];

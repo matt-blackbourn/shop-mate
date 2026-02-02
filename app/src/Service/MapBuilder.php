@@ -4,12 +4,14 @@ namespace App\Service;
 
 use App\Repository\EdgeRepository;
 use App\Repository\NodeRepository;
+use App\Repository\ShelfRepository;
 
 final class MapBuilder
 {
     public function __construct(
         private NodeRepository $nodeRepository,
         private EdgeRepository $edgeRepository,
+        private ShelfRepository $shelfRepository,
     ) {}
 
     public function getAllNodes($supermarket){
@@ -41,6 +43,20 @@ final class MapBuilder
             ];
         }
         return $edges;
+    }
+
+    public function getAllShelves($supermarket): array{
+        $shelves = []; 
+        foreach ($this->shelfRepository->findBySupermarket($supermarket) as $shelf) {
+            $shelves[] = [
+                'id' => $shelf->getId(),
+                'width' => $shelf->getWidth(),
+                'height' => $shelf->getHeight(),
+                'x' => $shelf->getX(),
+                'y' => $shelf->getY(),
+            ];
+        }
+        return $shelves;
     }
 }
 

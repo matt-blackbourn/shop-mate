@@ -13,6 +13,7 @@ use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductPlacementRepository;
+use App\Repository\ShelfRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\MapBuilder;
 use Doctrine\ORM\EntityManagerInterface;
@@ -224,6 +225,37 @@ class SupermarketController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/shelves/edit', name: 'app_supermarket_edit_shelves', methods: ['GET'])]
+    public function shelvesEdit(MapBuilder $mapBuilder, Supermarket $supermarket): Response
+    {
+        $minX = 0;
+        $minY = 0;
+        $maxX = 0;
+        $maxY = 0;
+        $padding = 40;
+
+        foreach ($mapBuilder->getAllShelves($supermarket) as $shelf) {
+            $minX = min($minX, $shelf['x']);
+            $minY = min($minY, $shelf['y']);
+            $maxX = max($maxX, $shelf['x'] + $shelf['width']);
+            $maxY = max($maxY, $shelf['y'] + $shelf['height']);
+        }
+
+        $viewBox = [
+            'minX' => $minX - $padding,
+            'minY' => $minY - $padding,
+            'width' => ($maxX - $minX) + $padding * 2,
+            'height' => ($maxY - $minY) + $padding * 2,
+        ];
+        return $this->render('supermarket/shelvesEdit.html.twig', [
+            'nodes' => $mapBuilder->getAllNodes($supermarket),
+            'edges' => $mapBuilder->getAllEdges($supermarket),
+            'shelves' => $mapBuilder->getAllShelves($supermarket),
+            'viewBox' => $viewBox,
+            'supermarket' => $supermarket,
+        ]);
+    }
+
 
 
     #[Route('/{id}/edges/save', methods: ['POST'])]
@@ -353,12 +385,13 @@ class SupermarketController extends AbstractController
     public function saveShelves(
         Supermarket $supermarket,
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        ShelfRepository $shelfRepository,
     ) {
         $shelves = json_decode($request->request->get('shelf'), true);
 
         foreach ($shelves as $item) {
-            $shelf = new Shelf();
+            $shelf = isset($item['id']) ? new Shelf() : $shelfRepository->find($item['id']);
             $shelf->setSupermarket($supermarket);
             $shelf->setX($item['x']);
             $shelf->setY($item['y']);
@@ -375,32 +408,4 @@ class SupermarketController extends AbstractController
         ]);
     }
 
-
-    #[Route('/ajax/{id}/edges/get', methods: ['GET'])]
-    public function getEdgesBulk(
-        Supermarket $supermarket,
-    ) {
-        $nodes = $supermarket->getNodes(); 
-
-        $data = array_map(fn($n) => [
-            'id' => $n->getId(),
-            'x' => $n->getX(),
-            'y' => $n->getY()
-        ], $nodes->toArray());
-
-        return $this->json($data);
-    }
-
-
-
-    #[Route('/{id}', name: 'app_supermarket_delete', methods: ['POST'])]
-    public function delete(Request $request, Supermarket $supermarket, EntityManagerInterface $entityManager): Response
-    {
-        if ($this->isCsrfTokenValid('delete'.$supermarket->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($supermarket);
-            $entityManager->flush();
-        }
-
-        return $this->redirectToRoute('app_supermarket_index', [], Response::HTTP_SEE_OTHER);
-    }
 }

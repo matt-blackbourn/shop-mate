@@ -1,0 +1,212 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Supermarket{% endblock %}
+
+{% block body %}
+<div class="toolbar">
+    <a href="{{ path('app_supermarket_index') }}" class="btn btn-outline-secondary btn-sm">← Back to list</a>
+    <button id="undoGroupsBtn" class="btn btn-outline-secondary">Undo</button>
+
+    <form method="POST" action="/supermarket/{{ supermarket.id }}/shelves/save" id="shelfForm">
+        <input type="hidden" name="shelves" id="shelfInput">
+        <button type="submit" class="btn btn-primary mt-3">Save Shelves</button>
+    </form>
+
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+
+
+<!-- SVG editor -->
+<svg id="shelfEditor"
+    viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}"
+    class="w-100 border"
+    preserveAspectRatio="xMinYMin meet"
+    style="height: 600px; background: #f8f9fa;"
+    data-shelves="{{ shelves|json_encode|e('html_attr') }}"
+    >
+</svg>
+
+<style>
+.shelf {
+    fill: #e9ecef;
+    stroke: #495057;
+    stroke-width: 2;
+    cursor: pointer;
+}
+.shelf.selected {
+    stroke-dasharray: 4;
+}
+.edge-handle {
+    fill: transparent;
+    pointer-events: all;
+}
+.toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+}
+
+.toolbar button.active {
+  background: #ffd54f;
+}
+</style>
+
+<script>
+const SVG_NS = "http://www.w3.org/2000/svg";
+let activeShelfId = null;
+let resizeState = null;
+
+const svg = document.getElementById('shelfEditor');
+const shelves = JSON.parse(svg.dataset.shelves);
+
+
+// --- Rendering ---
+function renderShelves() {
+    svg.innerHTML = '';
+
+    shelves.forEach(shelf => {
+        const g = document.createElementNS(SVG_NS, 'g');
+        g.dataset.id = shelf.id;
+
+        const rect = document.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('x', shelf.x);
+        rect.setAttribute('y', shelf.y);
+        rect.setAttribute('width', shelf.width);
+        rect.setAttribute('height', shelf.height);
+        rect.classList.add('shelf');
+
+        rect.addEventListener('mousedown', () => selectShelf(shelf.id));
+        if (shelf.id === activeShelfId) rect.classList.add('selected');
+
+        g.appendChild(rect);
+
+        if (shelf.id === activeShelfId) addEdgeHandles(g, shelf);
+
+        svg.appendChild(g);
+    });
+}
+
+// --- Selection ---
+function selectShelf(id) {
+    activeShelfId = id;
+    renderShelves();
+}
+
+// --- Edge handles ---
+const HANDLE_THICKNESS = 10;
+
+function addEdgeHandles(group, shelf) {
+    const edges = [
+        { edge: 'n', x: shelf.x, y: shelf.y - HANDLE_THICKNESS/2, w: shelf.width, h: HANDLE_THICKNESS, cursor: 'ns-resize' },
+        { edge: 's', x: shelf.x, y: shelf.y + shelf.height - HANDLE_THICKNESS/2, w: shelf.width, h: HANDLE_THICKNESS, cursor: 'ns-resize' },
+        { edge: 'w', x: shelf.x - HANDLE_THICKNESS/2, y: shelf.y, w: HANDLE_THICKNESS, h: shelf.height, cursor: 'ew-resize' },
+        { edge: 'e', x: shelf.x + shelf.width - HANDLE_THICKNESS/2, y: shelf.y, w: HANDLE_THICKNESS, h: shelf.height, cursor: 'ew-resize' },
+    ];
+
+    edges.forEach(({ edge, x, y, w, h, cursor }) => {
+        const handle = document.createElementNS(SVG_NS, 'rect');
+        handle.setAttribute('x', x);
+        handle.setAttribute('y', y);
+        handle.setAttribute('width', w);
+        handle.setAttribute('height', h);
+        handle.classList.add('edge-handle');
+        handle.style.cursor = cursor;
+
+        handle.addEventListener('mousedown', e => startResize(e, shelf.id, edge));
+        group.appendChild(handle);
+    });
+}
+
+// --- Resize logic ---
+function startResize(event, shelfId, edge) {
+    event.stopPropagation();
+    const shelf = shelves.find(s => s.id === shelfId);
+
+    resizeState = {
+        shelfId,
+        edge,
+        startX: event.clientX,
+        startY: event.clientY,
+        startShelf: { ...shelf }
+    };
+
+    window.addEventListener('mousemove', onResizeMove);
+    window.addEventListener('mouseup', endResize);
+}
+
+function onResizeMove(e) {
+    if (!resizeState) return;
+
+    const shelf = shelves.find(s => s.id === resizeState.shelfId);
+    const dx = e.clientX - resizeState.startX;
+    const dy = e.clientY - resizeState.startY;
+    const start = resizeState.startShelf;
+
+    switch(resizeState.edge) {
+        case 'e':
+            shelf.width = Math.max(10, start.width + dx);
+            break;
+        case 'w':
+            shelf.x = start.x + dx;
+            shelf.width = Math.max(10, start.width - dx);
+            break;
+        case 's':
+            shelf.height = Math.max(10, start.height + dy);
+            break;
+        case 'n':
+            shelf.y = start.y + dy;
+            shelf.height = Math.max(10, start.height - dy);
+            break;
+    }
+
+    snapShelf(shelf);
+    renderShelves();
+}
+
+function endResize() {
+    resizeState = null;
+    window.removeEventListener('mousemove', onResizeMove);
+    window.removeEventListener('mouseup', endResize);
+}
+
+// --- Snapping ---
+const SNAP_DISTANCE = 8;
+
+function snapShelf(shelf) {
+    shelves.forEach(other => {
+        if (other.id === shelf.id) return;
+
+        // Horizontal snap
+        if (Math.abs(shelf.x + shelf.width - other.x) < SNAP_DISTANCE) shelf.width = other.x - shelf.x;
+        if (Math.abs(shelf.x - (other.x + other.width)) < SNAP_DISTANCE) shelf.x = other.x + other.width;
+
+        // Vertical snap
+        if (Math.abs(shelf.y + shelf.height - other.y) < SNAP_DISTANCE) shelf.height = other.y - shelf.y;
+        if (Math.abs(shelf.y - (other.y + other.height)) < SNAP_DISTANCE) shelf.y = other.y + other.height;
+    });
+}
+
+// --- Save ---
+document.getElementById('shelfForm').addEventListener('submit', e => {
+    document.getElementById('shelfInput').value = JSON.stringify(shelves);
+});
+
+// --- Initial render ---
+renderShelves();
+</script>
+
+
+
+
+
+{% endblock %}
