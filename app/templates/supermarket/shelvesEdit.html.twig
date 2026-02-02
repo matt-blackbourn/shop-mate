@@ -5,7 +5,8 @@
 {% block body %}
 <div class="toolbar">
     <a href="{{ path('app_supermarket_index') }}" class="btn btn-outline-secondary btn-sm">← Back to list</a>
-    <button id="undoGroupsBtn" class="btn btn-outline-secondary">Undo</button>
+    <button type="button" class="btn btn-primary" id="createShelfBtn">Create New Shelf</button>
+    <button type="button" class="btn btn-danger" id="deleteShelfBtn" disabled>Delete Shelf</button>
 
     <form method="POST" action="/supermarket/{{ supermarket.id }}/shelves/save" id="shelfForm">
         <input type="hidden" name="shelves" id="shelfInput">
@@ -69,14 +70,33 @@ let resizeState = null;
 const svg = document.getElementById('shelfEditor');
 const shelves = JSON.parse(svg.dataset.shelves);
 
+document.getElementById('shelfForm').addEventListener('submit', e => {
+
+    // sanitize shelves before submit - remove clientId and include deleted flag
+    const payload = shelves.map(shelf => ({
+        id: shelf.id ?? null,      // only real DB ids
+        x: shelf.x,
+        y: shelf.y,
+        width: shelf.width,
+        height: shelf.height,
+        deleted: !!shelf.deleted
+    }));
+
+    document.getElementById('shelfInput').value = JSON.stringify(payload);
+});
+
+// --- Initial render ---
+renderShelves();
 
 // --- Rendering ---
 function renderShelves() {
     svg.innerHTML = '';
 
     shelves.forEach(shelf => {
+        if(shelf.deleted) return;
+
         const g = document.createElementNS(SVG_NS, 'g');
-        g.dataset.id = shelf.id;
+        g.dataset.id = shelf.clientId;
 
         const rect = document.createElementNS(SVG_NS, 'rect');
         rect.setAttribute('x', shelf.x);
@@ -85,22 +105,75 @@ function renderShelves() {
         rect.setAttribute('height', shelf.height);
         rect.classList.add('shelf');
 
-        rect.addEventListener('mousedown', () => selectShelf(shelf.id));
-        if (shelf.id === activeShelfId) rect.classList.add('selected');
+        rect.addEventListener('mousedown', () => selectShelf(shelf.clientId));
+        if (shelf.clientId === activeShelfId) rect.classList.add('selected');
 
         g.appendChild(rect);
 
-        if (shelf.id === activeShelfId) addEdgeHandles(g, shelf);
+        if (shelf.clientId === activeShelfId) addEdgeHandles(g, shelf);
 
         svg.appendChild(g);
     });
 }
 
-// --- Selection ---
-function selectShelf(id) {
-    activeShelfId = id;
+function selectShelf(clientId) {
+    activeShelfId = clientId;
+    document.getElementById('deleteShelfBtn').disabled = !activeShelfId;
     renderShelves();
 }
+
+// Delete button listener
+document.getElementById('deleteShelfBtn').addEventListener('click', () => {
+    if (!activeShelfId) return;
+
+
+    // Use strict equality to match UUID strings
+    const index = shelves.findIndex(s => s.clientId === activeShelfId);
+    if (index === -1) return;
+
+    shelves[index].deleted = true;   // remove shelf
+    activeShelfId = null;       // clear selection
+
+    document.getElementById('deleteShelfBtn').disabled = true; // disable button
+    renderShelves();
+});
+
+let creatingShelf = false;
+
+// Enable “create shelf” mode
+document.getElementById('createShelfBtn').addEventListener('click', () => {
+    creatingShelf = true;
+    svg.style.cursor = 'crosshair';
+});
+
+// When user clicks on SVG, create new shelf
+svg.addEventListener('click', (e) => {
+    if (!creatingShelf) return;
+
+    // Calculate SVG coordinates from client coordinates
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+    const newShelf = {
+        id: null,
+        clientId: crypto.randomUUID(),
+        x: svgP.x - 25, // small default size centered on click
+        y: svgP.y - 10,
+        width: 50,
+        height: 20
+    };
+
+    shelves.push(newShelf);
+    activeShelfId = newShelf.clientId;
+
+    creatingShelf = false;
+    svg.style.cursor = 'default';
+
+    renderShelves();
+});
+
 
 // --- Edge handles ---
 const HANDLE_THICKNESS = 10;
@@ -122,7 +195,7 @@ function addEdgeHandles(group, shelf) {
         handle.classList.add('edge-handle');
         handle.style.cursor = cursor;
 
-        handle.addEventListener('mousedown', e => startResize(e, shelf.id, edge));
+        handle.addEventListener('mousedown', e => startResize(e, shelf.clientId, edge));
         group.appendChild(handle);
     });
 }
@@ -130,7 +203,7 @@ function addEdgeHandles(group, shelf) {
 // --- Resize logic ---
 function startResize(event, shelfId, edge) {
     event.stopPropagation();
-    const shelf = shelves.find(s => s.id === shelfId);
+    const shelf = shelves.find(s => s.clientId === shelfId);
 
     resizeState = {
         shelfId,
@@ -147,7 +220,7 @@ function startResize(event, shelfId, edge) {
 function onResizeMove(e) {
     if (!resizeState) return;
 
-    const shelf = shelves.find(s => s.id === resizeState.shelfId);
+    const shelf = shelves.find(s => s.clientId === resizeState.shelfId);
     const dx = e.clientX - resizeState.startX;
     const dy = e.clientY - resizeState.startY;
     const start = resizeState.startShelf;
@@ -184,7 +257,7 @@ const SNAP_DISTANCE = 8;
 
 function snapShelf(shelf) {
     shelves.forEach(other => {
-        if (other.id === shelf.id) return;
+        if (other.clientId === shelf.clientId) return;
 
         // Horizontal snap
         if (Math.abs(shelf.x + shelf.width - other.x) < SNAP_DISTANCE) shelf.width = other.x - shelf.x;
@@ -196,13 +269,7 @@ function snapShelf(shelf) {
     });
 }
 
-// --- Save ---
-document.getElementById('shelfForm').addEventListener('submit', e => {
-    document.getElementById('shelfInput').value = JSON.stringify(shelves);
-});
 
-// --- Initial render ---
-renderShelves();
 </script>
 
 

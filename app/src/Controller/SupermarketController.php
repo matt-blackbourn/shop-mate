@@ -247,6 +247,7 @@ class SupermarketController extends AbstractController
             'width' => ($maxX - $minX) + $padding * 2,
             'height' => ($maxY - $minY) + $padding * 2,
         ];
+
         return $this->render('supermarket/shelvesEdit.html.twig', [
             'nodes' => $mapBuilder->getAllNodes($supermarket),
             'edges' => $mapBuilder->getAllEdges($supermarket),
@@ -388,10 +389,16 @@ class SupermarketController extends AbstractController
         EntityManagerInterface $em,
         ShelfRepository $shelfRepository,
     ) {
-        $shelves = json_decode($request->request->get('shelf'), true);
-
+        $shelvesJson = $request->request->get('shelves'); // gets the string
+        $shelves = json_decode($shelvesJson, true);       // converts to array
         foreach ($shelves as $item) {
-            $shelf = isset($item['id']) ? new Shelf() : $shelfRepository->find($item['id']);
+            $shelf = isset($item['id']) ? $shelfRepository->find($item['id']) : new Shelf();
+            
+            if($item['deleted']){
+                $em->remove($shelf);
+                continue;
+            }
+
             $shelf->setSupermarket($supermarket);
             $shelf->setX($item['x']);
             $shelf->setY($item['y']);
@@ -403,7 +410,7 @@ class SupermarketController extends AbstractController
         $em->flush();
         $this->addFlash('success', 'Shelves saved successfully!');
 
-        return $this->redirectToRoute('app_supermarket_draw_shelves', [
+        return $this->redirectToRoute('app_supermarket_edit_shelves', [
             'id' => $supermarket->getId(),
         ]);
     }

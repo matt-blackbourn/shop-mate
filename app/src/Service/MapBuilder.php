@@ -50,10 +50,12 @@ final class MapBuilder
         foreach ($this->shelfRepository->findBySupermarket($supermarket) as $shelf) {
             $shelves[] = [
                 'id' => $shelf->getId(),
+                'clientId' => bin2hex(random_bytes(16)),
                 'width' => $shelf->getWidth(),
                 'height' => $shelf->getHeight(),
                 'x' => $shelf->getX(),
                 'y' => $shelf->getY(),
+                'deleted' => false,
             ];
         }
         return $shelves;
