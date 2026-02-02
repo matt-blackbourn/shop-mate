@@ -27,6 +27,15 @@
 
         </div>
     </div>
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
 
     <!-- Spacer -->
     <div class="sticky-spacer"></div>
@@ -64,8 +73,8 @@
                             <div class="dots-modal">
                                 <p class="modal-text"></p>
                                 <div class="modal-actions">
-                                    <button class="modal-btn primary"></button>
-                                    <button class="modal-btn secondary"></button>
+                                    <button type="button" class="modal-btn primary"></button>
+                                    <button type="button" class="modal-btn secondary"></button>
                                 </div>
                             </div>
                         </div>
@@ -273,13 +282,6 @@
 <script>
 
 function openPlacementModal() {
-    // reset previous selection
-    document.getElementById('savePlacement').disabled = true;
-
-    document.querySelectorAll('.edge.selected').forEach(e => {
-        e.classList.remove('selected');
-    });
-
     const modalEl = document.getElementById('placementModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
@@ -424,5 +426,21 @@ function pickItem(card) {
 
     enqueuePick(card);  
 }
+
+// make this global later
+document.addEventListener('DOMContentLoaded', () => {
+    // Select all flash alerts
+    const flashAlerts = document.querySelectorAll('.alert');
+
+    flashAlerts.forEach(alert => {
+        // Wait 3 seconds (3000ms) and then fade it out
+        setTimeout(() => {
+            // Use Bootstrap's alert instance to close it properly
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        }, 3000); // adjust time as needed
+    });
+});
+
 </script>
 {% endblock %}

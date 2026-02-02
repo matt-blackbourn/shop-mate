@@ -29,7 +29,6 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ShoppingListController extends AbstractController
 {
-    
     #[Route('/', name: 'app_home', methods: ['GET', 'POST'])]
     public function home(
         Request $request, 

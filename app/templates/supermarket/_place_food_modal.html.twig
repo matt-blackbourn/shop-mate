@@ -11,8 +11,11 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <h6 class="modal-title">Click on the aisle this item is located in:</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h6 class="modal-title">
+                Tap the aisle this item belongs in. </br>
+                Tap again to change aisle side:
+                </h6>
+                {# <button type="button" class="btn-close" data-bs-dismiss="modal"></button> #}
             </div>
 
             <div class="modal-body">
@@ -22,33 +25,32 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">
-                    Cancel
-                </button>
-
-                <button id="savePlacement"
-                    class="btn btn-primary"
-                    disabled>
-                    Save placement
-                </button>
+                <button type="button" id="placementCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="placementForm" id="placementConfirmBtn" class="btn btn-primary" disabled>Save placement</button>
             </div>
+            <form method="POST" action="/placement/save" id="placementForm">
+                <input type="hidden" name="placement" id="placementPayload">
+            </form>
 
         </div>
-        <form method="POST" action="/placement/save" id="placementForm">
-            <input type="hidden" name="placement" id="placementPayload">
-        </form>
     </div>
 </div>
 <style>
-
-#placementModal .modal-content {
-    background: #0f1115;          /* same as map */
-    color: #e9ecef;
-    border: 1px solid #1f2430;
-}
-
+/* ----------------------
+   Modal layout & map
+   ---------------------- */
 #placementModal .modal-dialog {
     margin: 0;
+    max-width: 100%; /* full width modal if needed */
+}
+
+#placementModal .modal-content {
+    background: #0f1115;
+    color: #e9ecef;
+    border: 1px solid #1f2430;
+    display: flex;
+    flex-direction: column;
+    height: 90vh; /* adjust as needed */
 }
 
 #placementModal .modal-header {
@@ -60,6 +62,7 @@
     color: #f1f3f5;
     font-weight: 500;
 }
+
 #placementModal .btn-close {
     filter: invert(1) opacity(0.8);
 }
@@ -67,16 +70,44 @@
 #placementModal .btn-close:hover {
     opacity: 1;
 }
+
 #placementModal .modal-body {
+    flex: 1;           /* fill vertical space above footer */
+    padding: 0;        /* map edge-to-edge */
+    display: flex;
+    flex-direction: column;
     background: #0f1115;
-    padding: 0; /* let the map go edge-to-edge */
+    overflow: hidden;
 }
+
+#map-container {
+    flex: 1;           /* fill all available modal-body space */
+    background: #0f1115;
+    overflow: hidden;  /* map will scale within container */
+}
+
+/* Make SVG fill the container */
+#placement-map {
+    width: 100%;
+    height: 100%;
+    touch-action: manipulation;
+    background: #0f1115;
+    display: block;
+}
+
+/* ---------------------
+   Modal footer & buttons
+   ---------------------- */
 #placementModal .modal-footer {
     border-top: 1px solid #1f2430;
     background: #121520;
+    flex-shrink: 0;    /* never shrink */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
-/* Cancel */
+/* Cancel button */
 #placementModal .btn-secondary {
     background: #2b303b;
     border-color: #2b303b;
@@ -87,7 +118,7 @@
     background: #343a46;
 }
 
-/* Save */
+/* Save button */
 #placementModal .btn-primary {
     background: #4dabf7;
     border-color: #4dabf7;
@@ -99,42 +130,30 @@
     border-color: #2a2f3a;
     color: #6c757d;
 }
+
+/* ----------------------
+   Modal backdrop
+   ---------------------- */
 .modal-backdrop.show {
     background-color: #05070c;
     opacity: 0.85;
-}
-.modal-backdrop.show {
     backdrop-filter: blur(2px);
 }
 
-#map-container {
-    width: 100%;
-    height: 100%;
-    display: block;
-    overflow: hidden;
-    background: #0f1115; /* deep charcoal */
-}
-
-#placement-map {
-    width: 100%;
-    height: auto;
-    touch-action: manipulation;
-    background: #0f1115;
-}
-
-/* default = invisible */
+/* ----------------------
+   Map elements
+   ---------------------- */
 .edge {
-    stroke: #0f1115;          /* same as map background */
+    stroke: #0f1115;
     stroke-width: 10;
     stroke-linecap: round;
 }
 
-/* keep hit targets working */
 .edge-hit {
-    stroke: transparent;   /* invisible but still exists */
-    stroke-width: 50;      /* big enough to tap */
+    stroke: transparent;
+    stroke-width: 50;
     cursor: pointer;
-    pointer-events: stroke; /* allow clicks on invisible line */
+    pointer-events: stroke;
 }
 
 .edge:hover {
@@ -142,13 +161,8 @@
 }
 
 .edge.selected {
-    stroke: #4dabf7;      /* soft electric blue */
-    animation: pulse 1.2s infinite;
+    stroke: #4dabf7;
     stroke-width: 20;
-}
-
-
-.edge.selected {
     animation: pulse 1s infinite;
     filter: drop-shadow(0 0 6px rgba(77,171,247,0.8));
 }
@@ -158,24 +172,28 @@
 }
 
 .shelf {
-    fill: #1c212b;         /* dark slate */
-    stroke: #3a4152;      /* subtle outline */
+    fill: #1c212b;
+    stroke: #3a4152;
     stroke-width: 2;
     cursor: pointer;
     filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
 }
 
 .edge-side {
-    fill:rgba(77, 171, 247, 0.44);       
+    fill: rgba(77, 171, 247, 0.44);
     opacity: 0;
     transition: opacity 0.15s ease;
 }
 
+/* ----------------------
+   Animations
+   ---------------------- */
 @keyframes pulse {
     0%   { stroke-width: 8;  opacity: 0.7; }
-    50%  { stroke-width: 12; opacity: 1;   }
+    50%  { stroke-width: 12; opacity: 1; }
     100% { stroke-width: 8;  opacity: 0.7; }
 }
+
 </style>
 
 <script>
@@ -189,6 +207,8 @@ const edgesData = JSON.parse(mapWrapper.dataset.edges);
 const shelvesData = JSON.parse(mapWrapper.dataset.shelves);
 const foodItemId = mapWrapper.dataset.foodItemId; // passed in when opened
 const SVG_NS = "http://www.w3.org/2000/svg";
+const confirmBtn = document.getElementById('placementConfirmBtn');
+
 let selectedEdgeId = null;
 let selectedAisleSide = null; // -1 or 1
 
@@ -202,6 +222,11 @@ const placementState = {
 const nodes = {};
 nodesData.forEach(n => {
     nodes[n.id] = n;
+});
+
+// Safetynet:
+document.getElementById('placementForm').addEventListener('submit', () => {
+    updatePlacementPayload();
 });
 
 edgesData.forEach(e => {
@@ -255,6 +280,19 @@ function renderShelves() {
         svg.appendChild(rect);
     });
 }
+
+const cancelBtn = document.getElementById('placementCancelBtn');
+cancelBtn.addEventListener('click', () => {
+    clearSelection();
+
+    placementState.edgeId = null;
+    placementState.aisleSide = null;
+    placementState.foodItemId = null;
+    placementState.supermarketId = null;
+
+    updatePlacementPayload();
+    confirmBtn.disabled = true;
+});
 
 // Vector math to offset left/right
 function updateAisleSide(edgeId, side) {
@@ -312,9 +350,7 @@ function selectEdge(edgeId) {
     const edge = edgeEls.get(edgeId);
     edge.line.classList.add('selected');
 
-    const directionFactor =
-        edge.from.id < edge.to.id ? 1 : -1;
-
+    const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
     const geometrySide = selectedAisleSide * directionFactor;
 
     updateAisleSide(edgeId, geometrySide);
@@ -324,10 +360,12 @@ function selectEdge(edgeId) {
     placementState.supermarketId = mapWrapper.dataset.supermarketid;
     placementState.foodItemId = mapWrapper.dataset.foodItemId;
     updatePlacementPayload();
+
+    confirmBtn.disabled = false;
 }
 
 function updatePlacementPayload() {
-    console.log('Updating placement payload:', placementState);
+    console.log(placementState);
     document.getElementById('placementPayload').value = JSON.stringify(placementState);
 }
 
