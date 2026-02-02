@@ -2,7 +2,7 @@
     class="modal fade" 
     id="placementModal" 
     tabindex="-1"
-    data-supermarket-id="{{ supermarket.id }}"  
+    data-supermarketId="{{ supermarket.id }}"  
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-shelves="{{ shelves|json_encode|e('html_attr') }}"
@@ -34,6 +34,9 @@
             </div>
 
         </div>
+        <form method="POST" action="/placement/save" id="placementForm">
+            <input type="hidden" name="placement" id="placementPayload">
+        </form>
     </div>
 </div>
 <style>
@@ -180,12 +183,21 @@ const svg = document.getElementById('placement-map');
 
 const edgeEls = new Map(); // Keep references to all edges
 const mapWrapper = document.getElementById('placementModal');
+const supermarketId = mapWrapper.dataset.supermarket;
 const nodesData = JSON.parse(mapWrapper.dataset.nodes);
 const edgesData = JSON.parse(mapWrapper.dataset.edges);
 const shelvesData = JSON.parse(mapWrapper.dataset.shelves);
+const foodItemId = mapWrapper.dataset.foodItemId; // passed in when opened
 const SVG_NS = "http://www.w3.org/2000/svg";
 let selectedEdgeId = null;
 let selectedAisleSide = null; // -1 or 1
+
+const placementState = {
+    supermarketId: null,
+    foodItemId: null,
+    edgeId: null,
+    aisleSide: null
+};
 
 const nodes = {};
 nodesData.forEach(n => {
@@ -307,11 +319,16 @@ function selectEdge(edgeId) {
 
     updateAisleSide(edgeId, geometrySide);
 
-    console.log('placement:', {
-        edgeId,
-        aisleSide: selectedAisleSide,   // stable value to save
-        geometrySide                    // purely visual
-    });
+    placementState.edgeId = edgeId;
+    placementState.aisleSide = selectedAisleSide;
+    placementState.supermarketId = mapWrapper.dataset.supermarketid;
+    placementState.foodItemId = mapWrapper.dataset.foodItemId;
+    updatePlacementPayload();
+}
+
+function updatePlacementPayload() {
+    console.log('Updating placement payload:', placementState);
+    document.getElementById('placementPayload').value = JSON.stringify(placementState);
 }
 
 function clearSelection() {

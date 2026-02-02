@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         line.addEventListener('click', () => {
             edge.selected = !edge.selected;                     // update JS state
             line.classList.toggle('selected', edge.selected);   // visual highlight
+            console.log(edge)
         });
 
         // Insert behind nodes

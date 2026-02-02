@@ -271,10 +271,6 @@
 </style>
 
 <script>
-let activePlacement = {
-    foodItemId: null,
-    selectedEdgeId: null
-};
 
 function openPlacementModal() {
     // reset previous selection
@@ -289,39 +285,6 @@ function openPlacementModal() {
     modal.show();
 }
 
-
-document.getElementById('savePlacement').addEventListener('click', () => {
-    if (!activePlacement.selectedEdgeId) return;
-
-    fetch('/placements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            list_item_id: activePlacement.listItemId,
-            food_item_id: activePlacement.foodItemId,
-            edge_id: activePlacement.selectedEdgeId
-        })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Failed');
-        return res.json();
-    })
-    .then(() => {
-        bootstrap.Modal
-            .getInstance(document.getElementById('placementModal'))
-            .hide();
-    });
-});
-
-// Reset state when the modal closes so you don’t leak selections:
-document
-    .getElementById('placementModal')
-    .addEventListener('hidden.bs.modal', () => {
-        activePlacement = {
-            foodItemId: null,
-            selectedEdgeId: null
-        };
-    });
 
 
 // Pick item function
@@ -396,10 +359,11 @@ function openPlacementMenu(card) {
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
 
+        // pass the food item ID to the modal
         const itemEl = primaryBtn.closest('.shopping-card');
-
-        activePlacement.foodItemId = itemEl.dataset.foodItemId;
-        activePlacement.selectedEdgeId = null;
+        const foodItemId = itemEl.dataset.foodItemId;
+        const modalEl = document.getElementById('placementModal');
+        modalEl.dataset.foodItemId = foodItemId;
 
         openPlacementModal();
     };
