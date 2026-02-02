@@ -163,7 +163,7 @@
 }
 
 .edge-side {
-    fill:rgba(255, 193, 7, 0.38);       /* warm highlight */
+    fill:rgba(77, 171, 247, 0.44);       
     opacity: 0;
     transition: opacity 0.15s ease;
 }
@@ -257,7 +257,10 @@ function updateAisleSide(edgeId, side) {
     if (len === 0) return;
 
     // rectangle thickness (distance from aisle center to side)
-    const offset = len * 0.15 * side; // adjust 0.15 to your taste
+    // SAME constants as shelf generation
+    const aisleWidth = 80;
+    const shelfDepth = 30;
+    const offset = (aisleWidth / 2 + shelfDepth / 2) * side;
 
     // compute perpendicular vector
     const px = -dy / len;
@@ -279,6 +282,11 @@ function updateAisleSide(edgeId, side) {
     sideRect.style.opacity = 1;
 }
 
+function getDirectionFactor(edge) {
+    // If edge.from < edge.to, geometry matches logical direction
+    return edge.from.id < edge.to.id ? 1 : -1;
+}
+
 
 function selectEdge(edgeId) {
     if (selectedEdgeId === edgeId) {
@@ -286,16 +294,23 @@ function selectEdge(edgeId) {
     } else {
         clearSelection();
         selectedEdgeId = edgeId;
-        selectedAisleSide = -1;
+        selectedAisleSide = -1; // logical "left"
     }
 
     const edge = edgeEls.get(edgeId);
     edge.line.classList.add('selected');
 
-    updateAisleSide(edgeId, selectedAisleSide);
-        console.log('placement:', {
+    const directionFactor =
+        edge.from.id < edge.to.id ? 1 : -1;
+
+    const geometrySide = selectedAisleSide * directionFactor;
+
+    updateAisleSide(edgeId, geometrySide);
+
+    console.log('placement:', {
         edgeId,
-        aisleSide: selectedAisleSide
+        aisleSide: selectedAisleSide,   // stable value to save
+        geometrySide                    // purely visual
     });
 }
 
