@@ -128,6 +128,7 @@ final class ShoppingListController extends AbstractController
                         $newPlacement->setSupermarket($supermarket);
                         $newPlacement->setEdge($similarPlacement->getEdge());
                         $newPlacement->setType(PlacementType::CATEGORY);
+                        $newPlacement->setAisleSide($similarPlacement->getAisleSide());
                         $em->persist($newPlacement);
                     }
                 }
