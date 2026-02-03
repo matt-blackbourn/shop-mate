@@ -54,7 +54,6 @@
     </div>
 
 
-
     <div class="px-2 pt-2">
         <div class="d-flex gap-2 mb-3">
             <button
@@ -162,7 +161,6 @@
     color: #e9ecef;            /* light text */
 }
 
-/* Sticky header colors */
 .sticky-header {
     position: sticky;
     top: 0;
@@ -177,41 +175,70 @@
     width: 100%;
 }
 
-
-/* Heading takes all available space */
 .sticky-header h1 {
     color: #e9ecef;
     flex-grow: 1; /* ensures button stays right */
 }
 
-/* Side menu */
 .side-menu {
     background-color: #2b303b;
     color: #e9ecef;
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: 70%;
+    max-width: 280px;
+    box-shadow: -8px 0 20px rgba(0, 0, 0, 0.08);
+    padding: 1.25rem;
+    z-index: 10;
 }
 
-/* Side menu links */
-.side-menu a {
+
+
+
+/* Overlay */
+.menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(2px);
+    z-index: 9;
+}
+
+/* Close button */
+.menu-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    cursor: pointer;
     color: #e9ecef;
-    text-decoration: none;
-    font-weight: 500;
-    display: block;
-    padding: 0.75rem 0;
+}
+
+.menu-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    color: #e9ecef;
 }
 
 .side-menu a:hover {
     color: #4dabf7; /* primary accent hover */
 }
 
-/* Menu overlay */
-.menu-overlay {
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
+.side-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-/* Menu buttons */
-.menu-close,
-.menu-button {
+.side-menu a {
+    display: block;
+    padding: 0.75rem 0;
+    text-decoration: none;
+    font-weight: 500;
     color: #e9ecef;
 }
 
@@ -220,15 +247,7 @@
     color: #4dabf7;
 }
 
-.header-center {
-    flex: 1 1 auto;               /* take available space */
-    display: flex;
-    justify-content: center;      /* horizontal center */
-    align-items: center;          /* vertical center */
-    position: relative;           /* allows heading to remain centered even with left/right items */
-      margin: 0;
-    color: #e9ecef;
-}
+
 
 /* Go Shopping button */
 .go-shopping-btn {
@@ -237,7 +256,7 @@
     border: 1px solid #343a46;
     border-radius: 0.5rem;    /* rounded corners */
     cursor: pointer;
-        min-height: 48px;      /* slightly taller than default flex items */
+    min-height: 48px;      /* slightly taller than default flex items */
     padding: 0 1rem;       /* horizontal padding stays */
     display: flex;
     align-items: center;
@@ -256,69 +275,10 @@
 
 
 
-/* Side menu (closed by default) */
-.side-menu {
-    position: fixed;
-    inset: 0 0 0 auto;
-    width: 70%;
-    max-width: 280px;
-    background: #ffffff;
-    box-shadow: -8px 0 20px rgba(0, 0, 0, 0.08);
-    padding: 1.5rem;
-}
 
-.side-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
 
-.side-menu a {
-    display: block;
-    padding: 0.75rem 0;
-    color: #374151;
-    text-decoration: none;
-    font-weight: 500;
-}
 
-/* Overlay */
-.menu-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(2px);
-    z-index: 9;
-}
 
-/* Side menu */
-.side-menu {
-    position: fixed;
-    inset: 0 0 0 auto;
-    width: 70%;
-    max-width: 280px;
-    background: #ffffff;
-    box-shadow: -8px 0 20px rgba(0, 0, 0, 0.08);
-    padding: 1.25rem;
-    z-index: 10;
-}
-
-/* Close button */
-.menu-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    line-height: 1;
-    margin-bottom: 1rem;
-    cursor: pointer;
-}
-
-.menu-button {
-     background: none;
-    border: none;
-    font-size: 1.5rem;
-    padding: 0.25rem 0.5rem;
-    cursor: pointer;
-}
 
 .list-item.collapsed .item-body {
     display: none;
