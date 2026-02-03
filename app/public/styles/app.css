@@ -1,147 +1,219 @@
 /* =================================
-   Minimal reset (safe)
+   Dark Theme Variables
 ================================= */
 :root {
-    --app-bg: #f9fafb;
-  }
-  
-  *,
-  *::before,
-  *::after {
+    --bg-color: #0f1115;         /* main background */
+    --fg-color: #e9ecef;         /* main text */
+    --primary: #4dabf7;          /* primary action color */
+    --secondary: #2b303b;        /* secondary buttons, inputs */
+    --border: #343a46;           /* borders for forms, tables */
+    --header-bg: #121520;        /* headers, modal footers */
+    --fab-bg: #4dabf7;           /* floating action button */
+    --fab-color: #0b0d12;
+}
+
+/* =================================
+   Minimal reset (safe)
+================================= */
+*,
+*::before,
+*::after {
     box-sizing: border-box;
-  }
-  
-  html,
-  body {
+}
+
+html,
+body {
     margin: 0;
     padding: 0;
-  }
-  
-  /* =================================
-     App shell ONLY
-  ================================= */
-  .app {
+    background-color: var(--bg-color);
+    color: var(--fg-color);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.4;
+}
+
+/* =================================
+   App shell
+================================= */
+.app {
     min-height: 100svh;
     display: flex;
     flex-direction: column;
-    background: var(--app-bg);
-  
+    background: var(--bg-color);
     padding:
       env(safe-area-inset-top)
       env(safe-area-inset-right)
       env(safe-area-inset-bottom)
       env(safe-area-inset-left);
-  
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: clamp(15px, 4vw, 18px);
-    line-height: 1.4;
-  }
-  
-  /* =================================
-     Layout helpers
-  ================================= */
-  .app main {
+}
+
+.app main {
     flex: 1;
-  }
-  
-  .container {
+}
+
+.container {
     max-width: 480px;
     margin: 0 auto;
     padding: clamp(16px, 4vw, 24px);
-  }
-  
-  .centered {
+}
+
+.centered {
     min-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: clamp(16px, 4vw, 24px);
-  }
-  
-  /* =================================
-     Header (scoped)
-  ================================= */
-  .app header {
+}
+
+/* =================================
+   Header (scoped)
+================================= */
+.app header {
     padding-top: calc(env(safe-area-inset-top) + 20px);
     padding-bottom: 16px;
     padding-left: clamp(16px, 4vw, 24px);
     padding-right: clamp(16px, 4vw, 24px);
-  }
-  
-  .app header h1 {
+    background: var(--header-bg);
+}
+
+.app header h1 {
     margin: 0;
     font-size: 1.5rem;
-  }
-  
-  /* =================================
-     Forms & buttons (OPT-IN)
-  ================================= */
-  .form-control,
-  .btn-block {
+    color: var(--fg-color);
+}
+
+/* =================================
+   Forms & buttons
+================================= */
+.form-control,
+.btn-block {
     width: 100%;
     min-height: 44px;
     font-size: 1rem;
-  }
-  
-  input.form-control,
-  select.form-control,
-  textarea.form-control {
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    color: var(--fg-color);
+}
+
+input.form-control,
+select.form-control,
+textarea.form-control {
     width: 100%;
-  }
-  
-  /* Leave native buttons alone unless opted in */
-  .btn {
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    color: var(--fg-color);
+}
+
+.btn {
     min-height: 44px;
     padding: 0.75rem 1rem;
     font-size: 1rem;
-  }
-  
-  /* =================================
-     Action rows
-  ================================= */
-  .actions {
+    color: var(--fg-color);
+    border: 1px solid var(--border);
+    background: var(--secondary);
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: #343a46;
+}
+
+/* =================================
+   Action rows
+================================= */
+.actions {
     display: flex;
     gap: 0.75rem;
     margin-bottom: 1rem;
     flex-wrap: wrap;
-  }
-  
-  .actions .btn {
+}
+
+.actions .btn {
     flex: 1;
     text-align: center;
-  }
-  
-  /* =================================
-     Tables (safe wrapper only)
-  ================================= */
-  .table-wrap {
+}
+
+/* =================================
+   Tables (safe wrapper only)
+================================= */
+.table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-  }
+    border-color: var(--border);
+    color: var(--fg-color);
+}
 
-  
-  /* =================================
-     Floating action button
-  ================================= */
-  .fab {
+/* Table cells */
+.table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-wrap th,
+.table-wrap td {
+    border: 1px solid var(--border);
+    padding: 0.5rem;
+}
+
+/* =================================
+   Floating action button
+================================= */
+.fab {
     position: fixed;
     right: clamp(16px, 4vw, 24px);
-    bottom: calc(
-      clamp(16px, 4vw, 24px)
-      + env(safe-area-inset-bottom)
-    );
-  
+    bottom: calc(clamp(16px, 4vw, 24px) + env(safe-area-inset-bottom));
     width: 56px;
     height: 56px;
     border-radius: 50%;
-  
-    background: #0d6efd;
-    color: white;
+    background: var(--fab-bg);
+    color: var(--fab-color);
     font-size: 2rem;
     line-height: 56px;
     text-align: center;
-  
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     text-decoration: none;
-  }
-  
+}
+
+/* =================================
+   Scrollbars
+================================= */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 4px;
+}
+
+/* =================================
+   Links
+================================= */
+a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+a:hover {
+    color: #70b5f9;
+}
+
+/* =================================
+   Modals (optional, scoped)
+================================= */
+.modal-content {
+    background: var(--bg-color);
+    color: var(--fg-color);
+    border: 1px solid var(--border);
+}
+
+.modal-header,
+.modal-footer {
+    background: var(--header-bg);
+    border-color: var(--border);
+}
+
+.modal-body {
+    background: var(--bg-color);
+    padding: 0;
+}
