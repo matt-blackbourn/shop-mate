@@ -2,7 +2,6 @@
     class="modal fade" 
     id="placementModal" 
     tabindex="-1"
-    data-supermarketId="{{ supermarket.id }}"  
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-shelves="{{ shelves|json_encode|e('html_attr') }}"
@@ -198,26 +197,14 @@
 
 <script>
 const svg = document.getElementById('placement-map');
-
 const edgeEls = new Map(); // Keep references to all edges
 const mapWrapper = document.getElementById('placementModal');
-const supermarketId = mapWrapper.dataset.supermarket;
 const nodesData = JSON.parse(mapWrapper.dataset.nodes);
 const edgesData = JSON.parse(mapWrapper.dataset.edges);
 const shelvesData = JSON.parse(mapWrapper.dataset.shelves);
-const foodItemId = mapWrapper.dataset.foodItemId; // passed in when opened
 const SVG_NS = "http://www.w3.org/2000/svg";
 const confirmBtn = document.getElementById('placementConfirmBtn');
 
-let selectedEdgeId = null;
-let selectedAisleSide = null; // -1 or 1
-
-const placementState = {
-    supermarketId: null,
-    foodItemId: null,
-    edgeId: null,
-    aisleSide: null
-};
 
 const nodes = {};
 nodesData.forEach(n => {
@@ -258,7 +245,6 @@ edgesData.forEach(e => {
     sideRect.classList.add('edge-side');
     sideRect.dataset.edgeId = e.id;
     sideRect.style.opacity = 0;
-
 
     edgeEls.set(e.id, { line, hit, sideRect, from, to });
 
@@ -339,26 +325,26 @@ function getDirectionFactor(edge) {
 
 
 function selectEdge(edgeId) {
-    if (selectedEdgeId === edgeId) {
-        selectedAisleSide *= -1;
+    edgeId = Number(edgeId);
+    if (!edgeId) return; // nothing to select
+
+    // Toggle aisle side if the same edge is clicked
+    if (placementState.edgeId === edgeId) {
+        placementState.aisleSide *= -1; // flip side
     } else {
         clearSelection();
-        selectedEdgeId = edgeId;
-        selectedAisleSide = -1; // logical "left"
+        placementState.edgeId = edgeId;
+        placementState.aisleSide = -1; // default to logical "left"
     }
 
+   // Highlight the edge on the map
     const edge = edgeEls.get(edgeId);
     edge.line.classList.add('selected');
 
     const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
-    const geometrySide = selectedAisleSide * directionFactor;
+    const geometrySide = placementState.aisleSide * directionFactor;
 
     updateAisleSide(edgeId, geometrySide);
-
-    placementState.edgeId = edgeId;
-    placementState.aisleSide = selectedAisleSide;
-    placementState.supermarketId = mapWrapper.dataset.supermarketid;
-    placementState.foodItemId = mapWrapper.dataset.foodItemId;
     updatePlacementPayload();
 
     confirmBtn.disabled = false;
@@ -375,7 +361,7 @@ function clearSelection() {
         if (sideRect) sideRect.style.opacity = 0;
     });
 
-    selectedEdgeId = null;
-    selectedAisleSide = null;
+    placementState.edgeId = null;
+    placementState.aisleSide = null;
 }
 </script>

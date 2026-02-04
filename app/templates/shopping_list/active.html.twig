@@ -68,12 +68,17 @@
     <!-- Shopping items -->
     <div class="shopping-cards">
 
-    {% for listItem in orderedList %}
+    {% for routedItem in orderedList %}
+        {% set listItem = routedItem.item %}
+
         <div 
             class="shopping-card"
             data-id="{{ listItem.id }}"
+            data-supermarket-id="{{ supermarket.id }}"  
             data-placement-status="{{ listItem.placementStatus.value }}"
             data-food-item-id="{{ listItem.foodItem.id }}"
+            data-placement-edge-id="{{ routedItem.placement ? routedItem.placement.edge.id : '' }}"
+            data-placement-aisle-side="{{ routedItem.placement ? routedItem.placement.aisleSide : '' }}"
         >
 
             <div class="card-header d-flex justify-content-between">
@@ -340,13 +345,36 @@
 
 <script>
 
-function openPlacementModal() {
+const placementState = {
+    supermarketId: null,
+    foodItemId: null,
+    edgeId: null,
+    aisleSide: null
+};
+
+function openPlacementModal(itemEl) {
     const modalEl = document.getElementById('placementModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    const foodItemId = itemEl.dataset.foodItemId;
+    const edgeId = itemEl.dataset.placementEdgeId || null;
+    const aisleSide = itemEl.dataset.placementAisleSide || null;
+    const supermarketId = itemEl.dataset.supermarketId;
+
+    placementState.supermarketId = supermarketId;
+    placementState.foodItemId = foodItemId;
+    placementState.edgeId = edgeId || null;
+    placementState.aisleSide = aisleSide || null;   
+
+    clearSelection()
+
+    // Only select edge if one exists
+    if (edgeId) {
+        selectEdge(edgeId);
+    }
+    
     modal.show();
 }
-
-
 
 // Pick item function
 document.querySelectorAll('.pick-btn').forEach(btn => {
@@ -420,13 +448,9 @@ function openPlacementMenu(card) {
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
 
-        // pass the food item ID to the modal
         const itemEl = primaryBtn.closest('.shopping-card');
-        const foodItemId = itemEl.dataset.foodItemId;
-        const modalEl = document.getElementById('placementModal');
-        modalEl.dataset.foodItemId = foodItemId;
 
-        openPlacementModal();
+        openPlacementModal(itemEl);
     };
 
     secondaryBtn.onclick = () => {
