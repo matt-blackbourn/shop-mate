@@ -212,7 +212,7 @@ nodesData.forEach(n => {
 });
 
 // Safetynet:
-document.getElementById('placementForm').addEventListener('submit', () => {
+document.getElementById('placementForm').addEventListener('submit', (e) => {
     updatePlacementPayload();
 });
 
@@ -326,15 +326,12 @@ function getDirectionFactor(edge) {
 
 function selectEdge(edgeId) {
     edgeId = Number(edgeId);
-    if (!edgeId) return; // nothing to select
-
-    // Toggle aisle side if the same edge is clicked
     if (placementState.edgeId === edgeId) {
-        placementState.aisleSide *= -1; // flip side
+        placementState.aisleSide *= -1;
     } else {
         clearSelection();
         placementState.edgeId = edgeId;
-        placementState.aisleSide = -1; // default to logical "left"
+        placementState.aisleSide = -1;
     }
 
    // Highlight the edge on the map
@@ -348,6 +345,22 @@ function selectEdge(edgeId) {
     updatePlacementPayload();
 
     confirmBtn.disabled = false;
+}
+
+function preselectEdge(edgeId, aisleSide) {
+    edgeId = Number(edgeId);
+    clearSelection();
+
+    placementState.edgeId = edgeId;
+    placementState.aisleSide = aisleSide;
+
+    const edge = edgeEls.get(edgeId);
+    if (!edge) return;
+
+    edge.line.classList.add('selected');
+
+    const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
+    updateAisleSide(edgeId, placementState.aisleSide * directionFactor);
 }
 
 function updatePlacementPayload() {

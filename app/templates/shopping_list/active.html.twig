@@ -32,15 +32,7 @@
         </div>
     </div>
 
-    {# Flash messages #}
-    {% for label, messages in app.flashes %}
-        {% for message in messages %}
-            <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endfor %}
+
 
     <!-- Spacer -->
     <div class="sticky-spacer"></div>
@@ -138,6 +130,15 @@
         </div>
         {% endfor %}
     </div>
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
 </div>
 {% include 'supermarket/_place_food_modal.html.twig' %}
 
@@ -363,14 +364,11 @@ function openPlacementModal(itemEl) {
 
     placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
-    placementState.edgeId = edgeId || null;
-    placementState.aisleSide = aisleSide || null;   
 
-    clearSelection()
-
+    console.log(placementState.aisleSide)
     // Only select edge if one exists
     if (edgeId) {
-        selectEdge(edgeId);
+        preselectEdge(edgeId, aisleSide)
     }
     
     modal.show();

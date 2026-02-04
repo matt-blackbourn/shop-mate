@@ -17,9 +17,6 @@ class ProductPlacement
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::SMALLINT, nullable: true)]
-    private ?int $aisleSide = null;
-
     #[ORM\ManyToOne(inversedBy: 'productPlacements')]
     #[ORM\JoinColumn(nullable: false)]
     private ?FoodItem $foodItem = null;
@@ -47,6 +44,9 @@ class ProductPlacement
     #[ORM\ManyToOne(inversedBy: 'productPlacements')]
     private ?User $suggestedBy = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $aisleSide = null;
+
     public function __construct()
     {
         $this->productPlacements = new ArrayCollection();
@@ -55,18 +55,6 @@ class ProductPlacement
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getAisleSide(): ?int
-    {
-        return $this->aisleSide;
-    }
-
-    public function setAisleSide(?int $aisleSide): static
-    {
-        $this->aisleSide = $aisleSide;
-
-        return $this;
     }
 
     public function getFoodItem(): ?FoodItem
@@ -167,6 +155,18 @@ class ProductPlacement
     public function setSuggestedBy(?User $suggestedBy): static
     {
         $this->suggestedBy = $suggestedBy;
+
+        return $this;
+    }
+
+    public function getAisleSide(): ?int
+    {
+        return $this->aisleSide;
+    }
+
+    public function setAisleSide(?int $aisleSide): static
+    {
+        $this->aisleSide = $aisleSide;
 
         return $this;
     }

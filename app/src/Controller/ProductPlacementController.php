@@ -6,6 +6,7 @@ use App\Entity\ProductPlacement;
 use App\Enum\PlacementType;
 use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
+use App\Repository\ProductPlacementRepository;
 use App\Repository\SupermarketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,19 +24,64 @@ class ProductPlacementController extends AbstractController
         SupermarketRepository $supermarketRepository,
         FoodItemRepository $foodItemRepository,
         EdgeRepository $edgeRepository,
+        ProductPlacementRepository $productPlacementRepository,
     ): Response
     {
         $placement = json_decode($request->request->get('placement'), true);
-        
-        $productPlacement = new ProductPlacement();
-        $productPlacement->setSupermarket($supermarketRepository->find($placement['supermarketId']));
-        $productPlacement->setFoodItem($foodItemRepository->find($placement['foodItemId']));
-        $productPlacement->setEdge($edgeRepository->find($placement['edgeId']));
-        $productPlacement->setAisleSide($placement['aisleSide']);
-        $productPlacement->setAisleSide($placement['aisleSide']);
-        $productPlacement->setSuggestedBy($this->getUser());
-        $productPlacement->setType(PlacementType::USER);
-        $em->persist($productPlacement);
+
+        // this needs work
+        $updated = false;
+        $aisleSide = $placement['aisleSide'];
+        $edgeId    = $placement['edgeId'];
+        $supermarket = $supermarketRepository->find($placement['supermarketId']);
+        $foodItem    = $foodItemRepository->find($placement['foodItemId']);
+
+
+        $existingPlacements = $productPlacementRepository->findBy([
+            'supermarket' => $supermarket,
+            'foodItem'    => $foodItem,
+        ]);
+
+        // 1️⃣ User always updates their own placement
+        foreach ($existingPlacements as $existing) {
+            if ($existing->getSuggestedBy()?->getId() === $this->getUser()->getId()) {
+                $existing->setEdge($edgeRepository->find($edgeId));
+                $existing->setAisleSide($aisleSide);
+                $updated = true;
+                $uow = $em->getUnitOfWork();
+                $uow->computeChangeSets();
+                
+                break;
+            }
+        }
+
+        // 2️⃣ Otherwise, check for identical placement → SYSTEM
+        if (!$updated) {
+            foreach ($existingPlacements as $existing) {
+                if (
+                    $existing->getEdge()->getId() === $edgeId &&
+                    $existing->getAisleSide() === $aisleSide
+                ) {
+                    $existing->setType(PlacementType::SYSTEM);
+                    $existing->setSuggestedBy(null);
+                    $updated = true;
+                    break;
+                }
+            }
+        }
+
+        // 3️⃣ Otherwise create a new one
+        if (!$updated) {
+            $productPlacement = new ProductPlacement();
+            $productPlacement->setSupermarket($supermarketRepository->find($placement['supermarketId']));
+            $productPlacement->setFoodItem($foodItemRepository->find($placement['foodItemId']));
+            $productPlacement->setEdge($edgeRepository->find($edgeId));
+            $productPlacement->setAisleSide($aisleSide);
+            $productPlacement->setSuggestedBy($this->getUser());
+            $productPlacement->setType(PlacementType::USER);
+            $em->persist($productPlacement);
+        }
+
 
         $em->flush();
         $this->addFlash('success', 'Product placed successfully - list order has been updated!');
