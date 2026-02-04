@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/food/item')]
+#[Route('/food')]
 final class FoodItemController extends AbstractController
 {
     #[Route(name: 'app_food_item_index', methods: ['GET'])]
@@ -40,6 +40,43 @@ final class FoodItemController extends AbstractController
         return $this->render('food_item/new.html.twig', [
             'food_item' => $foodItem,
             'form' => $form,
+        ]);
+    }
+
+    #[Route('/ajax/new', name: 'app_food_item_ajax_new', methods: ['POST'])]
+    public function createFood(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        if (!$request->isXmlHttpRequest()) {
+            return new JsonResponse(['error' => 'Invalid request'], 400);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $name = trim($data['name'] ?? '');
+
+        if ($name === '') {
+            return new JsonResponse(['error' => 'Name required'], 422);
+        }
+
+        // Optional: case-insensitive de-dupe
+        $existing = $em->getRepository(FoodItem::class)->findOneBy([
+            'name' => $name
+        ]);
+        if ($existing) {
+            return new JsonResponse([
+                'id'    => $existing->getId(),
+                'label' => $existing->getName(),
+            ]);
+        }
+
+        $food = new FoodItem();
+        $food->setName($name);
+
+        $em->persist($food);
+        $em->flush();
+
+        return new JsonResponse([
+            'id'    => $food->getId(),
+            'label' => $food->getName(),
         ]);
     }
 

@@ -285,9 +285,6 @@
 
 
 
-
-
-
 /* Card background and border */
 .card.list-item {
     background-color: #1c212b; /* dark slate */
@@ -343,7 +340,11 @@
     color: #6c757d;
 }
 
-
+/* notes input */
+.form-control-sm {
+    font-size: initial;
+    font-style: italic;
+}
 
 
 .list-item.collapsed .item-body {
@@ -561,9 +562,6 @@ document.getElementById('add-item').addEventListener('click', () => {
 });
 
 
-
-
-// Event delegation
 container.addEventListener('change', e => {
     const item = e.target.closest('.list-item');
     if (!item) return;
@@ -654,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         return `
                             <div class="ts-no-results">
-                                <div class="ts-create-food text-primary" data-name="${query}">
+                                <div class="ts-create-food text-primary" data-name="${query}" data-action="/food/ajax/new">
                                     ➕ Add <strong>"${query}"</strong>
                                 </div>
                             </div>
@@ -679,41 +677,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Capture clicks on the “Add new food” row
 let activeListItemRow = null;
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
     const createRow = e.target.closest('.ts-create-food');
     if (!createRow) return;
 
-    const name = createRow.dataset.name || '';
+    const name = (createRow.dataset.name || '').trim();
+    if (!name) return;
 
-    // Find the parent collection row
     activeListItemRow = createRow.closest('.list-item');
 
-    openAddFoodModal(name);
-});
-
-
-// New food modal
-document.addEventListener('submit', async function (e) {
-    if (e.target.id !== 'addFoodForm') return;
-
-    e.preventDefault();
-
-    const form = e.target;
-    const formData = new FormData(form);
-
-    // Step 1: immediately close modal
-    const modalEl = document.getElementById('addFoodModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal){
-        // move focus somewhere safe (best-effort)
-        const fallback = document.getElementById('add-item') || document.body;
-        fallback.focus();
-
-        // hide the modal
-        modal.hide();
-    }
-
-    // Step 2: update the row label and collapse it
+    // Optimistic UI update
     if (activeListItemRow) {
         // get name from modal form input
         const nameInput = e.target.querySelector('[name$="[name]"]');
@@ -725,27 +698,22 @@ document.addEventListener('submit', async function (e) {
         activeListItemRow.classList.add('collapsed');
     }
 
-    // Step 3: send AJAX request in the background
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-        }
-    })
-    .then(async (response) => {
-        if (!response.ok) {
-            const err = await response.json();
-            console.error('Food creation error:', err);
-            // Optionally show toast/alert
-            return;
-        }
-        return response.json();
-    })
-    .then((data) => {
-        if (!data) return;
+    try {
+        const response = await fetch(createRow.dataset.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ name })
+        });
 
-        // Step 3: inject new option into Tom Select
+        if (!response.ok) {
+            throw await response.json();
+        }
+
+        const data = await response.json();
+
         if (!activeFoodSelect) return;
 
         activeFoodSelect.addOption({
@@ -757,29 +725,18 @@ document.addEventListener('submit', async function (e) {
         activeFoodSelect.close();
 
         activeFoodSelect = null;
-    })
-    .catch(err => console.error('Food creation request failed:', err));
+
+    } catch (err) {
+        console.error('Food creation failed:', err);
+
+        // Optional rollback
+        if (activeListItemRow) {
+            const label = activeListItemRow.querySelector('.food-label');
+            if (label) label.textContent = `Failed to add ${label}`;
+        }
+    }
 });
 
-
-{# Open the modal with the pre-filled name #}
-function openAddFoodModal(name = '') {
-    const modalEl = document.getElementById('addFoodModal');
-    if (!modalEl) return;
-
-    const form = modalEl.querySelector('form');
-    if (form) {
-        form.reset();
-        const nameInput = form.querySelector('input[name$="[name]"]');
-        nameInput.value = name;
-    }
-
-    const titleSpan = modalEl.querySelector('#food-name-title');
-    titleSpan.textContent = name || 'new food';
-
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
-}
 
 const menuButton = document.querySelector('.menu-button');
 const menu = document.querySelector('.side-menu');
