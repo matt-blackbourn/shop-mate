@@ -9,14 +9,12 @@ use App\Entity\Supermarket;
 use App\Repository\EdgeRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\NodeRepository;
-use App\Repository\ProductPlacementRepository;
 use SplPriorityQueue;
 
 class PathFinder
 {
     public function __construct(
         private EdgeRepository $edgeRepository,
-        private ProductPlacementRepository $productPlacementRepository,
         private NodeRepository $nodeRepository,
         private PlacementResolver $placementResolver,
         private ListItemRepository $listItemRepository,
@@ -29,6 +27,8 @@ class PathFinder
         Edge::END_PHASE,
     ];
 
+    private $placementCache = []; // Cache for placements to avoid redundant DB calls
+
     /**
      * Nearest-neighbour route (the core algorithm)
      */
@@ -37,10 +37,11 @@ class PathFinder
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
 
-        foreach ($this->listItemRepository->findByShoppingListOrderedByCategory($shoppingList) as $listItem) {
+        foreach ($this->listItemRepository->findByShoppingList($shoppingList) as $listItem) {
             $placement = $this->placementResolver->resolve($listItem, $supermarket);
             if($placement){
                 $mappedItems[$placement->getEdge()->getPhase()][$listItem->getId()] = $listItem;
+                $this->placementCache[$listItem->getId()] = $placement; // Cache placement for later use
             } else {
                 $unmappedItems[] = new RoutedListItemDto(
                     item: $listItem,
@@ -158,11 +159,7 @@ class PathFinder
      */
     private function getClosestNodeToListItem(array $distances, ListItem $listItem, Supermarket $supermarket): ?array
     {
-        $placement = $this->productPlacementRepository->findOneBy([
-            'foodItem' => $listItem->getFoodItem(),
-            'supermarket' => $supermarket,
-        ]);
-
+        $placement = $this->placementCache[$listItem->getId()] ?? null; // Check cache
         if (!$placement) {
             return [
                 'node' => $this->nodeRepository->findLastNodeInSupermarket($supermarket)->getId(),
@@ -170,10 +167,8 @@ class PathFinder
             ];
         }
         
-        $edge = $placement->getEdge();
-        
-        $startId = $edge->getStart()->getId();
-        $endId   = $edge->getEnd()->getId();
+        $startId = $placement->getEdge()->getStart()->getId();
+        $endId   = $placement->getEdge()->getEnd()->getId();
         
         $distanceToStart = $distances[$startId] ?? INF;
         $distanceToEnd   = $distances[$endId] ?? INF;

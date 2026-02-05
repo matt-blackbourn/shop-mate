@@ -17,17 +17,13 @@ class ListItemRepository extends ServiceEntityRepository
         parent::__construct($registry, ListItem::class);
     }
 
-    public function findByShoppingListOrderedByCategory(ShoppingList $shoppingList): array {
+    public function findByShoppingList(ShoppingList $shoppingList): array {
         return $this->createQueryBuilder('li')
-            ->addSelect('fi', 'c')
+            ->addSelect('fi')
             ->innerJoin('li.foodItem', 'fi')
-            ->leftJoin('fi.category', 'c')
             ->where('li.shoppingList = :shoppingList')
             ->andWhere('li.pickedAt IS NULL')
             ->setParameter('shoppingList', $shoppingList)
-            // Push NULL categories to the end
-            ->orderBy('CASE WHEN c.id IS NULL THEN 1 ELSE 0 END', 'ASC')
-            ->addOrderBy('c.orderBy', 'ASC')
             ->addOrderBy('fi.name', 'ASC')
             ->getQuery()
             ->getResult();

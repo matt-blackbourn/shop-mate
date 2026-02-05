@@ -379,6 +379,8 @@ function openPlacementModal(itemEl) {
     const aisleSide = itemEl.dataset.placementAisleSide || null;
     const supermarketId = itemEl.dataset.supermarketId;
 
+    console.log(foodItemId, edgeId, aisleSide, supermarketId);
+
     placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
 
@@ -400,6 +402,12 @@ document.querySelectorAll('.pick-btn').forEach(btn => {
 
 document.querySelectorAll('.dots-btn').forEach(btn => {
     btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openPlacementMenu(e.target.closest('.shopping-card'));
+    });
+});
+document.querySelectorAll('.placement-icon').forEach(icon => {
+    icon.addEventListener('click', e => {
         e.stopPropagation();
         openPlacementMenu(e.target.closest('.shopping-card'));
     });
@@ -538,6 +546,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000); // adjust time as needed
     });
 });
+
+
 
 </script>
 {% endblock %}

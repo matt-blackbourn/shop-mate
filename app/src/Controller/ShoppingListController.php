@@ -48,7 +48,7 @@ final class ShoppingListController extends AbstractController
         }
 
         $form = $this->createForm(ShoppingListType::class, $shoppingList, [
-            'unpickedItems' => $listItemRepository->findByShoppingListOrderedByCategory($shoppingList),
+            'unpickedItems' => $listItemRepository->findByShoppingList($shoppingList),
         ]);
         $form->handleRequest($request);
 
@@ -62,8 +62,6 @@ final class ShoppingListController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
 
-            // $action = $request->request->get('intent');
-
             if ($request->request->get('intent') === 'go_shopping') {
                 return $this->redirectToRoute('app_shopping_list_active', [
                     'id' => $shoppingList->getId(),
@@ -73,9 +71,6 @@ final class ShoppingListController extends AbstractController
             if ($request->isXmlHttpRequest()) {
                 return new Response(null, 204);
             }
-        
-            // default: save → home
-            // return $this->redirectToRoute('app_home');
         }
 
         // Create form for new food modal
@@ -93,7 +88,7 @@ final class ShoppingListController extends AbstractController
     }
 
 
-    #[Route('/active/{supermarketId}', name: 'app_shopping_list_active', methods: ['GET'])]
+    #[Route('/active/{supermarketId}/{showModal}', name: 'app_shopping_list_active', methods: ['GET'], defaults: ['showModal' => false])]
     public function activeList(
         ShoppingListRepository $shoppingListRepository,
         PathFinder $pathFinder,
@@ -102,6 +97,7 @@ final class ShoppingListController extends AbstractController
         SupermarketRepository $supermarketRepository,
         MapBuilder $mapBuilder,
         int $supermarketId,
+        bool $showModal,
     ): Response {
         $shoppingList = $shoppingListRepository->findOneByUser($this->getUser());
         if(!$shoppingList) {
@@ -141,6 +137,13 @@ final class ShoppingListController extends AbstractController
         $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket);
         if(count($orderedList) === 0) {
             return $this->redirectToRoute('app_home');
+        }
+
+        if($showModal){
+            $unplacedItemCount = count(array_filter($orderedList, fn($item) => $item->placement === null));
+            if($unplacedItemCount > 0) {
+                $this->addFlash('warning', "You have {$unplacedItemCount} item(s) with no mapped location. Place them to update your list order!");
+            }
         }
 
         return $this->render('shopping_list/active.html.twig', [
