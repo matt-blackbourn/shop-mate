@@ -131,6 +131,7 @@
         {% endfor %}
     </div>
     {# Flash messages #}
+    <div class="flash-container">
     {% for label, messages in app.flashes %}
         {% for message in messages %}
             <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
@@ -139,6 +140,7 @@
             </div>
         {% endfor %}
     {% endfor %}
+    </div>
 </div>
 {% include 'supermarket/_place_food_modal.html.twig' %}
 
@@ -342,6 +344,21 @@
     background-color: #3a4152;
 }
 
+.flash-container {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1055; /* higher than cards, lower than modals */
+    width: calc(100% - 2rem);
+    max-width: 600px;
+    pointer-events: none;
+}
+
+.flash-container .alert {
+    pointer-events: auto;
+}
+
 </style>
 
 <script>
@@ -365,7 +382,6 @@ function openPlacementModal(itemEl) {
     placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
 
-    console.log(placementState.aisleSide)
     // Only select edge if one exists
     if (edgeId) {
         preselectEdge(edgeId, aisleSide)

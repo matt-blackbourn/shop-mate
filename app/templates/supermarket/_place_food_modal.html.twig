@@ -5,6 +5,7 @@
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-shelves="{{ shelves|json_encode|e('html_attr') }}"
+    data-entrance-node-id="{{ supermarket.entranceNode.id }}"
 >
     <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
         <div class="modal-content">
@@ -19,7 +20,10 @@
 
             <div class="modal-body">
                 <div id="map-container">
-                    <svg id="placement-map" viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}"></svg>
+                    <svg id="placement-map" viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
+                        <g id="edges-layer"></g>
+                        <g id="entrance-layer"></g>
+                    </svg>
                 </div>
             </div>
 
@@ -171,9 +175,9 @@
 }
 
 .shelf {
-    fill: #1c212b;
-    stroke: #3a4152;
-    stroke-width: 2;
+    fill: #40272e;
+    stroke: #a96f79;
+    stroke-width: 2.25;
     cursor: pointer;
     filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
 }
@@ -184,6 +188,28 @@
     transition: opacity 0.15s ease;
 }
 
+.node.entrance {
+    paint-order: stroke fill; /* ensures arrow is above circle */
+}
+
+.node.entrance circle:first-child {
+    fill: rgba(255, 200, 120, 0.25);
+}
+
+.node.entrance circle:nth-child(2) {
+    fill: #f2b66d;
+}
+
+.node.entrance path {
+    fill: #f2b66d; /* same as node */
+}
+.node.entrance .arrow-line {
+    stroke: #f2b66d;   /* same bright color */
+    stroke-width: 6;
+    stroke-linecap: round;
+}
+
+
 /* ----------------------
    Animations
    ---------------------- */
@@ -192,6 +218,7 @@
     50%  { stroke-width: 12; opacity: 1; }
     100% { stroke-width: 8;  opacity: 0.7; }
 }
+
 
 </style>
 
@@ -202,14 +229,86 @@ const mapWrapper = document.getElementById('placementModal');
 const nodesData = JSON.parse(mapWrapper.dataset.nodes);
 const edgesData = JSON.parse(mapWrapper.dataset.edges);
 const shelvesData = JSON.parse(mapWrapper.dataset.shelves);
+const entranceNodeId = mapWrapper.dataset.entranceNodeId;
 const SVG_NS = "http://www.w3.org/2000/svg";
 const confirmBtn = document.getElementById('placementConfirmBtn');
 
 
 const nodes = {};
 nodesData.forEach(n => {
+    if (n.id == entranceNodeId) {
+        drawEntranceNode(n);
+    }
     nodes[n.id] = n;
 });
+
+function getLayer(id) {
+    return svg.querySelector(`#${id}`);
+}
+
+function getFirstEdge(node, edgesData) {
+    return edgesData.find(edge => edge.from === node.id);
+}
+
+function drawEntranceNode(node) {
+        const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.getElementById('placement-map');
+
+    // --- create/get entrance layer ---
+    let layer = svg.querySelector('#entrance-layer');
+    if (!layer) {
+        layer = document.createElementNS(ns, 'g');
+        layer.setAttribute('id', 'entrance-layer');
+        svg.appendChild(layer);
+    }
+
+    // --- create group ---
+    const g = document.createElementNS(ns, 'g');
+    g.classList.add('node', 'entrance');
+    g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+
+    // Halo
+    const ring = document.createElementNS(ns, 'circle');
+    ring.setAttribute('r', 15);
+
+    // Base circle
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('r', 10);
+
+    g.appendChild(ring);
+    g.appendChild(circle);
+
+    // --- find first edge ---
+    const firstEdge = edgesData.find(e => e.from === node.id);
+    if (firstEdge) {
+        const dx = firstEdge.x2 - firstEdge.x1; // horizontal distance
+        const dy = firstEdge.y2 - firstEdge.y1; // vertical distance
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI); // rotation in degrees
+        const arrowLength = 100; // length of the line
+        const arrowTipWidth = 30; // size of the tip
+
+        // Arrow line starting at node center
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', 0);
+        line.setAttribute('y1', 0);
+        line.setAttribute('x2', arrowLength);
+        line.setAttribute('y2', 0);
+        line.setAttribute('transform', `rotate(${angle})`);
+        line.classList.add('arrow-line');
+        g.appendChild(line);
+
+        // Arrow tip at end of line
+        const tip = document.createElementNS(ns, 'path');
+        tip.setAttribute('d', `M0 ${-arrowTipWidth/2} L${arrowTipWidth} 0 L0 ${arrowTipWidth/2} Z`);
+        tip.setAttribute('fill', '#f2b66d');
+        // Translate the tip along the rotated X axis so it sits exactly at the end of the line
+        tip.setAttribute('transform', `rotate(${angle}) translate(${arrowLength},0)`);
+        g.appendChild(tip);
+    }
+
+    // append to entrance layer
+    layer.appendChild(g);
+}
 
 // Safetynet:
 document.getElementById('placementForm').addEventListener('submit', (e) => {
@@ -219,6 +318,7 @@ document.getElementById('placementForm').addEventListener('submit', (e) => {
 edgesData.forEach(e => {
     const from = nodes[e.from];
     const to   = nodes[e.to];
+    const layer = getLayer('edges-layer');
 
     // visible edge
     const line = document.createElementNS(SVG_NS, 'line');
@@ -248,9 +348,9 @@ edgesData.forEach(e => {
 
     edgeEls.set(e.id, { line, hit, sideRect, from, to });
 
-    svg.appendChild(line);
-    svg.appendChild(sideRect);
-    svg.appendChild(hit);
+    layer.appendChild(line);
+    layer.appendChild(sideRect);
+    layer.appendChild(hit);
 });
 
 renderShelves();
