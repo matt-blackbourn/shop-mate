@@ -142,7 +142,7 @@ final class ShoppingListController extends AbstractController
         if($showModal){
             $unplacedItemCount = count(array_filter($orderedList, fn($item) => $item->placement === null));
             if($unplacedItemCount > 0) {
-                $this->addFlash('warning', "You have {$unplacedItemCount} item(s) with no mapped location. Place them to update your list order!");
+                $this->addFlash('warning', '<i class="bi bi-exclamation-triangle-fill placement-icon missing"></i> You have ' . $unplacedItemCount . ' item(s) with no mapped location. Place them to update your list order!');
             }
         }
 

@@ -134,8 +134,8 @@
     <div class="flash-container">
     {% for label, messages in app.flashes %}
         {% for message in messages %}
-            <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
-                {{ message }}
+            <div class="alert alert-{{ label }} alert-dismissible mt-2 mb-0" role="alert" data-auto-fade="{{ label == 'success' ? '1' : '0' }}">
+                {{ message|raw }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endfor %}
@@ -352,12 +352,10 @@
     z-index: 1055; /* higher than cards, lower than modals */
     width: calc(100% - 2rem);
     max-width: 600px;
-    pointer-events: none;
-}
-
-.flash-container .alert {
     pointer-events: auto;
 }
+
+
 
 </style>
 
@@ -534,17 +532,18 @@ function pickItem(card) {
 
 // make this global later
 document.addEventListener('DOMContentLoaded', () => {
-    // Select all flash alerts
-    const flashAlerts = document.querySelectorAll('.alert');
+    document
+        .querySelectorAll('.alert[data-auto-fade="1"]')
+        .forEach(alert => {
+            setTimeout(() => {
+                alert.style.transition = 'opacity 0.4s ease';
+                alert.style.opacity = '0';
 
-    flashAlerts.forEach(alert => {
-        // Wait 3 seconds (3000ms) and then fade it out
-        setTimeout(() => {
-            // Use Bootstrap's alert instance to close it properly
-            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
-            bsAlert.close();
-        }, 3000); // adjust time as needed
-    });
+                setTimeout(() => {
+                    alert.remove();
+                }, 400);
+            }, 3000);
+        });
 });
 
 
