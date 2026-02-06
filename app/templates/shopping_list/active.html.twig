@@ -10,6 +10,7 @@
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-shelves="{{ shelves|json_encode|e('html_attr') }}"
+    data-segments="{{ segments|json_encode|e('html_attr') }}"
     data-entrance-node-id="{{ supermarket.entranceNode.id }}"
 >
 
@@ -462,9 +463,15 @@ const container = document.getElementById('shoppingListContainer');
 const nodesData = JSON.parse(container.dataset.nodes);
 const edgesData = JSON.parse(container.dataset.edges);
 const shelvesData = JSON.parse(container.dataset.shelves);
+const segments = JSON.parse(container.dataset.segments);
 const entranceNodeId = container.dataset.entranceNodeId;  
 const edgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
+
+
+
+
+
 
 // other state
 let processingQueue = false;
@@ -484,6 +491,139 @@ nodesData.forEach(n => {
     }
     nodes[n.id] = n;
 });
+
+
+
+
+//path state
+// 1. Build edge lookup
+// Draw edges (path display)
+edgesData.forEach(e => {
+    const from = nodes[e.from];
+    const to   = nodes[e.to];
+    const layer = getLayer('path-map', 'path-edges-layer');
+
+    // visible edge
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.classList.add('edge');
+    line.dataset.edgeId = e.id;
+
+    layer.appendChild(line);
+});
+
+const edgeByNodes = new Map();
+edgesData.forEach(edge => {
+    const el = document.querySelector(
+        `[data-edge-id="${edge.id}"]`
+    );
+
+    if (!el) {
+        console.warn('Missing DOM for edge', edge.id);
+        return;
+    }
+
+    edgeByNodes.set(`${edge.from}->${edge.to}`, {
+        ...edge,
+        el
+    });
+
+    edgeByNodes.set(`${edge.to}->${edge.from}`, {
+        ...edge,
+        el
+    });
+});
+// 2. Build routeState
+const routeState = {
+    segments: segments.map(s => ({
+        ...s,
+        edges: []
+    })),
+    currentSegment: 0
+};
+
+
+// 3. Resolve segment edges
+routeState.segments.forEach(segment => {
+    segment.edges = resolveEdgesForSegment(segment);
+});
+// 4. 🔥 Render initial route
+renderRoute();
+
+function resolveEdgesForSegment(segment) {
+    const edges = [];
+
+    for (let i = 0; i < segment.pathNodes.length - 1; i++) {
+        const from = segment.pathNodes[i];
+        const to = segment.pathNodes[i + 1];
+
+        const edge = edgeByNodes.get(`${from}->${to}`);
+        if (!edge) {
+            console.warn('Missing edge', from, to);
+            continue;
+        }
+
+        edges.push(edge);
+    }
+
+    return edges;
+}
+
+function renderRoute() {
+    routeState.segments.forEach((segment, index) => {
+        segment.edges.forEach(edge => {
+            edge.el.classList.remove(
+                'route-upcoming',
+                'route-active',
+                'route-complete'
+            );
+
+            if (index < routeState.currentSegment) {
+                edge.el.classList.add('route-complete');
+            } else if (index === routeState.currentSegment) {
+                edge.el.classList.add('route-active');
+            } else {
+                edge.el.classList.add('route-upcoming');
+            }
+        });
+
+        // highlight the shelf edge itself
+        if (segment.placementEdgeId) {
+            const placementEl = document.querySelector(
+                `[data-edge-id="${segment.placementEdgeId}"]`
+            );
+
+            placementEl?.classList.toggle(
+                'placement-active',
+                index === routeState.currentSegment
+            );
+        }
+    });
+}
+
+function onItemPicked(itemId) {
+    const idx = routeState.segments.findIndex(
+        s => s.itemId === itemId
+    );
+
+    if (idx === -1) return;
+
+    routeState.currentSegment = idx + 1;
+    renderRoute();
+}
+
+function highlightPlacementEdge(segment, state) {
+    const edgeEl = document.querySelector(
+        `[data-edge-id="${segment.placementEdgeId}"]`
+    );
+
+    edgeEl?.classList.add(`placement-${state}`);
+}
+
+
 
 // draw shelves on maps
 drawShelves(shelvesData, document.getElementById('placement-map'))
@@ -558,7 +698,7 @@ function drawEntranceNode(node) {
 }
 
 
-// Draw edges
+// Draw edges (place food)
 edgesData.forEach(e => {
     const from = nodes[e.from];
     const to   = nodes[e.to];
@@ -596,6 +736,8 @@ edgesData.forEach(e => {
     layer.appendChild(sideRect);
     layer.appendChild(hit);
 });
+
+
 
 document.getElementById('mapButton').addEventListener('click', e => {
     e.preventDefault();

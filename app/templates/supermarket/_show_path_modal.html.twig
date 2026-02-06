@@ -12,8 +12,8 @@
             <div class="modal-body">
                 <div class="map-container">
                     <svg id="path-map" class="map-svg" viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
-                        <g id="edges-layer"></g>
-                        <g id="entrance-layer"></g>
+                        <g id="path-edges-layer"></g>
+                        <g id="path-entrance-layer"></g>
                     </svg>
                 </div>
             </div>
@@ -32,10 +32,29 @@
 
 
 <style>
+.edge.route-upcoming {
+    stroke-dasharray: 4 2;
+    stroke:rgb(246, 156, 59);
+}
 
+.edge.route-active {
+    stroke: #3b82f6;
+    stroke-width: 4;
+    opacity: 1;
+}
+
+.edge.route-complete {
+    stroke: #22c55e;
+    opacity: 0.8;
+}
+
+.edge.placement-active {
+    stroke-dasharray: 4 2;
+}
 
 </style>
 
 <script>
+
 
 </script>

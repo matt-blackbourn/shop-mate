@@ -20,6 +20,7 @@ use App\Repository\SupermarketRepository;
 use App\Service\MapBuilder;
 use App\Service\PathFinder;
 use App\Service\PlacementResolver;
+use App\Service\RoutedListItemDto;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -145,7 +146,13 @@ final class ShoppingListController extends AbstractController
                 $this->addFlash('warning', '<i class="bi bi-exclamation-triangle-fill placement-icon missing"></i> You have ' . $unplacedItemCount . ' item(s) with no mapped location. Place them to update your list order!');
             }
         }
-
+        $segments = array_map(fn (RoutedListItemDto $dto) => [
+            'itemId' => $dto->item->getId(),
+            'placementEdgeId' => $dto->placement?->getEdge()->getId(),
+            'targetNodeId' => $dto->targetNodeId,
+            'pathNodes' => $dto->path, // ordered list of node IDs
+        ], $orderedList);
+        
         return $this->render('shopping_list/active.html.twig', [
             'orderedList' => $orderedList,
             'shoppingList' => $shoppingList,
@@ -154,6 +161,7 @@ final class ShoppingListController extends AbstractController
             'edges' => $mapBuilder->getAllEdges($supermarket),
             'shelves' => $mapBuilder->getAllShelves($supermarket),
             'viewBox' => $mapBuilder->getViewBox($supermarket),
+            'segments' => $segments,
         ]);
     }
 
