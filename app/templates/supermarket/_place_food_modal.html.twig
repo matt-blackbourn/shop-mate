@@ -219,43 +219,30 @@
 </style>
 
 <script>
-const svg = document.getElementById('placement-map');
 const mapWrapper = document.getElementById('placementModal');
 const confirmBtn = document.getElementById('placementConfirmBtn');
 
 
 
-function getLayer(id) {
-    return svg.querySelector(`#${id}`);
-}
 
 function getFirstEdge(node, edgesData) {
     return edgesData.find(edge => edge.from === node.id);
 }
 
 function drawEntranceNode(node) {
-        const ns = 'http://www.w3.org/2000/svg';
-    const svg = document.getElementById('placement-map');
-
-    // --- create/get entrance layer ---
-    let layer = svg.querySelector('#entrance-layer');
-    if (!layer) {
-        layer = document.createElementNS(ns, 'g');
-        layer.setAttribute('id', 'entrance-layer');
-        svg.appendChild(layer);
-    }
+    let layer = getLayer('placement-map', 'entrance-layer');
 
     // --- create group ---
-    const g = document.createElementNS(ns, 'g');
+    const g = document.createElementNS(SVG_NS, 'g');
     g.classList.add('node', 'entrance');
     g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
 
     // Halo
-    const ring = document.createElementNS(ns, 'circle');
+    const ring = document.createElementNS(SVG_NS, 'circle');
     ring.setAttribute('r', 15);
 
     // Base circle
-    const circle = document.createElementNS(ns, 'circle');
+    const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('r', 10);
 
     g.appendChild(ring);
@@ -271,7 +258,7 @@ function drawEntranceNode(node) {
         const arrowTipWidth = 30; // size of the tip
 
         // Arrow line starting at node center
-        const line = document.createElementNS(ns, 'line');
+        const line = document.createElementNS(SVG_NS, 'line');
         line.setAttribute('x1', 0);
         line.setAttribute('y1', 0);
         line.setAttribute('x2', arrowLength);
@@ -281,7 +268,7 @@ function drawEntranceNode(node) {
         g.appendChild(line);
 
         // Arrow tip at end of line
-        const tip = document.createElementNS(ns, 'path');
+        const tip = document.createElementNS(SVG_NS, 'path');
         tip.setAttribute('d', `M0 ${-arrowTipWidth/2} L${arrowTipWidth} 0 L0 ${arrowTipWidth/2} Z`);
         tip.setAttribute('fill', '#f2b66d');
         // Translate the tip along the rotated X axis so it sits exactly at the end of the line

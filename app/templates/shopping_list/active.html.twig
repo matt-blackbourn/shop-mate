@@ -368,6 +368,7 @@
 
 // map drawing state
 const container = document.getElementById('shoppingListContainer');
+const placementMap = document.getElementById('placement-map');
 const nodesData = JSON.parse(container.dataset.nodes);
 const edgesData = JSON.parse(container.dataset.edges);
 const shelvesData = JSON.parse(container.dataset.shelves);
@@ -384,22 +385,32 @@ nodesData.forEach(n => {
     nodes[n.id] = n;
 });
 
+// draw shelves on plaement map
+drawShelves(shelvesData, placementMap)
+
 // draw shelves
-shelvesData.forEach(shelf => {
-    const rect = document.createElementNS(SVG_NS, 'rect');
-    rect.setAttribute('x', shelf.x);
-    rect.setAttribute('y', shelf.y);
-    rect.setAttribute('width', shelf.width);
-    rect.setAttribute('height', shelf.height);
-    rect.classList.add('shelf');
-    svg.appendChild(rect);
-});
+function drawShelves(shelvesData, svg) {
+    shelvesData.forEach(shelf => {
+        const rect = document.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('x', shelf.x);
+        rect.setAttribute('y', shelf.y);
+        rect.setAttribute('width', shelf.width);
+        rect.setAttribute('height', shelf.height);
+        rect.classList.add('shelf');
+        svg.appendChild(rect);
+    });
+}
+
+function getLayer(svgId, layerId) {
+    return document.getElementById(svgId).querySelector(`#${layerId}`);
+}
+
 
 // Draw edges
 edgesData.forEach(e => {
     const from = nodes[e.from];
     const to   = nodes[e.to];
-    const layer = getLayer('edges-layer');
+    const layer = getLayer('placement-map', 'edges-layer');
 
     // visible edge
     const line = document.createElementNS(SVG_NS, 'line');
@@ -455,8 +466,6 @@ function openPlacementModal(itemEl) {
     const edgeId = itemEl.dataset.placementEdgeId || null;
     const aisleSide = itemEl.dataset.placementAisleSide || null;
     const supermarketId = itemEl.dataset.supermarketId;
-
-    console.log(foodItemId, edgeId, aisleSide, supermarketId);
 
     placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
