@@ -31,7 +31,7 @@
             </div>
 
             <div class="header-right d-flex align-items-center">
-                <a href="" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
+                <a href="" id="mapButton" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
                     <i class="bi bi-geo-alt-fill"></i>
                     <span class="d-none d-sm-inline">Map</span>
                 </a>
@@ -148,6 +148,7 @@
     </div>
 </div>
 {% include 'supermarket/_place_food_modal.html.twig' %}
+{% include 'supermarket/_show_path_modal.html.twig' %}
 
 
 <style>
@@ -181,9 +182,6 @@
     background-color: rgba(77, 171, 247, 0.15);
     border-color: #4dabf7;
 }
-
-
-
 
 /* Shopping card container */
 .shopping-card {
@@ -289,7 +287,6 @@
     text-overflow: ellipsis;
 }
 
-
 .dots-wrapper {
     position: relative;
 }
@@ -360,21 +357,124 @@
     pointer-events: auto;
 }
 
+{# shared map styles #}
+.map-container {
+    flex: 1;           /* fill all available modal-body space */
+    background: #0f1115;
+    overflow: hidden;  /* map will scale within container */
+}
 
+.shelf {
+    fill: #40272e;
+    stroke: #a96f79;
+    stroke-width: 2.25;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+}
 
+{# shared modal styles  #}
+.map-svg {
+    width: 100%;
+    height: 100%;
+    touch-action: manipulation;
+    background: #0f1115;
+    display: block;
+}
+.map-modal .modal-dialog {
+    margin: 0;
+    max-width: 100%; /* full width modal if needed */
+}
+
+.map-modal .modal-content {
+    background: #0f1115;
+    color: #e9ecef;
+    border: 1px solid #1f2430;
+    display: flex;
+    flex-direction: column;
+    height: 90vh; /* adjust as needed */
+}
+
+.map-modal .modal-header {
+    border-bottom: 1px solid #1f2430;
+    background: #121520;
+}
+
+.map-modal .modal-title {
+    color: #f1f3f5;
+    font-weight: 500;
+}
+
+.map-modal .btn-close {
+    filter: invert(1) opacity(0.8);
+}
+
+.map-modal .btn-close:hover {
+    opacity: 1;
+}
+
+.map-modal .modal-body {
+    flex: 1;           /* fill vertical space above footer */
+    padding: 0;        /* map edge-to-edge */
+    display: flex;
+    flex-direction: column;
+    background: #0f1115;
+    overflow: hidden;
+}
+
+.map-modal .modal-footer {
+    border-top: 1px solid #1f2430;
+    background: #121520;
+    flex-shrink: 0;    /* never shrink */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Cancel button */
+.map-modal .btn-secondary {
+    background: #2b303b;
+    border-color: #2b303b;
+    color: #dee2e6;
+}
+
+.map-modal .btn-secondary:hover {
+    background: #343a46;
+}
+
+/* Save button */
+.map-modal .btn-primary {
+    background: #4dabf7;
+    border-color: #4dabf7;
+    color: #0b0d12;
+}
+
+.map-modal .btn-primary:disabled {
+    background: #2a2f3a;
+    border-color: #2a2f3a;
+    color: #6c757d;
+}
 </style>
 
 <script>
 
 // map drawing state
 const container = document.getElementById('shoppingListContainer');
-const placementMap = document.getElementById('placement-map');
 const nodesData = JSON.parse(container.dataset.nodes);
 const edgesData = JSON.parse(container.dataset.edges);
 const shelvesData = JSON.parse(container.dataset.shelves);
 const entranceNodeId = container.dataset.entranceNodeId;  
 const edgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
+
+// other state
+let processingQueue = false;
+const pickQueue = [];
+const placementState = {
+    supermarketId: null,
+    foodItemId: null,
+    edgeId: null,
+    aisleSide: null
+};
 
 // build a lookup for nodes and draw entrance node
 const nodes = {};
@@ -385,8 +485,9 @@ nodesData.forEach(n => {
     nodes[n.id] = n;
 });
 
-// draw shelves on plaement map
-drawShelves(shelvesData, placementMap)
+// draw shelves on maps
+drawShelves(shelvesData, document.getElementById('placement-map'))
+drawShelves(shelvesData, document.getElementById('path-map'))
 
 // draw shelves
 function drawShelves(shelvesData, svg) {
@@ -405,12 +506,63 @@ function getLayer(svgId, layerId) {
     return document.getElementById(svgId).querySelector(`#${layerId}`);
 }
 
+function drawEntranceNode(node) {
+    let layer = getLayer('placement-map', 'placement-entrance-layer');
+
+    // --- create group ---
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.classList.add('node', 'entrance');
+    g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+
+    // Halo
+    const ring = document.createElementNS(SVG_NS, 'circle');
+    ring.setAttribute('r', 15);
+
+    // Base circle
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('r', 10);
+
+    g.appendChild(ring);
+    g.appendChild(circle);
+
+    // --- find first edge ---
+    const firstEdge = edgesData.find(e => e.from === node.id);
+    if (firstEdge) {
+        const dx = firstEdge.x2 - firstEdge.x1; // horizontal distance
+        const dy = firstEdge.y2 - firstEdge.y1; // vertical distance
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI); // rotation in degrees
+        const arrowLength = 100; // length of the line
+        const arrowTipWidth = 30; // size of the tip
+
+        // Arrow line starting at node center
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', 0);
+        line.setAttribute('y1', 0);
+        line.setAttribute('x2', arrowLength);
+        line.setAttribute('y2', 0);
+        line.setAttribute('transform', `rotate(${angle})`);
+        line.classList.add('arrow-line');
+        g.appendChild(line);
+
+        // Arrow tip at end of line
+        const tip = document.createElementNS(SVG_NS, 'path');
+        tip.setAttribute('d', `M0 ${-arrowTipWidth/2} L${arrowTipWidth} 0 L0 ${arrowTipWidth/2} Z`);
+        tip.setAttribute('fill', '#f2b66d');
+        // Translate the tip along the rotated X axis so it sits exactly at the end of the line
+        tip.setAttribute('transform', `rotate(${angle}) translate(${arrowLength},0)`);
+        g.appendChild(tip);
+    }
+
+    // append to entrance layer
+    layer.appendChild(g);
+}
+
 
 // Draw edges
 edgesData.forEach(e => {
     const from = nodes[e.from];
     const to   = nodes[e.to];
-    const layer = getLayer('placement-map', 'edges-layer');
+    const layer = getLayer('placement-map', 'placement-edges-layer');
 
     // visible edge
     const line = document.createElementNS(SVG_NS, 'line');
@@ -445,18 +597,12 @@ edgesData.forEach(e => {
     layer.appendChild(hit);
 });
 
-
-
-
-const pickQueue = [];
-let processingQueue = false;
-
-const placementState = {
-    supermarketId: null,
-    foodItemId: null,
-    edgeId: null,
-    aisleSide: null
-};
+document.getElementById('mapButton').addEventListener('click', e => {
+    e.preventDefault();
+    const modalEl = document.getElementById('pathModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+});
 
 function openPlacementModal(itemEl) {
     const modalEl = document.getElementById('placementModal');
@@ -498,6 +644,7 @@ document.querySelectorAll('.placement-icon').forEach(icon => {
         openPlacementMenu(e.target.closest('.shopping-card'));
     });
 });
+
 
 function openPlacementMenu(card) {
     const wrapper = card.querySelector('.dots-wrapper');
@@ -565,7 +712,6 @@ function openPlacementMenu(card) {
         console.log('Secondary action clicked for', card.dataset.id);
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
-        // TODO: navigate to placement screen or open placement form
     };
 }
 
