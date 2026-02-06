@@ -4,7 +4,14 @@
 
 {% block body %}
 
-<div class="container py-3">
+<div 
+    class="container py-3"
+    id="shoppingListContainer"
+    data-nodes="{{ nodes|json_encode|e('html_attr') }}"
+    data-edges="{{ edges|json_encode|e('html_attr') }}"
+    data-shelves="{{ shelves|json_encode|e('html_attr') }}"
+    data-entrance-node-id="{{ supermarket.entranceNode.id }}"
+>
 
     <div class="sticky-header">
         <div class="d-flex align-items-center px-2 py-2 w-100">
@@ -31,8 +38,6 @@
             </div>
         </div>
     </div>
-
-
 
     <!-- Spacer -->
     <div class="sticky-spacer"></div>
@@ -361,6 +366,80 @@
 
 <script>
 
+// map drawing state
+const container = document.getElementById('shoppingListContainer');
+const nodesData = JSON.parse(container.dataset.nodes);
+const edgesData = JSON.parse(container.dataset.edges);
+const shelvesData = JSON.parse(container.dataset.shelves);
+const entranceNodeId = container.dataset.entranceNodeId;  
+const edgeEls = new Map(); // Keep references to all edges
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// build a lookup for nodes and draw entrance node
+const nodes = {};
+nodesData.forEach(n => {
+    if (n.id == entranceNodeId) {
+        drawEntranceNode(n);
+    }
+    nodes[n.id] = n;
+});
+
+// draw shelves
+shelvesData.forEach(shelf => {
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute('x', shelf.x);
+    rect.setAttribute('y', shelf.y);
+    rect.setAttribute('width', shelf.width);
+    rect.setAttribute('height', shelf.height);
+    rect.classList.add('shelf');
+    svg.appendChild(rect);
+});
+
+// Draw edges
+edgesData.forEach(e => {
+    const from = nodes[e.from];
+    const to   = nodes[e.to];
+    const layer = getLayer('edges-layer');
+
+    // visible edge
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.classList.add('edge');
+    line.dataset.edgeId = e.id;
+
+    // hit target (fat invisible line)
+    const hit = document.createElementNS(SVG_NS, 'line');
+    hit.setAttribute('x1', from.x);
+    hit.setAttribute('y1', from.y);
+    hit.setAttribute('x2', to.x);
+    hit.setAttribute('y2', to.y);
+    hit.classList.add('edge-hit');
+    hit.dataset.edgeId = e.id;
+    hit.addEventListener('click', () => selectEdge(e.id));
+    
+
+    // side indicator (initially invisible)
+    const sideRect = document.createElementNS(SVG_NS, 'rect');
+    sideRect.classList.add('edge-side');
+    sideRect.dataset.edgeId = e.id;
+    sideRect.style.opacity = 0;
+
+    edgeEls.set(e.id, { line, hit, sideRect, from, to });
+
+    layer.appendChild(line);
+    layer.appendChild(sideRect);
+    layer.appendChild(hit);
+});
+
+
+
+
+const pickQueue = [];
+let processingQueue = false;
+
 const placementState = {
     supermarketId: null,
     foodItemId: null,
@@ -480,9 +559,6 @@ function openPlacementMenu(card) {
         // TODO: navigate to placement screen or open placement form
     };
 }
-
-const pickQueue = [];
-let processingQueue = false;
 
 function enqueuePick(card) {
     pickQueue.push(card);
