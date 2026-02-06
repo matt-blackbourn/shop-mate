@@ -18,8 +18,7 @@
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
             <div class="header-left d-flex align-items-center">
-                <a href="{{ path('app_home') }}"
-                class="btn btn-sm d-flex align-items-center gap-1 header-btn">
+                <a href="{{ path('app_home') }}" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
                     <i class="bi bi-check-circle-fill"></i>
                     <span class="d-none d-sm-inline">Finished</span>
                 </a>
@@ -503,13 +502,13 @@ edgesData.forEach(e => {
     const to   = nodes[e.to];
     const layer = getLayer('path-map', 'path-edges-layer');
 
-    // visible edge
+    // invisible edges - only visible with styles added
     const line = document.createElementNS(SVG_NS, 'line');
     line.setAttribute('x1', from.x);
     line.setAttribute('y1', from.y);
     line.setAttribute('x2', to.x);
     line.setAttribute('y2', to.y);
-    line.classList.add('edge');
+    line.classList.add('path-edge');
     line.dataset.edgeId = e.id;
 
     layer.appendChild(line);
@@ -550,6 +549,7 @@ const routeState = {
 routeState.segments.forEach(segment => {
     segment.edges = resolveEdgesForSegment(segment);
 });
+
 // 4. 🔥 Render initial route
 renderRoute();
 
@@ -574,39 +574,28 @@ function resolveEdgesForSegment(segment) {
 
 function renderRoute() {
     routeState.segments.forEach((segment, index) => {
+        const state =
+            index < routeState.currentSegment
+                ? 'route-complete'
+                : index === routeState.currentSegment
+                ? 'route-active'
+                : 'route-upcoming';
+
         segment.edges.forEach(edge => {
             edge.el.classList.remove(
-                'route-upcoming',
+                'route-complete',
                 'route-active',
-                'route-complete'
+                'route-upcoming'
             );
 
-            if (index < routeState.currentSegment) {
-                edge.el.classList.add('route-complete');
-            } else if (index === routeState.currentSegment) {
-                edge.el.classList.add('route-active');
-            } else {
-                edge.el.classList.add('route-upcoming');
-            }
+            edge.el.classList.add(state);
         });
-
-        // highlight the shelf edge itself
-        if (segment.placementEdgeId) {
-            const placementEl = document.querySelector(
-                `[data-edge-id="${segment.placementEdgeId}"]`
-            );
-
-            placementEl?.classList.toggle(
-                'placement-active',
-                index === routeState.currentSegment
-            );
-        }
     });
 }
 
 function onItemPicked(itemId) {
     const idx = routeState.segments.findIndex(
-        s => s.itemId === itemId
+        s => s.itemId === Number(itemId)
     );
 
     if (idx === -1) return;
@@ -901,6 +890,10 @@ function pickItem(card) {
     setTimeout(() => card.remove(), 200);
 
     enqueuePick(card);  
+
+    // Update route immediately for UI
+    const itemId = card.dataset.id;
+    onItemPicked(itemId);
 }
 
 // make this global later

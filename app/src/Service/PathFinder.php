@@ -82,7 +82,7 @@ class PathFinder
     
                  // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
-                    $result = $this->getClosestNodeToListItem($distances, $listItem, $supermarket);
+                    $result = $this->getFurthestNodeOnEdge($distances, $listItem, $supermarket);
                     if ($result === null) {
                         continue;
                     }
@@ -93,6 +93,27 @@ class PathFinder
                         $closestNode = $result['node'];
                         $closestDistance = $result['distance'];
                         $pathToClosestNode = $this->reconstructPath($prev, $closestNode);
+
+                        // Extend path to include the placement edge itself
+                        if ($closestPlacement) {
+                            $edge = $closestPlacement->getEdge();
+                            $startId = $edge->getStart()->getId();
+                            $endId   = $edge->getEnd()->getId();
+                        
+                            $lastNode = end($pathToClosestNode);
+                        
+                            if ($lastNode === $startId) {
+                                // approaching from start → walk to end
+                                $pathToClosestNode[] = $endId;
+                            } elseif ($lastNode === $endId) {
+                                // approaching from end → walk to start
+                                $pathToClosestNode[] = $startId;
+                            } else {
+                                // defensive fallback: attach whole edge
+                                $pathToClosestNode[] = $startId;
+                                $pathToClosestNode[] = $endId;
+                            }
+                        }
                     }
                 }
     
@@ -157,35 +178,42 @@ class PathFinder
      * Distance from a node to a food item (edge-based)
      * A food item is on an edge, not a node — so we take the closest endpoint.
      */
-    private function getClosestNodeToListItem(array $distances, ListItem $listItem, Supermarket $supermarket): ?array
+    private function getFurthestNodeOnEdge(array $distances, ListItem $listItem, Supermarket $supermarket): ?array
     {
-        $placement = $this->placementCache[$listItem->getId()] ?? null; // Check cache
+        // Look up the placement for this item from the cache
+        $placement = $this->placementCache[$listItem->getId()] ?? null;
+
+        // If there is no placement, return a default "last node in supermarket"
         if (!$placement) {
             return [
                 'node' => $this->nodeRepository->findLastNodeInSupermarket($supermarket)->getId(),
                 'distance' => INF,
             ];
         }
-        
+
+        // Get both nodes of the placement edge
         $startId = $placement->getEdge()->getStart()->getId();
         $endId   = $placement->getEdge()->getEnd()->getId();
-        
-        $distanceToStart = $distances[$startId] ?? INF;
-        $distanceToEnd   = $distances[$endId] ?? INF;
 
-        if($distanceToStart <= $distanceToEnd){
-            return [
-                'distance' => $distanceToStart,
-                'node' => $startId, 
-                'placement' => $placement,
-            ];
+        // Lookup distances to both nodes from current position
+        $distanceStart = $distances[$startId] ?? INF;
+        $distanceEnd   = $distances[$endId] ?? INF;
+
+        // Choose the node that is further away (furthest from current position)
+        if ($distanceStart >= $distanceEnd) {
+            $furthestNode = $startId;
+            $distance = $distanceStart;
         } else {
-            return [
-                'distance' => $distanceToEnd,
-                'node' => $endId, 
-                'placement' => $placement,
-            ];
+            $furthestNode = $endId;
+            $distance = $distanceEnd;
         }
+
+        // Return the chosen node, its distance, and the placement object
+        return [
+            'distance' => $distance,
+            'node' => $furthestNode,
+            'placement' => $placement,
+        ];
     }
 
 

@@ -32,25 +32,66 @@
 
 
 <style>
-.edge.route-upcoming {
-    stroke-dasharray: 4 2;
-    stroke:rgb(246, 156, 59);
+/* Base route styling */
+.path-edge.route-upcoming,
+.path-edge.route-active,
+.path-edge.route-complete {
+    stroke-width: 6;              /* thicker line */
+    stroke-dasharray: 40 20;      /* long dash, clear gap */
+    transition: stroke 200ms ease, opacity 200ms ease;
 }
 
-.edge.route-active {
-    stroke: #3b82f6;
+.path-edge.route-complete {
+    stroke: #64748b;        /* slate-500 */
+    opacity: 0.7;
     stroke-width: 4;
+}
+
+/* Active (warm, obvious) */
+.path-edge.route-active {
+    stroke: #f59e0b;        /* amber-500 */
     opacity: 1;
+    stroke-width: 7;
+    drop-shadow(0 0 8px rgba(245, 158, 11, 0.65))
+    stroke-dasharray: 60 0; /* solid */
+    animation: pulse 1s infinite;
 }
 
-.edge.route-complete {
+/* Upcoming (same hue, hint only) */
+.path-edge.route-upcoming {
+    stroke: #f59e0b;
+    opacity: 0.4;
+    stroke-width: 4;
+}
+
+@keyframes pulse {
+    0%   { stroke-width: 8;  opacity: 0.7; }
+    50%  { stroke-width: 12; opacity: 1; }
+    100% { stroke-width: 8;  opacity: 0.7; }
+}
+
+{# /* Visited segments (blue, subtle) */
+.path-edge.route-complete {
+    stroke: var(--app-blue, #3b82f6); /* or your app blue */
+    opacity: 0.5;
+    stroke-width: 4;
+}
+
+/* Current target segment (strong green) */
+.path-edge.route-active {
     stroke: #22c55e;
-    opacity: 0.8;
+    opacity: 1;
+    stroke-width: 5;
 }
 
-.edge.placement-active {
-    stroke-dasharray: 4 2;
-}
+/* Remaining segments (green but very see-through) */
+.path-edge.route-upcoming {
+    stroke: #22c55e;
+    opacity: 0.5;
+    stroke-width: 4;
+} #}
+
+
 
 </style>
 
