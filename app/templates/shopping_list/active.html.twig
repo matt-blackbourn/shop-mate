@@ -468,10 +468,6 @@ const edgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 
-
-
-
-
 // other state
 let processingQueue = false;
 const pickQueue = [];
@@ -492,9 +488,6 @@ nodesData.forEach(n => {
 });
 
 
-
-
-//path state
 // 1. Build edge lookup
 // Draw edges (path display)
 edgesData.forEach(e => {
@@ -573,25 +566,28 @@ function resolveEdgesForSegment(segment) {
 }
 
 function renderRoute() {
+    // First pass: complete & upcoming
     routeState.segments.forEach((segment, index) => {
-        const state =
-            index < routeState.currentSegment
-                ? 'route-complete'
-                : index === routeState.currentSegment
-                ? 'route-active'
-                : 'route-upcoming';
+        if (index === routeState.currentSegment) return; // skip active for now
+
+        const state = index < routeState.currentSegment ? 'route-complete' : 'route-upcoming';
 
         segment.edges.forEach(edge => {
-            edge.el.classList.remove(
-                'route-complete',
-                'route-active',
-                'route-upcoming'
-            );
-
+            edge.el.classList.remove('route-complete', 'route-active', 'route-upcoming');
             edge.el.classList.add(state);
         });
     });
+
+    // Second pass: active edges only
+    const activeSegment = routeState.segments[routeState.currentSegment];
+    if (activeSegment) {
+        activeSegment.edges.forEach(edge => {
+            edge.el.classList.remove('route-complete', 'route-upcoming', 'route-active');
+            edge.el.classList.add('route-active'); // also add pulse here
+        });
+    }
 }
+
 
 function onItemPicked(itemId) {
     const idx = routeState.segments.findIndex(
@@ -734,6 +730,7 @@ document.getElementById('mapButton').addEventListener('click', e => {
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
 });
+
 
 function openPlacementModal(itemEl) {
     const modalEl = document.getElementById('placementModal');

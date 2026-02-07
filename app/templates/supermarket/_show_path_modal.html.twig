@@ -19,8 +19,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" id="placementCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="placementForm" id="placementConfirmBtn" class="btn btn-primary" disabled>Save placement</button>
+                <button type="button" id="pathCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
             <form method="POST" action="/placement/save" id="placementForm">
                 <input type="hidden" name="placement" id="placementPayload">
@@ -70,32 +69,9 @@
     100% { stroke-width: 8;  opacity: 0.7; }
 }
 
-{# /* Visited segments (blue, subtle) */
-.path-edge.route-complete {
-    stroke: var(--app-blue, #3b82f6); /* or your app blue */
-    opacity: 0.5;
-    stroke-width: 4;
-}
-
-/* Current target segment (strong green) */
-.path-edge.route-active {
-    stroke: #22c55e;
-    opacity: 1;
-    stroke-width: 5;
-}
-
-/* Remaining segments (green but very see-through) */
-.path-edge.route-upcoming {
-    stroke: #22c55e;
-    opacity: 0.5;
-    stroke-width: 4;
-} #}
-
-
 
 </style>
 
 <script>
-
 
 </script>
