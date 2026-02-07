@@ -48,6 +48,10 @@ final class ShoppingListController extends AbstractController
             $em->flush();
         }
 
+         // if we dont render the picked items, doctrine will delete them when we flush
+         //so we cache them here and manually add them back afer form submission
+        $picked = $shoppingList->getListItems()->filter(fn($item) => $item->getPickedAt() !== null)->toArray();
+
         $form = $this->createForm(ShoppingListType::class, $shoppingList, [
             'unpickedItems' => $listItemRepository->findByShoppingList($shoppingList),
         ]);
@@ -56,11 +60,15 @@ final class ShoppingListController extends AbstractController
         
         // For AJAX save: the form isn’t submitted via normal POST
         if ($request->isXmlHttpRequest() && !$form->isSubmitted()) {
-            // Manually submit the form with the posted data
-            $form->submit($request->request->all());
+            $form->submit($request->request->all()); // Manually submit the form with the posted data
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // Merge picked items back into the entity
+            foreach ($picked as $item) {
+                $shoppingList->addListItem($item);
+            }
+
             $em->flush();
 
             if ($request->request->get('intent') === 'go_shopping') {
