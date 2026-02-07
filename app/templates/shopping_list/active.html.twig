@@ -534,7 +534,8 @@ const routeState = {
         ...s,
         edges: []
     })),
-    currentSegment: 0
+    currentSegment: 0,
+    pickedItemIds: new Set(),
 };
 
 
@@ -570,7 +571,8 @@ function renderRoute() {
     routeState.segments.forEach((segment, index) => {
         if (index === routeState.currentSegment) return; // skip active for now
 
-        const state = index < routeState.currentSegment ? 'route-complete' : 'route-upcoming';
+        const isPicked = routeState.pickedItemIds.has(segment.itemId);
+        const state = isPicked ? 'route-complete' : 'route-upcoming';
 
         segment.edges.forEach(edge => {
             edge.el.classList.remove('route-complete', 'route-active', 'route-upcoming');
@@ -578,25 +580,40 @@ function renderRoute() {
         });
     });
 
-    // Second pass: active edges only
-    const activeSegment = routeState.segments[routeState.currentSegment];
-    if (activeSegment) {
-        activeSegment.edges.forEach(edge => {
-            edge.el.classList.remove('route-complete', 'route-upcoming', 'route-active');
-            edge.el.classList.add('route-active'); // also add pulse here
+    console.log(routeState);
+
+    // Active segment (if not already picked)
+    const active = routeState.segments[routeState.currentSegment];
+    if (active && !routeState.pickedItemIds.has(active.itemId)) {
+        active.edges.forEach(edge => {
+            edge.el.classList.remove('route-complete', 'route-upcoming');
+            edge.el.classList.add('route-active');
         });
     }
 }
 
 
 function onItemPicked(itemId) {
-    const idx = routeState.segments.findIndex(
-        s => s.itemId === Number(itemId)
-    );
+    const id = Number(itemId);
 
+    // Record the pick (truth)
+    routeState.pickedItemIds.add(id);
+
+    const idx = routeState.segments.findIndex(
+        s => s.itemId === id
+    );
     if (idx === -1) return;
 
-    routeState.currentSegment = idx + 1;
+    // Only recalc guidance if the user picked the current target
+    if (idx === routeState.currentSegment) {
+        const next = routeState.segments.findIndex(
+            s => !routeState.pickedItemIds.has(s.itemId)
+        );
+
+        routeState.currentSegment =
+            next === -1 ? routeState.segments.length : next;
+    }
+
     renderRoute();
 }
 
