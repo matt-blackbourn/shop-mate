@@ -82,12 +82,12 @@ class ProductPlacementController extends AbstractController
             $em->persist($productPlacement);
         }
 
-
         $em->flush();
         $this->addFlash('success', 'Product placed successfully - list order has been updated!');
 
         return $this->redirectToRoute('app_shopping_list_active', [
             'supermarketId' => $placement['supermarketId'],
+            'startNode' => $placement['currentNodeId'], // in case we are reodering mid-shop
         ]);
     }
 }

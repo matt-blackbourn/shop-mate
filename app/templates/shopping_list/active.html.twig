@@ -475,7 +475,8 @@ const placementState = {
     supermarketId: null,
     foodItemId: null,
     edgeId: null,
-    aisleSide: null
+    aisleSide: null,
+    currentNodeId: null,
 };
 
 // build a lookup for nodes and draw entrance node
@@ -604,14 +605,16 @@ function onItemPicked(itemId) {
     );
     if (idx === -1) return;
 
+    // record physical location of user in placement state in case of placement made mid-shop
+    placementState.currentNodeId = routeState.segments[idx].targetNodeId;
+
     // Only recalc guidance if the user picked the current target
     if (idx === routeState.currentSegment) {
         const next = routeState.segments.findIndex(
             s => !routeState.pickedItemIds.has(s.itemId)
         );
 
-        routeState.currentSegment =
-            next === -1 ? routeState.segments.length : next;
+        routeState.currentSegment = next === -1 ? routeState.segments.length : next;
     }
 
     renderRoute();

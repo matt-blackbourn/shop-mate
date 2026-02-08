@@ -105,6 +105,7 @@ final class ShoppingListController extends AbstractController
         EntityManagerInterface $em,
         SupermarketRepository $supermarketRepository,
         MapBuilder $mapBuilder,
+        Request $request,
         int $supermarketId,
         bool $showModal,
     ): Response {
@@ -112,6 +113,9 @@ final class ShoppingListController extends AbstractController
         if(!$shoppingList) {
             $this->redirectToRoute('app_home');
         }
+
+        $startNode = $request->query->get('startNode', null);
+
 
         // here we want to look for any items that do not have a mapped location
         // if those items have a category, we look for any item in this category in this supermarket that is mapped
@@ -142,8 +146,8 @@ final class ShoppingListController extends AbstractController
 
         $this->getUser()->setLastUsedSupermarket($supermarket);
         $em->flush();
-
-        $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket);
+        
+        $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, $startNode);
         if(count($orderedList) === 0) {
             return $this->redirectToRoute('app_home');
         }

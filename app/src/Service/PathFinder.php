@@ -32,7 +32,7 @@ class PathFinder
     /**
      * Nearest-neighbour route (the core algorithm)
      */
-    public function orderShoppingList(ShoppingList $shoppingList, Supermarket $supermarket): array {
+    public function orderShoppingList(ShoppingList $shoppingList, Supermarket $supermarket, ?int $startNode = null): array {
         // Convert collection to id-indexed array, and separate by phase and unmapped items
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
@@ -55,14 +55,15 @@ class PathFinder
 
         // Apply phase processing rules
         // If we have no entrance phase items, main phase becomes entrance phase
-        if (empty($mappedItems[Edge::ENTRANCE_PHASE])) {
+        // Note, we only apply this when starting a shop from the entrance node; if starting mid-shop ($startNode !== null) we disregard
+        if (empty($mappedItems[Edge::ENTRANCE_PHASE]) && !$startNode) {
             $mappedItems[Edge::ENTRANCE_PHASE] = $mappedItems[Edge::MAIN_PHASE] ?? [];
             $mappedItems[Edge::MAIN_PHASE] = [];
         }
 
         // Set some variables before building the route
         $orderedList = [];
-        $currentNodeId = (int) $supermarket->getEntranceNode()->getId();
+        $currentNodeId = $startNode ?? (int) $supermarket->getEntranceNode()->getId();
         $graph = $this->buildGraph($supermarket);
 
         // Process each phase in order
