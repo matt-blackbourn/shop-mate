@@ -555,6 +555,11 @@ function resolveEdgesForSegment(segment) {
         const from = segment.pathNodes[i];
         const to = segment.pathNodes[i + 1];
 
+        // set currentNodeId, in case it is not the entrance node
+        if (i === 0) {
+            placementState.currentNodeId = from;
+        }
+
         const edge = edgeByNodes.get(`${from}->${to}`);
         if (!edge) {
             console.warn('Missing edge', from, to);
