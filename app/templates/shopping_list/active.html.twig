@@ -95,6 +95,8 @@
                             <div class="modal-actions">
                                 <button type="button" class="modal-btn primary"></button>
                                 <button type="button" class="modal-btn secondary"></button>
+                                <button id="skip" class="btn btn-secondary" type="button">Skip Item</button>
+
                             </div>
                         </div>
                     </div>
@@ -269,6 +271,7 @@
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
+    border: 1px solid #51cf66;
 }
 
 
@@ -461,7 +464,8 @@ const edgesData = JSON.parse(container.dataset.edges);
 const shelvesData = JSON.parse(container.dataset.shelves);
 const segments = JSON.parse(container.dataset.segments);
 const entranceNodeId = container.dataset.entranceNodeId;  
-const edgeEls = new Map(); // Keep references to all edges
+const placementEdgeEls = new Map(); // Keep references to all edges
+const pathEdgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const currentItemState = {
@@ -509,7 +513,16 @@ edgesData.forEach(e => {
     line.classList.add('path-edge');
     line.dataset.edgeId = e.id;
 
+    // side indicator (initially invisible)
+    const sideRect = document.createElementNS(SVG_NS, 'rect');
+    sideRect.classList.add('edge-side');
+    sideRect.dataset.edgeId = e.id;
+    sideRect.style.opacity = 0;
+
+    pathEdgeEls.set(e.id, { line, sideRect, from, to });
+
     layer.appendChild(line);
+    layer.appendChild(sideRect);
 });
 
 const edgeByNodes = new Map();
@@ -580,7 +593,6 @@ function updateCurrentListItem() {
         };
     }
 
-
     document.getElementById('modalItemName').textContent = routeState.currentItem.name;
 
     const qtyEl = document.getElementById('modalItemQty');
@@ -630,13 +642,23 @@ function renderRoute() {
     });
 
     // Active segment (if not already picked)
-    const active = routeState.segments[routeState.currentSegment];
-    if (active && !routeState.pickedItemIds.has(active.itemId)) {
-        active.edges.forEach(edge => {
+    const activeSegment = routeState.segments[routeState.currentSegment];
+    if (activeSegment && !routeState.pickedItemIds.has(activeSegment.itemId)) {
+        activeSegment.edges.forEach(edge => {
             edge.el.classList.remove('route-complete', 'route-upcoming');
             edge.el.classList.add('route-active');
         });
     }
+
+    // Highlight the edge on the map
+   
+    const edgeId = activeSegment.edges[activeSegment.edges.length - 1].id; // last edge leading to the item
+    const edge = pathEdgeEls.get(edgeId);
+
+    const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
+    const geometrySide = placementState.aisleSide * directionFactor;
+
+    updateAisleSide(edgeId, geometrySide);
 }
 
 
@@ -782,7 +804,7 @@ edgesData.forEach(e => {
     sideRect.dataset.edgeId = e.id;
     sideRect.style.opacity = 0;
 
-    edgeEls.set(e.id, { line, hit, sideRect, from, to });
+    placementEdgeEls.set(e.id, { line, hit, sideRect, from, to });
 
     layer.appendChild(line);
     layer.appendChild(sideRect);
@@ -854,6 +876,7 @@ function openPlacementMenu(card) {
     const textEl = modal.querySelector('.modal-text');
     const primaryBtn = modal.querySelector('.modal-btn.primary');
     const secondaryBtn = modal.querySelector('.modal-btn.secondary');
+    
 
     // read placement status from data attribute or JS variable
     const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'category', 'none'

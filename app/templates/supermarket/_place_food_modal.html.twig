@@ -49,7 +49,7 @@
 }
 
 .edge.selected {
-    stroke: #4dabf7;
+    stroke: #51cf66;
     stroke-width: 20;
     animation: pulse 1s infinite;
     filter: drop-shadow(0 0 6px rgba(77,171,247,0.8));
@@ -61,7 +61,7 @@
 
 
 .edge-side {
-    fill: rgba(77, 171, 247, 0.44);
+    fill: #6bb37a;
     opacity: 0;
     transition: opacity 0.15s ease;
 }
@@ -114,7 +114,7 @@ document.getElementById('placementCancelBtn').addEventListener('click', () => {
 
 // Vector math to offset left/right
 function updateAisleSide(edgeId, side) {
-    const edge = edgeEls.get(edgeId);
+    const edge = placementEdgeEls.get(edgeId);
     if (!edge) return;
 
     const { from, to, sideRect } = edge;
@@ -128,7 +128,7 @@ function updateAisleSide(edgeId, side) {
     // SAME constants as shelf generation
     const aisleWidth = 80;
     const shelfDepth = 30;
-    const offset = (aisleWidth / 2 + shelfDepth / 2) * side;
+    const offset = (aisleWidth / 2 ) * side;
 
     // compute perpendicular vector
     const px = -dy / len;
@@ -161,7 +161,7 @@ function selectEdge(edgeId) {
     }
 
    // Highlight the edge on the map
-    const edge = edgeEls.get(edgeId);
+    const edge = placementEdgeEls.get(edgeId);
     edge.line.classList.add('selected');
 
     const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
@@ -180,7 +180,7 @@ function preselectEdge(edgeId, aisleSide) {
     placementState.edgeId = edgeId;
     placementState.aisleSide = aisleSide;
 
-    const edge = edgeEls.get(edgeId);
+    const edge = placementEdgeEls.get(edgeId);
     if (!edge) return;
 
     edge.line.classList.add('selected');
@@ -195,7 +195,7 @@ function updatePlacementPayload() {
 }
 
 function clearSelection() {
-    edgeEls.forEach(({ line, sideRect }) => {
+    placementEdgeEls.forEach(({ line, sideRect }) => {
         line.classList.remove('selected');
         if (sideRect) sideRect.style.opacity = 0;
     });
