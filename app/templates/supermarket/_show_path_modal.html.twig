@@ -3,10 +3,19 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <h6 class="modal-title">
-                    Tap the aisle this item belongs in. </br>
-                    Tap again to change aisle side:
-                </h6>
+                <div class="modal-title">
+                    <div class="title">
+                        <strong>
+                            <span id="modalItemName"></span>
+                            <span id="modalItemQty" class="app-muted"></span>
+                        </strong>
+                    </div>
+
+                    <div id="modalItemNotes" class="notes small app-muted"></div>
+                </div>
+
+                <button id="skip" class="pick-skip" type="button">Skip</button>
+                <button id="pick" class="pick-skip" type="button">Picked</button>
             </div>
 
             <div class="modal-body">
@@ -21,10 +30,6 @@
             <div class="modal-footer">
                 <button type="button" id="pathCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
-            <form method="POST" action="/placement/save" id="placementForm">
-                <input type="hidden" name="placement" id="placementPayload">
-            </form>
-
         </div>
     </div>
 </div>
@@ -71,7 +76,3 @@
 
 
 </style>
-
-<script>
-
-</script>

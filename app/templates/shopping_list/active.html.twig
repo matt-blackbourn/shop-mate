@@ -74,6 +74,9 @@
             data-supermarket-id="{{ supermarket.id }}"  
             data-placement-status="{{ listItem.placementStatus.value }}"
             data-food-item-id="{{ listItem.foodItem.id }}"
+            data-food-item-name="{{ listItem.foodItem.name }}"
+            data-item-notes="{{ listItem.notes }}"
+            data-item-quantity="{{ listItem.quantity }}"
             data-placement-edge-id="{{ routedItem.placement ? routedItem.placement.edge.id : '' }}"
             data-placement-aisle-side="{{ routedItem.placement ? routedItem.placement.aisleSide : '' }}"
         >
@@ -127,7 +130,7 @@
                 </div>
 
                 <!-- PICKED -->
-                <button class="pick-btn" type="button">
+                <button class="pick-btn pick-skip" type="button">
                     Picked
                 </button>
 
@@ -147,6 +150,7 @@
     {% endfor %}
     </div>
 </div>
+
 {% include 'supermarket/_place_food_modal.html.twig' %}
 {% include 'supermarket/_show_path_modal.html.twig' %}
 
@@ -251,8 +255,7 @@
     color: #fa5252;
 }
 
-/* Picked button */
-.pick-btn {
+.pick-skip {
     all: unset;
     display: inline-flex;
     align-items: center;
@@ -267,13 +270,7 @@
     white-space: nowrap;
     flex-shrink: 0;
 }
-.pick-btn:active {
-    transform: scale(0.96);
-    background: #d7eddc;
-}
-.pick-btn:hover {
-    background-color: #343a46;
-}
+
 
 /* Card main title */
 .title {
@@ -467,6 +464,13 @@ const entranceNodeId = container.dataset.entranceNodeId;
 const edgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+const currentItemState = {
+    itemId: null,
+    name: null,
+    quantity: null,
+    notes: null,
+};
+
 
 // other state
 let processingQueue = false;
@@ -537,6 +541,12 @@ const routeState = {
     })),
     currentSegment: 0,
     pickedItemIds: new Set(),
+    currentItem: {
+        itemId: null,
+        name: null,
+        quantity: null,
+        notes: null,
+    },
 };
 
 
@@ -545,8 +555,41 @@ routeState.segments.forEach(segment => {
     segment.edges = resolveEdgesForSegment(segment);
 });
 
+updateCurrentListItem();
+console.log(routeState);
+
 // 4. 🔥 Render initial route
 renderRoute();
+
+function updateCurrentListItem() {
+    const segment = routeState.segments[routeState.currentSegment];
+    if(!segment) {
+        routeState.currentItem = {
+            listItemId: null,
+            name: null,
+            quantity: null,
+            notes: null,
+        };
+    } else {
+        const card = document.querySelector(`.shopping-card[data-id="${segment.itemId}"]`);
+        routeState.currentItem = {
+            itemId: card.dataset.id,
+            name: card.dataset.foodItemName,
+            quantity: card.dataset.itemQuantity,
+            notes: card.dataset.itemNotes,
+        };
+    }
+
+
+    document.getElementById('modalItemName').textContent = routeState.currentItem.name;
+
+    const qtyEl = document.getElementById('modalItemQty');
+    qtyEl.textContent = routeState.currentItem.quantity && routeState.currentItem.quantity > 1 ? ` (${routeState.currentItem.quantity})` : '';
+
+    const notesEl = document.getElementById('modalItemNotes');
+    notesEl.textContent = routeState.currentItem.notes ?? '';
+    notesEl.style.display = routeState.currentItem.notes ? '' : 'none';
+}
 
 function resolveEdgesForSegment(segment) {
     const edges = [];
@@ -586,8 +629,6 @@ function renderRoute() {
         });
     });
 
-    console.log(routeState);
-
     // Active segment (if not already picked)
     const active = routeState.segments[routeState.currentSegment];
     if (active && !routeState.pickedItemIds.has(active.itemId)) {
@@ -602,7 +643,7 @@ function renderRoute() {
 function onItemPicked(itemId) {
     const id = Number(itemId);
 
-    // Record the pick (truth)
+    // Record the pick
     routeState.pickedItemIds.add(id);
 
     const idx = routeState.segments.findIndex(
@@ -622,6 +663,7 @@ function onItemPicked(itemId) {
         routeState.currentSegment = next === -1 ? routeState.segments.length : next;
     }
 
+    updateCurrentListItem();
     renderRoute();
 }
 
@@ -781,8 +823,13 @@ function openPlacementModal(itemEl) {
 document.querySelectorAll('.pick-btn').forEach(btn => {
     btn.addEventListener('click', e => {
         const card = e.target.closest('.shopping-card');
-        pickItem(card);
+        const itemId = Number(card.dataset.id);
+        pickItemById(itemId);
     });
+});
+// pick from map view
+document.querySelector('#pick').addEventListener('click', () => {
+    pickItemById(routeState.currentItem.itemId);
 });
 
 document.querySelectorAll('.dots-btn').forEach(btn => {
@@ -898,10 +945,8 @@ async function processPickQueue() {
     processingQueue = false;
 }
 
-
-function pickItem(card) {
-    if (card.dataset.picking) return;
-    card.dataset.picking = '1';
+function pickItemById(itemId) {
+    const card = document.querySelector(`.shopping-card[data-id="${itemId}"]`);
 
     // Animate immediately
     card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
@@ -910,11 +955,9 @@ function pickItem(card) {
 
     // Remove from DOM after animation
     setTimeout(() => card.remove(), 200);
-
     enqueuePick(card);  
 
     // Update route immediately for UI
-    const itemId = card.dataset.id;
     onItemPicked(itemId);
 }
 
