@@ -571,13 +571,13 @@ routeState.segments.forEach(segment => {
     segment.edges = resolveEdgesForSegment(segment);
 });
 
-updateCurrentListItem();
+updateMapView();
 console.log(routeState);
 
 // 4. 🔥 Render initial route
-renderRoute();
+highlightEdgesOnPathMap();
 
-function updateCurrentListItem() {
+function updateMapView() {
     const segment = routeState.segments[routeState.currentSegment];
     if(!segment) {
         routeState.currentItem = {
@@ -632,7 +632,7 @@ function resolveEdgesForSegment(segment) {
     return edges;
 }
 
-function renderRoute() {
+function highlightEdgesOnPathMap() {
     // First pass: complete & upcoming
     routeState.segments.forEach((segment, index) => {
         if (index === routeState.currentSegment) return; // skip active for now
@@ -690,8 +690,8 @@ function onItemPicked(itemId) {
         routeState.currentSegment = next === -1 ? routeState.segments.length : next;
     }
 
-    updateCurrentListItem();
-    renderRoute();
+    updateMapView();
+    highlightEdgesOnPathMap();
 }
 
 function highlightPlacementEdge(segment, state) {
@@ -859,6 +859,11 @@ document.querySelector('#pick').addEventListener('click', () => {
     pickItemById(routeState.currentItem.itemId);
 });
 
+// skip item
+document.querySelector('#skip-item').addEventListener('click', () => {
+    skipItemById(routeState.currentItem.itemId);
+});
+
 document.querySelectorAll('.dots-btn').forEach(btn => {
     btn.addEventListener('click', e => {
         e.stopPropagation();
@@ -974,20 +979,48 @@ async function processPickQueue() {
 }
 
 function pickItemById(itemId) {
-    const card = document.querySelector(`.shopping-card[data-id="${itemId}"]`);
+    removeCardFromList(itemId);
+    enqueuePick(card);  // Add to queue for server update
+    updateRouteState(itemId);
+    updateMapView();
+    highlightEdgesOnPathMap();
+}
 
-    // Animate immediately
+function skipItemById(itemId) {
+    removeCardFromList(itemId);
+    updateRouteState(itemId);
+    updateMapView();
+    highlightEdgesOnPathMap();
+}
+
+function removeCardFromList(itemId){
+    const card = document.querySelector(`.shopping-card[data-id="${itemId}"]`);
     card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
     card.style.transform = 'translateX(-120%)';
     card.style.opacity = '0';
-
-    // Remove from DOM after animation
-    setTimeout(() => card.remove(), 200);
-    enqueuePick(card);  
-
-    // Update route immediately for UI
-    onItemPicked(itemId);
+    setTimeout(() => card.remove(), 200); // Remove from DOM after animation
 }
+
+function updateRouteState(itemId){
+    // Record the pick
+    const id = Number(itemId);
+    routeState.pickedItemIds.add(id);
+
+    // Record physical location of user in placement state in case of placement made mid-shop
+    const segmentIndex = routeState.segments.findIndex( s => s.itemId === id);
+    placementState.currentNodeId = routeState.segments[segmentIndex].targetNodeId;
+
+    // Update current segment if needed
+    if (segmentIndex === routeState.currentSegment) {
+        const nextSegment = routeState.segments.findIndex(
+            s => !routeState.pickedItemIds.has(s.itemId)
+        );
+
+        routeState.currentSegment = nextSegment === -1 ? routeState.segments.length : nextSegment;
+    }
+}
+
+
 
 // make this global later
 document.addEventListener('DOMContentLoaded', () => {
