@@ -458,8 +458,10 @@
 }
 
 .shelf-highlight {
-    fill: rgba(0, 255, 0, 0.35);
-    pointer-events: none;
+    fill: rgba(81, 207, 102, 0.25);
+    stroke: #51cf66;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
 }
 </style>
 
@@ -476,7 +478,7 @@ const placementEdgeEls = new Map(); // Keep references to all edges
 const pathEdgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
-const AISLE_WIDTH = 80;
+const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 
 const currentItemState = {
     itemId: null,
@@ -672,6 +674,8 @@ function highlightEdgesOnPathMap() {
     const highlights = document.querySelectorAll('.shelf-highlight');
     highlights.forEach(el => el.remove());
 
+    if(!activeSegment) return;
+
     const edge = activeSegment.edges[activeSegment.edges.length - 1]
     const shelves = shelvesNextToEdge(edge.id)
     const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, Number(routeState.currentItem.aisleSide)));
@@ -738,17 +742,35 @@ function shelvesNextToEdge(edgeId) {
         const shelfMaxY = shelf.y + shelf.height;
 
         if (horizontal) {
-            const shelfMidY = shelf.y + shelf.height / 2;
-            const closeInY = Math.abs(shelfMidY - edge.y1) < AISLE_WIDTH;
-            const overlapsX = rangesOverlap(shelfMinX, shelfMaxX, edgeMinX, edgeMaxX);
+            const dy =
+                edge.y1 < shelfMinY
+                    ? shelfMinY - edge.y1
+                    : edge.y1 > shelfMaxY
+                        ? edge.y1 - shelfMaxY
+                        : 0;
+
+            const closeInY = dy < AISLE_WIDTH; // we could use 1px over half of this and it would work, could tighten it up later
+            const overlapsX = rangesOverlap(
+                shelfMinX, shelfMaxX,
+                edgeMinX, edgeMaxX
+            );
 
             return closeInY && overlapsX;
         }
 
         if (vertical) {
-            const shelfMidX = shelf.x + shelf.width / 2;
-            const closeInX = Math.abs(shelfMidX - edge.x1) < AISLE_WIDTH;
-            const overlapsY = rangesOverlap(shelfMinY, shelfMaxY, edgeMinY, edgeMaxY);
+            const dx =
+                edge.x1 < shelfMinX
+                    ? shelfMinX - edge.x1
+                    : edge.x1 > shelfMaxX
+                        ? edge.x1 - shelfMaxX
+                        : 0; // edge is inside shelf X span (touching)
+
+            const closeInX = dx < AISLE_WIDTH; // we could use 1px over half of this and it would work, could tighten it up later
+            const overlapsY = rangesOverlap(
+                shelfMinY, shelfMaxY,
+                edgeMinY, edgeMaxY
+            );
 
             return closeInX && overlapsY;
         }
@@ -762,29 +784,25 @@ function rangesOverlap(aMin, aMax, bMin, bMax) {
 }
 
 function shelfIsOnAisleSide(shelf, edge, aisleSide) {
-    // edge direction
-    const dx = edge.x2 - edge.x1;
-    const dy = edge.y2 - edge.y1;
-    const len = Math.hypot(dx, dy);
-    if (len === 0) return false; // degenerate edge
-
-    // normal vector (perpendicular to edge)
-    const nx = -dy / len;
-    const ny =  dx / len;
+    const vertical = edge.x1 === edge.x2;
+    const horizontal = edge.y1 === edge.y2;
 
     // shelf center
     const cx = shelf.x + shelf.width / 2;
     const cy = shelf.y + shelf.height / 2;
 
-    // vector from edge start → shelf center
-    const vx = cx - edge.x1;
-    const vy = cy - edge.y1;
+    if (vertical) {
+        // signed distance from shelf center to edge line
+        const side = cx - edge.x1;
+        return Math.sign(side) === aisleSide;
+    }
 
-    // dot product tells which side
-    const side = vx * nx + vy * ny;
+    if (horizontal) {
+        const side = cy - edge.y1;
+        return Math.sign(side) === aisleSide;
+    }
 
-    // matches aisleSide?
-    return Math.sign(side) === aisleSide;
+    return false;
 }
 
 function onItemPicked(itemId) {

@@ -113,7 +113,7 @@ document.getElementById('placementCancelBtn').addEventListener('click', () => {
 });
 
 // Vector math to offset left/right
-function updateAisleSide(edge, aisleSide) {
+function highlightAisleSide(edge, aisleSide) {
     const { from, to, sideRect } = edge;
 
     const dx = to.x - from.x;
@@ -162,7 +162,7 @@ function selectEdge(edgeId) {
    // Highlight the edge on the map
     edge.line.classList.add('selected');
 
-    updateAisleSide(edge, placementState.aisleSide);
+    highlightAisleSide(edge, placementState.aisleSide);
     updatePlacementPayload();
 
     confirmBtn.disabled = false;
@@ -180,7 +180,7 @@ function preselectEdge(edgeId, aisleSide) {
 
     edge.line.classList.add('selected');
 
-    updateAisleSide(edge, placementState.aisleSide);
+    highlightAisleSide(edge, placementState.aisleSide);
 }
 
 function updatePlacementPayload() {
