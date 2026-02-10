@@ -125,7 +125,7 @@
                     </div>
 
                     {% if listItem.notes %}
-                        <div class="notes small app-muted">
+                        <div class="app-muted notes">
                             {{ listItem.notes }}
                         </div>
                     {% endif %}
@@ -285,6 +285,9 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.notes{
+    font-style: italic;
 }
 
 .dots-wrapper {
@@ -515,7 +518,7 @@ edgesData.forEach(e => {
 
     // side indicator (initially invisible)
     const sideRect = document.createElementNS(SVG_NS, 'rect');
-    sideRect.classList.add('edge-side');
+    sideRect.classList.add('location-side');
     sideRect.dataset.edgeId = e.id;
     sideRect.style.opacity = 0;
 
@@ -582,6 +585,7 @@ function updateCurrentListItem() {
             name: null,
             quantity: null,
             notes: null,
+            aisleSide: null,
         };
     } else {
         const card = document.querySelector(`.shopping-card[data-id="${segment.itemId}"]`);
@@ -590,6 +594,7 @@ function updateCurrentListItem() {
             name: card.dataset.foodItemName,
             quantity: card.dataset.itemQuantity,
             notes: card.dataset.itemNotes,
+            aisleSide: card.dataset.placementAisleSide,
         };
     }
 
@@ -650,15 +655,15 @@ function renderRoute() {
         });
     }
 
+    // Clear any prior highlights
+    pathEdgeEls.forEach(({ sideRect }) => {
+        sideRect.style.opacity = 0;
+    });
+
     // Highlight the edge on the map
-   
     const edgeId = activeSegment.edges[activeSegment.edges.length - 1].id; // last edge leading to the item
     const edge = pathEdgeEls.get(edgeId);
-
-    const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
-    const geometrySide = placementState.aisleSide * directionFactor;
-
-    updateAisleSide(edgeId, geometrySide);
+    updateAisleSide(edge, routeState.currentItem.aisleSide);
 }
 
 

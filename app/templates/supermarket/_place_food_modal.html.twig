@@ -113,10 +113,8 @@ document.getElementById('placementCancelBtn').addEventListener('click', () => {
 });
 
 // Vector math to offset left/right
-function updateAisleSide(edgeId, side) {
-    const edge = placementEdgeEls.get(edgeId);
-    if (!edge) return;
-
+function updateAisleSide(edge, aisleSide) {
+console.log(edge);
     const { from, to, sideRect } = edge;
 
     const dx = to.x - from.x;
@@ -127,8 +125,9 @@ function updateAisleSide(edgeId, side) {
     // rectangle thickness (distance from aisle center to side)
     // SAME constants as shelf generation
     const aisleWidth = 80;
-    const shelfDepth = 30;
-    const offset = (aisleWidth / 2 ) * side;
+    const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
+    const geometrySide = aisleSide * directionFactor;
+    const offset = (aisleWidth / 2 ) * geometrySide;
 
     // compute perpendicular vector
     const px = -dy / len;
@@ -152,6 +151,8 @@ function updateAisleSide(edgeId, side) {
 
 function selectEdge(edgeId) {
     edgeId = Number(edgeId);
+    const edge = placementEdgeEls.get(edgeId);
+
     if (placementState.edgeId === edgeId) {
         placementState.aisleSide *= -1;
     } else {
@@ -161,13 +162,9 @@ function selectEdge(edgeId) {
     }
 
    // Highlight the edge on the map
-    const edge = placementEdgeEls.get(edgeId);
     edge.line.classList.add('selected');
 
-    const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
-    const geometrySide = placementState.aisleSide * directionFactor;
-
-    updateAisleSide(edgeId, geometrySide);
+    updateAisleSide(edge, placementState.aisleSide);
     updatePlacementPayload();
 
     confirmBtn.disabled = false;
@@ -185,8 +182,7 @@ function preselectEdge(edgeId, aisleSide) {
 
     edge.line.classList.add('selected');
 
-    const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
-    updateAisleSide(edgeId, placementState.aisleSide * directionFactor);
+    updateAisleSide(edge, placementState.aisleSide);
 }
 
 function updatePlacementPayload() {
