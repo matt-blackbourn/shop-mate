@@ -114,7 +114,6 @@ document.getElementById('placementCancelBtn').addEventListener('click', () => {
 
 // Vector math to offset left/right
 function updateAisleSide(edge, aisleSide) {
-console.log(edge);
     const { from, to, sideRect } = edge;
 
     const dx = to.x - from.x;
@@ -124,10 +123,9 @@ console.log(edge);
 
     // rectangle thickness (distance from aisle center to side)
     // SAME constants as shelf generation
-    const aisleWidth = 80;
     const directionFactor = edge.from.id < edge.to.id ? 1 : -1;
     const geometrySide = aisleSide * directionFactor;
-    const offset = (aisleWidth / 2 ) * geometrySide;
+    const offset = (AISLE_WIDTH / 2 ) * geometrySide;
 
     // compute perpendicular vector
     const px = -dy / len;

@@ -456,6 +456,11 @@
     border-color: #2a2f3a;
     color: #6c757d;
 }
+
+.shelf-highlight {
+    fill: rgba(0, 255, 0, 0.35);
+    pointer-events: none;
+}
 </style>
 
 <script>
@@ -470,6 +475,8 @@ const entranceNodeId = container.dataset.entranceNodeId;
 const placementEdgeEls = new Map(); // Keep references to all edges
 const pathEdgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
+const shelfEls = []; // keep refs + geometry
+const AISLE_WIDTH = 80;
 
 const currentItemState = {
     itemId: null,
@@ -494,7 +501,7 @@ const placementState = {
 const nodes = {};
 nodesData.forEach(n => {
     if (n.id == entranceNodeId) {
-        drawEntranceNode(n);
+        drawEntranceArrow(n);
     }
     nodes[n.id] = n;
 });
@@ -517,15 +524,17 @@ edgesData.forEach(e => {
     line.dataset.edgeId = e.id;
 
     // side indicator (initially invisible)
+    /**
     const sideRect = document.createElementNS(SVG_NS, 'rect');
     sideRect.classList.add('location-side');
     sideRect.dataset.edgeId = e.id;
     sideRect.style.opacity = 0;
 
     pathEdgeEls.set(e.id, { line, sideRect, from, to });
+    */
 
     layer.appendChild(line);
-    layer.appendChild(sideRect);
+    // layer.appendChild(sideRect);
 });
 
 const edgeByNodes = new Map();
@@ -535,7 +544,6 @@ edgesData.forEach(edge => {
     );
 
     if (!el) {
-        console.warn('Missing DOM for edge', edge.id);
         return;
     }
 
@@ -549,6 +557,7 @@ edgesData.forEach(edge => {
         el
     });
 });
+
 // 2. Build routeState
 const routeState = {
     segments: segments.map(s => ({
@@ -570,6 +579,10 @@ const routeState = {
 routeState.segments.forEach(segment => {
     segment.edges = resolveEdgesForSegment(segment);
 });
+
+// draw shelves on maps
+drawShelves(shelvesData, document.getElementById('placement-map'))
+drawShelves(shelvesData, document.getElementById('path-map'))
 
 updateMapView();
 console.log(routeState);
@@ -656,16 +669,123 @@ function highlightEdgesOnPathMap() {
     }
 
     // Clear any prior highlights
-    pathEdgeEls.forEach(({ sideRect }) => {
-        sideRect.style.opacity = 0;
-    });
+    const highlights = document.querySelectorAll('.shelf-highlight');
+    highlights.forEach(el => el.remove());
 
-    // Highlight the edge on the map
-    const edgeId = activeSegment.edges[activeSegment.edges.length - 1].id; // last edge leading to the item
-    const edge = pathEdgeEls.get(edgeId);
-    updateAisleSide(edge, routeState.currentItem.aisleSide);
+    const edge = activeSegment.edges[activeSegment.edges.length - 1]
+    const shelves = shelvesNextToEdge(edge.id)
+    const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, Number(routeState.currentItem.aisleSide)));
+    highlightShelfPortion(correctShelf, edge);
 }
 
+
+function highlightShelfPortion(shelf, edge) {
+    const horizontal = edge.y1 === edge.y2;
+    const vertical = edge.x1 === edge.x2;
+
+    const shelfMinX = shelf.x;
+    const shelfMaxX = shelf.x + shelf.width;
+    const shelfMinY = shelf.y;
+    const shelfMaxY = shelf.y + shelf.height;
+
+    if (horizontal) {
+        const x1 = Math.max(shelfMinX, Math.min(edge.x1, edge.x2));
+        const x2 = Math.min(shelfMaxX, Math.max(edge.x1, edge.x2));
+
+        if (x2 <= x1) return;
+
+        drawShelfHighlight(shelf, x1, shelf.y, x2 - x1, shelf.height);
+    }
+
+    if (vertical) {
+        const y1 = Math.max(shelfMinY, Math.min(edge.y1, edge.y2));
+        const y2 = Math.min(shelfMaxY, Math.max(edge.y1, edge.y2));
+
+        if (y2 <= y1) return;
+
+        drawShelfHighlight(shelf, shelf.x, y1, shelf.width, y2 - y1);
+    }
+}
+
+function drawShelfHighlight(shelf, x, y, width, height) {
+    const highlight = document.createElementNS(SVG_NS, 'rect');
+    highlight.classList.add('shelf-highlight');
+    highlight.setAttribute('x', x);
+    highlight.setAttribute('y', y);
+    highlight.setAttribute('width', width);
+    highlight.setAttribute('height', height);
+
+    shelf.el.parentNode.appendChild(highlight);
+}
+
+function shelvesNextToEdge(edgeId) {
+    const edge = edgesData.find(e => e.id === edgeId);
+    if (!edge) return [];
+
+    const horizontal = edge.y1 === edge.y2;
+    const vertical   = edge.x1 === edge.x2;
+
+    const edgeMinX = Math.min(edge.x1, edge.x2);
+    const edgeMaxX = Math.max(edge.x1, edge.x2);
+    const edgeMinY = Math.min(edge.y1, edge.y2);
+    const edgeMaxY = Math.max(edge.y1, edge.y2);
+
+
+    return shelfEls.filter(shelf => {
+        const shelfMinX = shelf.x;
+        const shelfMaxX = shelf.x + shelf.width;
+        const shelfMinY = shelf.y;
+        const shelfMaxY = shelf.y + shelf.height;
+
+        if (horizontal) {
+            const shelfMidY = shelf.y + shelf.height / 2;
+            const closeInY = Math.abs(shelfMidY - edge.y1) < AISLE_WIDTH;
+            const overlapsX = rangesOverlap(shelfMinX, shelfMaxX, edgeMinX, edgeMaxX);
+
+            return closeInY && overlapsX;
+        }
+
+        if (vertical) {
+            const shelfMidX = shelf.x + shelf.width / 2;
+            const closeInX = Math.abs(shelfMidX - edge.x1) < AISLE_WIDTH;
+            const overlapsY = rangesOverlap(shelfMinY, shelfMaxY, edgeMinY, edgeMaxY);
+
+            return closeInX && overlapsY;
+        }
+
+        return false;
+    });
+}
+
+function rangesOverlap(aMin, aMax, bMin, bMax) {
+    return Math.min(aMax, bMax) > Math.max(aMin, bMin);
+}
+
+function shelfIsOnAisleSide(shelf, edge, aisleSide) {
+    // edge direction
+    const dx = edge.x2 - edge.x1;
+    const dy = edge.y2 - edge.y1;
+    const len = Math.hypot(dx, dy);
+    if (len === 0) return false; // degenerate edge
+
+    // normal vector (perpendicular to edge)
+    const nx = -dy / len;
+    const ny =  dx / len;
+
+    // shelf center
+    const cx = shelf.x + shelf.width / 2;
+    const cy = shelf.y + shelf.height / 2;
+
+    // vector from edge start → shelf center
+    const vx = cx - edge.x1;
+    const vy = cy - edge.y1;
+
+    // dot product tells which side
+    const side = vx * nx + vy * ny;
+
+    // matches aisleSide?
+    return Math.sign(side) === aisleSide;
+}
 
 function onItemPicked(itemId) {
     const id = Number(itemId);
@@ -695,18 +815,12 @@ function onItemPicked(itemId) {
 }
 
 function highlightPlacementEdge(segment, state) {
-    const edgeEl = document.querySelector(
-        `[data-edge-id="${segment.placementEdgeId}"]`
-    );
-
+    const edgeEl = document.querySelector(`[data-edge-id="${segment.placementEdgeId}"]`);
     edgeEl?.classList.add(`placement-${state}`);
 }
 
 
 
-// draw shelves on maps
-drawShelves(shelvesData, document.getElementById('placement-map'))
-drawShelves(shelvesData, document.getElementById('path-map'))
 
 // draw shelves
 function drawShelves(shelvesData, svg) {
@@ -718,14 +832,26 @@ function drawShelves(shelvesData, svg) {
         rect.setAttribute('height', shelf.height);
         rect.classList.add('shelf');
         svg.appendChild(rect);
+
+        // update shelfEls with geometry for hit testing during placement
+        if(svg.id == 'path-map'){
+            shelfEls.push({
+                el: rect,
+                ...shelf
+            });
+
+        }
     });
 }
+
+
+
 
 function getLayer(svgId, layerId) {
     return document.getElementById(svgId).querySelector(`#${layerId}`);
 }
 
-function drawEntranceNode(node) {
+function drawEntranceArrow(node) {
     let layer = getLayer('placement-map', 'placement-entrance-layer');
 
     // --- create group ---
@@ -886,7 +1012,6 @@ function openPlacementMenu(card) {
     const textEl = modal.querySelector('.modal-text');
     const primaryBtn = modal.querySelector('.modal-btn.primary');
     const secondaryBtn = modal.querySelector('.modal-btn.secondary');
-    
 
     // read placement status from data attribute or JS variable
     const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'category', 'none'
@@ -942,7 +1067,6 @@ function openPlacementMenu(card) {
     };
 
     secondaryBtn.onclick = () => {
-        console.log('Secondary action clicked for', card.dataset.id);
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
     };
@@ -970,7 +1094,7 @@ async function processPickQueue() {
                 }
             });
         } catch (e) {
-            console.error('Failed to mark item as picked', id);
+            // console.error('Failed to mark item as picked', id);
             // optional: stash failed IDs for retry
         }
     }
@@ -1019,8 +1143,6 @@ function updateRouteState(itemId){
         routeState.currentSegment = nextSegment === -1 ? routeState.segments.length : nextSegment;
     }
 }
-
-
 
 // make this global later
 document.addEventListener('DOMContentLoaded', () => {
