@@ -20,7 +20,7 @@
 
             <div class="modal-footer">
                 <button type="button" id="placementCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="placementForm" id="placementConfirmBtn" class="btn btn-primary" disabled>Save placement</button>
+                <button type="submit" form="placementForm" id="placementConfirmBtn" disabled>Save placement</button>
             </div>
             <form method="POST" action="/placement/save" id="placementForm">
                 <input type="hidden" name="placement" id="placementPayload">
@@ -30,7 +30,20 @@
     </div>
 </div>
 <style>
-
+#placementConfirmBtn {
+    background-color: #51cf66;
+    border: 1px solid #51cf66;
+    color: #0b0d12;
+    border-radius: 0.5rem; /* keep rounded corners */
+    padding: 0.5rem 1rem;  /* matches original spacing */
+}
+#placementCancelBtn {
+    border: 1px solid #343a46;
+    color: #e9ecef;
+    border-radius: 0.5rem; /* keep rounded corners */
+    padding: 0.5rem 1rem;  /* matches original spacing */
+    background-color: #343a46;
+}
 
 </style>
 
