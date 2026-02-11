@@ -201,7 +201,7 @@
 }
 
 .side-menu a:hover {
-    color: #4dabf7; /* primary accent hover */
+    color: #51cf66; /* primary accent hover */
 }
 
 .side-menu ul {
@@ -220,7 +220,7 @@
 
 .menu-close:hover,
 .menu-button:hover {
-    color: #4dabf7;
+    color: #51cf66;
 }
 
 /* Header buttons – base */
@@ -234,27 +234,20 @@
 /* Finished button */
 .header-btn:hover {
     background-color: rgba(77, 171, 247, 0.15);
-    border-color: #4dabf7;
+    border-color: #51cf66;
 }
 
-
-
-
 #add-item {
-    background-color: #4dabf7;
-    border: 1px solid #4dabf7;
+    background-color: #51cf66;
+    border: 1px solid #51cf66;
     color: #0b0d12;
     border-radius: 0.5rem; /* keep rounded corners */
     padding: 0.5rem 1rem;  /* matches original spacing */
 }
 
-#add-item:hover {
-    background-color: #70b5f9;
-}
-
 #save-list {
-    background-color: #f0ad4e;
-    border: 1px solid #f0ad4e;
+    background-color: #f59e0b;
+    border: 1px solid #f59e0b;
     color: #0b0d12;
     border-radius: 0.5rem;
     padding: 0.5rem 1rem;
@@ -267,7 +260,7 @@
 }
 
 #save-list:hover:not(:disabled) {
-    background-color: #f1b55d;
+    background-color: #f59e0b;
 }
 
 #refresh-page {
@@ -781,6 +774,20 @@ form.addEventListener('input', () => {
     updateActionButtons();
 });
 
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.remove-item');
+    if (!btn) return;
+
+    if (isDirty) return;
+
+    isDirty = true;
+    saveButton.disabled = false;
+
+    saveButton.classList.remove('btn-outline-secondary');
+    saveButton.classList.add('btn-outline-warning'); // guessing this was intended
+
+    updateActionButtons();
+});
 
 function updateActionButtons() {
     if (isDirty) {

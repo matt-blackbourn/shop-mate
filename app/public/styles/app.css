@@ -4,11 +4,11 @@
 :root {
     --bg-color: #0f1115;         /* main background */
     --fg-color: #e9ecef;         /* main text */
-    --primary: #4dabf7;          /* primary action color */
+    --primary: #51cf66;          /* primary action color */
     --secondary: #2b303b;        /* secondary buttons, inputs */
     --border: #343a46;           /* borders for forms, tables */
     --header-bg: #121520;        /* headers, modal footers */
-    --fab-bg: #4dabf7;           /* floating action button */
+    --fab-bg: #51cf66;           /* floating action button */
     --fab-color: #0b0d12;
 }
 
@@ -195,7 +195,7 @@ a {
 }
 
 a:hover {
-    color: #70b5f9;
+    color: #51cf66;
 }
 
 /* =================================
