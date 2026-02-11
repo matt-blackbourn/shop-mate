@@ -1222,6 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
 //---------------------------------------
 // second placement modal
 
+const confirmBtn = document.getElementById('placementConfirmBtn');
 let lastShelfSelection = {
     shelfId: null,
     edgeIndex: 0
@@ -1281,7 +1282,7 @@ function onShelfClicked(shelf, click) {
     placementState.aisleSide = aisleSide;
     placementState.edgeId = edge.id;
 
-    console.log(placementState);
+    confirmBtn.disabled = false;
     
     clearShelfHighlights();
     highlightShelfPortion(shelf, edge);
@@ -1422,6 +1423,31 @@ function openOtherPlacementModal(itemEl) {
     }
     
     modal.show();
+}
+
+
+
+document.getElementById('placementCancelBtn').addEventListener('click', () => {
+    clearSelection();
+
+    placementState.edgeId = null;
+    placementState.aisleSide = null;
+    placementState.foodItemId = null;
+    placementState.supermarketId = null;
+
+    updatePlacementPayload();
+    confirmBtn.disabled = true;
+});
+
+function updatePlacementPayload() {
+    document.getElementById('placementPayload').value = JSON.stringify(placementState);
+}
+
+function clearSelection() {
+    clearShelfHighlights();
+
+    placementState.edgeId = null;
+    placementState.aisleSide = null;
 }
 
 

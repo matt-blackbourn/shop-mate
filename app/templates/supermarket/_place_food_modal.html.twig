@@ -18,13 +18,13 @@
                 </div>
             </div>
 
-            <div class="modal-footer">
+            {# <div class="modal-footer">
                 <button type="button" id="placementCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" form="placementForm" id="placementConfirmBtn" class="btn btn-primary" disabled>Save placement</button>
             </div>
             <form method="POST" action="/placement/save" id="placementForm">
                 <input type="hidden" name="placement" id="placementPayload">
-            </form>
+            </form> #}
 
         </div>
     </div>
@@ -98,19 +98,7 @@
 </style>
 
 <script>
-const confirmBtn = document.getElementById('placementConfirmBtn');
 
-document.getElementById('placementCancelBtn').addEventListener('click', () => {
-    clearSelection();
-
-    placementState.edgeId = null;
-    placementState.aisleSide = null;
-    placementState.foodItemId = null;
-    placementState.supermarketId = null;
-
-    updatePlacementPayload();
-    confirmBtn.disabled = true;
-});
 
 // Vector math to offset left/right
 function highlightAisleSide(edge, aisleSide) {
