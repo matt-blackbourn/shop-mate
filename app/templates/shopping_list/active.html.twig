@@ -469,6 +469,7 @@
     stroke: #51cf66;
     stroke-width: 2;
     vector-effect: non-scaling-stroke;
+    pointer-events: none;   /* 👈 THIS FIXES IT */
 }
 </style>
 
@@ -671,44 +672,63 @@ function highlightEdgesOnPathMap() {
         });
     }
 
-    // Clear any prior highlights
-    const highlights = document.querySelectorAll('.shelf-highlight');
-    highlights.forEach(el => el.remove());
+    clearShelfHighlights();
 
     if(!activeSegment) return;
 
     const edge = activeSegment.edges[activeSegment.edges.length - 1]
-    const shelves = shelvesNextToEdge(edge.id)
+    const shelves = shelvesNextToEdge(edge.id, shelfEls)
     const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, Number(routeState.currentItem.aisleSide)));
     highlightShelfPortion(correctShelf, edge);
 }
 
 
 function highlightShelfPortion(shelf, edge) {
-    const horizontal = edge.y1 === edge.y2;
-    const vertical = edge.x1 === edge.x2;
+    const edgeIsHorizontal = edge.y1 === edge.y2;
+    const edgeIsVertical   = edge.x1 === edge.x2;
 
     const shelfMinX = shelf.x;
     const shelfMaxX = shelf.x + shelf.width;
     const shelfMinY = shelf.y;
     const shelfMaxY = shelf.y + shelf.height;
 
-    if (horizontal) {
+    const halfHeight = shelf.height / 2;
+    const halfWidth  = shelf.width / 2;
+
+    // 🔹 Edge runs left-right (above or below shelf)
+    if (edgeIsHorizontal) {
         const x1 = Math.max(shelfMinX, Math.min(edge.x1, edge.x2));
         const x2 = Math.min(shelfMaxX, Math.max(edge.x1, edge.x2));
-
         if (x2 <= x1) return;
 
-        drawShelfHighlight(shelf, x1, shelf.y, x2 - x1, shelf.height);
+        // Is edge above or below the shelf?
+        const edgeIsAbove = edge.y1 < shelfMinY;
+
+        drawShelfHighlight(
+            shelf,
+            x1,
+            edgeIsAbove ? shelfMinY : shelfMinY + halfHeight,
+            x2 - x1,
+            halfHeight
+        );
     }
 
-    if (vertical) {
+    // 🔹 Edge runs up-down (left or right of shelf)
+    if (edgeIsVertical) {
         const y1 = Math.max(shelfMinY, Math.min(edge.y1, edge.y2));
         const y2 = Math.min(shelfMaxY, Math.max(edge.y1, edge.y2));
-
         if (y2 <= y1) return;
 
-        drawShelfHighlight(shelf, shelf.x, y1, shelf.width, y2 - y1);
+        // Is edge left or right of shelf?
+        const edgeIsLeft = edge.x1 < shelfMinX;
+
+        drawShelfHighlight(
+            shelf,
+            edgeIsLeft ? shelfMinX : shelfMinX + halfWidth,
+            y1,
+            halfWidth,
+            y2 - y1
+        );
     }
 }
 
@@ -723,7 +743,7 @@ function drawShelfHighlight(shelf, x, y, width, height) {
     shelf.el.parentNode.appendChild(highlight);
 }
 
-function shelvesNextToEdge(edgeId) {
+function shelvesNextToEdge(edgeId, shelfData) {
     const edge = edgesData.find(e => e.id === edgeId);
     if (!edge) return [];
 
@@ -736,7 +756,7 @@ function shelvesNextToEdge(edgeId) {
     const edgeMaxY = Math.max(edge.y1, edge.y2);
 
 
-    return shelfEls.filter(shelf => {
+    return shelfData.filter(shelf => {
         const shelfMinX = shelf.x;
         const shelfMaxX = shelf.x + shelf.width;
         const shelfMinY = shelf.y;
@@ -1238,11 +1258,11 @@ edgesData.forEach(e => {
 
 function onShelfClicked(shelf, click) {
     const edges = edgesNextToShelf(shelf, click);
-    console.log(edges)
     if (!edges.length) return;
 
     let index = 0;
-
+    // if user clicked same shelf again, cycle to next edge
+    //  % edges.length loops back to the first edge after reaching the end of the list
     if (lastShelfSelection.shelfId === shelf.id) {
         index = (lastShelfSelection.edgeIndex + 1) % edges.length;
     }
@@ -1250,20 +1270,35 @@ function onShelfClicked(shelf, click) {
     const edge = edges[index];
     const aisleSide = aisleSideForShelf(shelf, edge);
 
+    // update last selection for toggling
     lastShelfSelection = {
         shelfId: shelf.id,
         edgeIndex: index
     };
 
-
     // existing logic you already have
-    selectEdge(edge.id);
+    //selectEdge(edge.id);
     placementState.aisleSide = aisleSide;
+    placementState.edgeId = edge.id;
 
-    //highlightAisleSide(edge, aisleSide);
+    console.log(placementState);
+    
+    clearShelfHighlights();
+    highlightShelfPortion(shelf, edge);
     updatePlacementPayload()
 }
 
+function preselectShelf(edgeId, aisleSide) {
+    const shelves = shelvesNextToEdge(edgeId, shelfElsOther)
+    const edge = edgesData.find(e => e.id === edgeId);
+    const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, aisleSide));
+
+    highlightShelfPortion(correctShelf, edge);
+}
+
+function clearShelfHighlights() {
+    document.querySelectorAll('.shelf-highlight').forEach(el => el.remove());
+}
 
 function aisleSideForShelf(shelf, edge) {
     const cx = shelf.x + shelf.width / 2;
@@ -1369,9 +1404,6 @@ function shelfOrientation(shelf) {
 }
 
 
-
-
-
 function openOtherPlacementModal(itemEl) {
     const modalEl = document.getElementById('otherPlacementModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -1384,9 +1416,9 @@ function openOtherPlacementModal(itemEl) {
     placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
 
-    // Only select edge if one exists
+    // Only select placement if one exists
     if (edgeId) {
-        // preselectEdge(edgeId, aisleSide)
+        preselectShelf(Number(edgeId), Number(aisleSide))
     }
     
     modal.show();
