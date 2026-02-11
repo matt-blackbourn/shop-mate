@@ -95,8 +95,7 @@
                             <div class="modal-actions">
                                 <button type="button" class="modal-btn primary"></button>
                                 <button type="button" class="modal-btn secondary"></button>
-                                <button type="button" class="modal-btn tertiary">New placement</button>
-                                <button id="skip" class="btn btn-secondary" type="button">Skip Item</button>
+                                <button type="button" class="modal-btn primary" id="skip-item">Skip Item</button>
 
                             </div>
                         </div>
@@ -154,7 +153,6 @@
     </div>
 </div>
 
-{% include 'supermarket/_place_food_modal.html.twig' %}
 {% include 'supermarket/_new_place_food_modal.html.twig' %}
 {% include 'supermarket/_show_path_modal.html.twig' %}
 
@@ -331,17 +329,12 @@
     cursor: pointer;
     border: 1px solid transparent;
 }
-.modal-btn.primary {
-    background-color: #4dabf7;
-    color: #0b0d12;
-    border-color: #4dabf7;
-}
 .modal-btn.secondary {
     background-color: #2b303b;
     color: #e9ecef;
     border-color: #343a46;
 }
-.modal-btn.tertiary {
+.modal-btn.primary {
     background-color: #2b303b;
     color: #e9ecef;
     border-color: #343a46;
@@ -469,7 +462,75 @@
     stroke: #51cf66;
     stroke-width: 2;
     vector-effect: non-scaling-stroke;
-    pointer-events: none;   /* 👈 THIS FIXES IT */
+    pointer-events: none; 
+}
+
+.node.entrance {
+    paint-order: stroke fill; /* ensures arrow is above circle */
+}
+
+.node.entrance circle:first-child {
+    fill: #f59e0b;
+}
+
+.node.entrance circle:nth-child(2) {
+    fill: #f59e0b;
+}
+
+.node.entrance path {
+    fill: #f59e0b; /* same as node */
+}
+.node.entrance .arrow-line {
+    stroke: #f59e0b;        /* amber-500 */
+    opacity: 1;
+    stroke-width: 7;
+    drop-shadow(0 0 8px rgba(245, 158, 11, 0.65))
+    stroke-dasharray: 40 20; 
+}
+
+/* Base route styling */
+.path-edge.route-upcoming,
+.path-edge.route-active,
+.path-edge.route-complete {
+    stroke-width: 6;              /* thicker line */
+    stroke-dasharray: 40 20;      /* long dash, clear gap */
+    transition: stroke 200ms ease, opacity 200ms ease;
+}
+
+.path-edge.route-complete {
+    stroke: #64748b;        /* slate-500 */
+    opacity: 0.7;
+    stroke-width: 4;
+}
+
+/* Active (warm, obvious) */
+.path-edge.route-active {
+    stroke: #f59e0b;        /* amber-500 */
+    opacity: 1;
+    stroke-width: 7;
+    drop-shadow(0 0 8px rgba(245, 158, 11, 0.65))
+    stroke-dasharray: 60 0; /* solid */
+    animation: pulse 1s infinite;
+}
+
+/* Upcoming (same hue, hint only) */
+.path-edge.route-upcoming {
+    stroke: #f59e0b;
+    opacity: 0.4;
+    stroke-width: 4;
+}
+
+.location-side {
+    fill: #f59e0b80
+}
+
+/* ----------------------
+   Animations
+   ---------------------- */
+@keyframes pulse {
+    0%   { stroke-width: 8;  opacity: 0.7; }
+    50%  { stroke-width: 12; opacity: 1; }
+    100% { stroke-width: 8;  opacity: 0.7; }
 }
 </style>
 
@@ -583,7 +644,6 @@ routeState.segments.forEach(segment => {
 
 // draw shelves on maps
 drawShelves(shelvesData, document.getElementById('placement-map'))
-drawShelves(shelvesData, document.getElementById('placement-map-2'))
 drawShelves(shelvesData, document.getElementById('path-map'))
 
 updateMapView();
@@ -884,7 +944,7 @@ function drawShelves(shelvesData, svg) {
         }
 
         // update shelfEls with geometry for hit testing during placement
-        if(svg.id == 'placement-map-2'){
+        if(svg.id == 'placement-map'){
             shelfElsOther.push({
                 el: rect,
                 ...shelf
@@ -916,14 +976,14 @@ function drawEntranceArrow(node) {
     g.appendChild(ring);
     g.appendChild(circle);
 
-    // --- find first edge ---
     const firstEdge = edgesData.find(e => e.from === node.id);
     if (firstEdge) {
         const dx = firstEdge.x2 - firstEdge.x1; // horizontal distance
         const dy = firstEdge.y2 - firstEdge.y1; // vertical distance
         const angle = Math.atan2(dy, dx) * (180 / Math.PI); // rotation in degrees
-        const arrowLength = 100; // length of the line
-        const arrowTipWidth = 30; // size of the tip
+
+        const arrowLength = dx ? Math.abs(dx) : Math.abs(dy); // length of the line
+        const arrowTipWidth = arrowLength/5; // size of the tip
 
         // Arrow line starting at node center
         const line = document.createElementNS(SVG_NS, 'line');
@@ -939,6 +999,7 @@ function drawEntranceArrow(node) {
         const tip = document.createElementNS(SVG_NS, 'path');
         tip.setAttribute('d', `M0 ${-arrowTipWidth/2} L${arrowTipWidth} 0 L0 ${arrowTipWidth/2} Z`);
         tip.setAttribute('fill', '#f2b66d');
+
         // Translate the tip along the rotated X axis so it sits exactly at the end of the line
         tip.setAttribute('transform', `rotate(${angle}) translate(${arrowLength},0)`);
         g.appendChild(tip);
@@ -1036,6 +1097,9 @@ document.querySelector('#pick').addEventListener('click', () => {
 document.querySelector('#skip-item').addEventListener('click', () => {
     skipItemById(routeState.currentItem.itemId);
 });
+document.querySelector('#skip-item-map').addEventListener('click', () => {
+    skipItemById(routeState.currentItem.itemId);
+});
 
 document.querySelectorAll('.dots-btn').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -1059,7 +1123,6 @@ function openPlacementMenu(card) {
     const textEl = modal.querySelector('.modal-text');
     const primaryBtn = modal.querySelector('.modal-btn.primary');
     const secondaryBtn = modal.querySelector('.modal-btn.secondary');
-    const tertiaryBtn = modal.querySelector('.modal-btn.tertiary');
 
     // read placement status from data attribute or JS variable
     const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'category', 'none'
@@ -1067,7 +1130,6 @@ function openPlacementMenu(card) {
     // reset buttons
     primaryBtn.style.display = 'inline-block';
     secondaryBtn.style.display = 'inline-block';
-    tertiaryBtn.style.display = 'inline-block';
 
     switch (status) {
         case 'system':
@@ -1113,15 +1175,6 @@ function openPlacementMenu(card) {
         const itemEl = primaryBtn.closest('.shopping-card');
 
         openPlacementModal(itemEl);
-    };
-
-    tertiaryBtn.onclick = () => {
-        wrapper.classList.remove('active');
-        document.removeEventListener('click', closeOutside);
-
-        const itemEl = primaryBtn.closest('.shopping-card');
-
-        openOtherPlacementModal(itemEl);
     };
 
     secondaryBtn.onclick = () => {
@@ -1241,7 +1294,7 @@ shelfElsOther.forEach(shelf => {
 edgesData.forEach(e => {
     const from = nodes[e.from];
     const to   = nodes[e.to];
-    const layer = getLayer('placement-map-2', 'placement-edges-layer');
+    const layer = getLayer('placement-map', 'placement-edges-layer');
 
     // visible edge
     const line = document.createElementNS(SVG_NS, 'line');
@@ -1405,10 +1458,9 @@ function shelfOrientation(shelf) {
 }
 
 
-function openOtherPlacementModal(itemEl) {
-    const modalEl = document.getElementById('otherPlacementModal');
+function openPlacementModal(itemEl) {
+    const modalEl = document.getElementById('placementModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
     const foodItemId = itemEl.dataset.foodItemId;
     const edgeId = itemEl.dataset.placementEdgeId || null;
     const aisleSide = itemEl.dataset.placementAisleSide || null;

@@ -1,17 +1,17 @@
-<div class="modal fade map-modal" id="otherPlacementModal" tabindex="-1">
+<div class="modal fade map-modal" id="placementModal" tabindex="-1">
     <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
         <div class="modal-content">
 
             <div class="modal-header">
                 <h6 class="modal-title">
-                    Tap the aisle this item belongs in. </br>
-                    Tap again to change aisle side:
+                    Tap the shelf this item belongs in. </br>
+                    Tap again to change sides.
                 </h6>
             </div>
 
             <div class="modal-body">
                 <div class="map-container">
-                    <svg id="placement-map-2" class="map-svg" viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
+                    <svg id="placement-map" class="map-svg" viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
                         <g id="placement-edges-layer"></g>
                         <g id="placement-entrance-layer"></g>
                     </svg>
@@ -31,51 +31,7 @@
 </div>
 <style>
 
-.edge {
-    stroke: #0f1115;
-    stroke-width: 10;
-    stroke-linecap: round;
-}
 
-.edge:hover {
-    stroke: #3d4658;
-}
-
-
-.edge.dimmed {
-    opacity: 0.3;
-}
-
-
-.node.entrance {
-    paint-order: stroke fill; /* ensures arrow is above circle */
-}
-
-.node.entrance circle:first-child {
-    fill: #51cf66;
-}
-
-.node.entrance circle:nth-child(2) {
-    fill: #51cf66;
-}
-
-.node.entrance path {
-    fill: #51cf66; /* same as node */
-}
-.node.entrance .arrow-line {
-    stroke: #51cf66;   /* same bright color */
-    stroke-width: 6;
-    stroke-linecap: round;
-}
-
-/* ----------------------
-   Animations
-   ---------------------- */
-@keyframes pulse {
-    0%   { stroke-width: 8;  opacity: 0.7; }
-    50%  { stroke-width: 12; opacity: 1; }
-    100% { stroke-width: 8;  opacity: 0.7; }
-}
 </style>
 
 <script>
