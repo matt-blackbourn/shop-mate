@@ -723,7 +723,7 @@ function highlightEdgesOnPathMap() {
         });
     }
 
-    clearShelfHighlights();
+    clearShelfHighlights('path-map');
 
     if(!activeSegment) return;
 
@@ -1376,7 +1376,7 @@ function onShelfClicked(shelf, click) {
 
     confirmBtn.disabled = false;
     
-    clearShelfHighlights();
+    clearShelfHighlights('placement-map');
     highlightShelfPortion(shelf, edge);
     updatePlacementPayload()
 }
@@ -1391,8 +1391,8 @@ function preselectShelf(edgeId, aisleSide) {
     highlightShelfPortion(correctShelf, edge);
 }
 
-function clearShelfHighlights() {
-    document.querySelectorAll('#placement-map .shelf-highlight').forEach(el => el.remove());
+function clearShelfHighlights(map) {
+    document.querySelectorAll(`#${map} .shelf-highlight`).forEach(el => el.remove());
 }
 
 function aisleSideForShelf(shelf, edge) {
@@ -1537,7 +1537,7 @@ function updatePlacementPayload() {
 }
 
 function clearSelection() {
-    clearShelfHighlights();
+    clearShelfHighlights('placement-map');
 
     placementState.edgeId = null;
     placementState.aisleSide = null;
