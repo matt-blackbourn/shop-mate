@@ -586,7 +586,6 @@ drawShelves(shelvesData, document.getElementById('placement-map-2'))
 drawShelves(shelvesData, document.getElementById('path-map'))
 
 updateMapView();
-console.log(routeState);
 
 // 4. 🔥 Render initial route
 highlightEdgesOnPathMap();
@@ -807,7 +806,7 @@ function shelfIsOnAisleSide(shelf, edge, aisleSide) {
     return false;
 }
 
-// Path map shelf highlighting
+// Path map shelf highlighting end
 // ----------------------------------------------------------
 
 function onItemPicked(itemId) {
@@ -1202,6 +1201,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 //---------------------------------------
 // second placement modal
+
+let lastShelfSelection = {
+    shelfId: null,
+    edgeIndex: 0
+};
+
+shelfElsOther.forEach(shelf => {
+    shelf.el.style.cursor = 'pointer';
+    shelf.el.addEventListener('click', (e) => {
+        
+        const click = svgPoint(e, shelf.el.ownerSVGElement); // Convert mouse coordinates to SVG coordinates
+        onShelfClicked(shelf, click);
+    });
+});
+
 // Draw edges (place food 2)
 edgesData.forEach(e => {
     const from = nodes[e.from];
@@ -1222,7 +1236,141 @@ edgesData.forEach(e => {
     layer.appendChild(line);
 });
 
-console.log(shelfElsOther);
+function onShelfClicked(shelf, click) {
+    const edges = edgesNextToShelf(shelf, click);
+    console.log(edges)
+    if (!edges.length) return;
+
+    let index = 0;
+
+    if (lastShelfSelection.shelfId === shelf.id) {
+        index = (lastShelfSelection.edgeIndex + 1) % edges.length;
+    }
+
+    const edge = edges[index];
+    const aisleSide = aisleSideForShelf(shelf, edge);
+
+    lastShelfSelection = {
+        shelfId: shelf.id,
+        edgeIndex: index
+    };
+
+
+    // existing logic you already have
+    selectEdge(edge.id);
+    placementState.aisleSide = aisleSide;
+
+    //highlightAisleSide(edge, aisleSide);
+    updatePlacementPayload()
+}
+
+
+function aisleSideForShelf(shelf, edge) {
+    const cx = shelf.x + shelf.width / 2;
+    const cy = shelf.y + shelf.height / 2;
+
+    if (edge.x1 === edge.x2) {
+        // vertical edge
+        return Math.sign(cx - edge.x1) || 1;
+    }
+
+    if (edge.y1 === edge.y2) {
+        // horizontal edge
+        return Math.sign(cy - edge.y1) || 1;
+    }
+
+    return 1;
+}
+
+function edgesNextToShelf(shelf, click) {
+    return edgesData.filter(edge =>
+        shelfIsNextToEdge(shelf, edge, click)
+    );
+}
+
+function shelfIsNextToEdge(shelf, edge, click) {
+    const edgeIsHorizontal = edge.y1 === edge.y2;
+    const edgeIsVertical   = edge.x1 === edge.x2;
+
+    const shelfIsHorizontal = shelf.width >= shelf.height;
+    const shelfIsVertical   = !shelfIsHorizontal;
+
+    // 🚫 Reject edges that don't run parallel to the shelf
+    if (shelfIsHorizontal && !edgeIsHorizontal) return false;
+    if (shelfIsVertical   && !edgeIsVertical)   return false;
+
+    const shelfMinX = shelf.x;
+    const shelfMaxX = shelf.x + shelf.width;
+    const shelfMinY = shelf.y;
+    const shelfMaxY = shelf.y + shelf.height;
+
+    const edgeMinX = Math.min(edge.x1, edge.x2);
+    const edgeMaxX = Math.max(edge.x1, edge.x2);
+    const edgeMinY = Math.min(edge.y1, edge.y2);
+    const edgeMaxY = Math.max(edge.y1, edge.y2);
+
+    if (edgeIsVertical) {
+        const dx =
+            edge.x1 < shelfMinX
+                ? shelfMinX - edge.x1
+                : edge.x1 > shelfMaxX
+                    ? edge.x1 - shelfMaxX
+                    : 0;
+
+        const closeInX = dx < AISLE_WIDTH;
+        const overlapsY = rangesOverlap(
+            shelfMinY, shelfMaxY,
+            edgeMinY, edgeMaxY
+        );
+
+          // ✅ NEW: click must project onto this edge
+        const clickProjects =
+            click.y >= edgeMinY &&
+            click.y <= edgeMaxY;
+
+        return closeInX && overlapsY && clickProjects;
+    }
+
+    if (edgeIsHorizontal) {
+        const dy =
+            edge.y1 < shelfMinY
+                ? shelfMinY - edge.y1
+                : edge.y1 > shelfMaxY
+                    ? edge.y1 - shelfMaxY
+                    : 0;
+
+        const closeInY = dy < AISLE_WIDTH;
+        const overlapsX = rangesOverlap(
+            shelfMinX, shelfMaxX,
+            edgeMinX, edgeMaxX
+        );
+
+        // ✅ NEW: click must project onto this edge
+        const clickProjects =
+            click.x >= edgeMinX &&
+            click.x <= edgeMaxX;
+
+        return closeInY && overlapsX && clickProjects;
+    }
+
+    return false;
+}
+
+function svgPoint(evt, svg) {
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+
+function shelfOrientation(shelf) {
+    return shelf.width >= shelf.height ? 'horizontal' : 'vertical';
+}
+
+
+
+
 
 function openOtherPlacementModal(itemEl) {
     const modalEl = document.getElementById('otherPlacementModal');
