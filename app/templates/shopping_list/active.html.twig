@@ -1349,7 +1349,9 @@ edgesData.forEach(e => {
 });
 
 function onShelfClicked(shelf, click) {
+    console.log(shelf)
     const edges = edgesNextToShelf(shelf, click);
+    console.log(edges)
     if (!edges.length) return;
 
     let index = 0;
@@ -1390,7 +1392,7 @@ function preselectShelf(edgeId, aisleSide) {
 }
 
 function clearShelfHighlights() {
-    document.querySelectorAll('.shelf-highlight').forEach(el => el.remove());
+    document.querySelectorAll('#placement-map .shelf-highlight').forEach(el => el.remove());
 }
 
 function aisleSideForShelf(shelf, edge) {
