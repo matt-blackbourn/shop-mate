@@ -95,6 +95,7 @@
                             <div class="modal-actions">
                                 <button type="button" class="modal-btn primary"></button>
                                 <button type="button" class="modal-btn secondary"></button>
+                                <button type="button" class="modal-btn tertiary">New placement</button>
                                 <button id="skip" class="btn btn-secondary" type="button">Skip Item</button>
 
                             </div>
@@ -154,6 +155,7 @@
 </div>
 
 {% include 'supermarket/_place_food_modal.html.twig' %}
+{% include 'supermarket/_new_place_food_modal.html.twig' %}
 {% include 'supermarket/_show_path_modal.html.twig' %}
 
 
@@ -339,6 +341,11 @@
     color: #e9ecef;
     border-color: #343a46;
 }
+.modal-btn.tertiary {
+    background-color: #2b303b;
+    color: #e9ecef;
+    border-color: #343a46;
+}
 
 /* Hover states */
 .modal-btn.primary:hover {
@@ -475,10 +482,12 @@ const shelvesData = JSON.parse(container.dataset.shelves);
 const segments = JSON.parse(container.dataset.segments);
 const entranceNodeId = container.dataset.entranceNodeId;  
 const placementEdgeEls = new Map(); // Keep references to all edges
+const otherPlacementEdgeEls = new Map(); // Keep references to all edges
 const pathEdgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
 const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
+const shelfElsOther = []; // keep refs + geometry
 
 const currentItemState = {
     itemId: null,
@@ -525,18 +534,7 @@ edgesData.forEach(e => {
     line.classList.add('path-edge');
     line.dataset.edgeId = e.id;
 
-    // side indicator (initially invisible)
-    /**
-    const sideRect = document.createElementNS(SVG_NS, 'rect');
-    sideRect.classList.add('location-side');
-    sideRect.dataset.edgeId = e.id;
-    sideRect.style.opacity = 0;
-
-    pathEdgeEls.set(e.id, { line, sideRect, from, to });
-    */
-
     layer.appendChild(line);
-    // layer.appendChild(sideRect);
 });
 
 const edgeByNodes = new Map();
@@ -584,6 +582,7 @@ routeState.segments.forEach(segment => {
 
 // draw shelves on maps
 drawShelves(shelvesData, document.getElementById('placement-map'))
+drawShelves(shelvesData, document.getElementById('placement-map-2'))
 drawShelves(shelvesData, document.getElementById('path-map'))
 
 updateMapView();
@@ -623,6 +622,9 @@ function updateMapView() {
     notesEl.style.display = routeState.currentItem.notes ? '' : 'none';
 }
 
+
+// Path map shelf highlighting
+// ----------------------------------------------------------
 function resolveEdgesForSegment(segment) {
     const edges = [];
 
@@ -805,6 +807,9 @@ function shelfIsOnAisleSide(shelf, edge, aisleSide) {
     return false;
 }
 
+// Path map shelf highlighting
+// ----------------------------------------------------------
+
 function onItemPicked(itemId) {
     const id = Number(itemId);
 
@@ -857,13 +862,17 @@ function drawShelves(shelvesData, svg) {
                 el: rect,
                 ...shelf
             });
+        }
 
+        // update shelfEls with geometry for hit testing during placement
+        if(svg.id == 'placement-map-2'){
+            shelfElsOther.push({
+                el: rect,
+                ...shelf
+            });
         }
     });
 }
-
-
-
 
 function getLayer(svgId, layerId) {
     return document.getElementById(svgId).querySelector(`#${layerId}`);
@@ -961,7 +970,6 @@ edgesData.forEach(e => {
 });
 
 
-
 document.getElementById('mapButton').addEventListener('click', e => {
     e.preventDefault();
     const modalEl = document.getElementById('pathModal');
@@ -989,6 +997,8 @@ function openPlacementModal(itemEl) {
     
     modal.show();
 }
+
+
 
 // Pick item function
 document.querySelectorAll('.pick-btn').forEach(btn => {
@@ -1030,6 +1040,7 @@ function openPlacementMenu(card) {
     const textEl = modal.querySelector('.modal-text');
     const primaryBtn = modal.querySelector('.modal-btn.primary');
     const secondaryBtn = modal.querySelector('.modal-btn.secondary');
+    const tertiaryBtn = modal.querySelector('.modal-btn.tertiary');
 
     // read placement status from data attribute or JS variable
     const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'category', 'none'
@@ -1037,6 +1048,7 @@ function openPlacementMenu(card) {
     // reset buttons
     primaryBtn.style.display = 'inline-block';
     secondaryBtn.style.display = 'inline-block';
+    tertiaryBtn.style.display = 'inline-block';
 
     switch (status) {
         case 'system':
@@ -1082,6 +1094,15 @@ function openPlacementMenu(card) {
         const itemEl = primaryBtn.closest('.shopping-card');
 
         openPlacementModal(itemEl);
+    };
+
+    tertiaryBtn.onclick = () => {
+        wrapper.classList.remove('active');
+        document.removeEventListener('click', closeOutside);
+
+        const itemEl = primaryBtn.closest('.shopping-card');
+
+        openOtherPlacementModal(itemEl);
     };
 
     secondaryBtn.onclick = () => {
@@ -1178,6 +1199,50 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 });
 
+
+//---------------------------------------
+// second placement modal
+// Draw edges (place food 2)
+edgesData.forEach(e => {
+    const from = nodes[e.from];
+    const to   = nodes[e.to];
+    const layer = getLayer('placement-map-2', 'placement-edges-layer');
+
+    // visible edge
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.classList.add('edge');
+    line.dataset.edgeId = e.id;
+
+    otherPlacementEdgeEls.set(e.id, { line, from, to });
+
+    layer.appendChild(line);
+});
+
+console.log(shelfElsOther);
+
+function openOtherPlacementModal(itemEl) {
+    const modalEl = document.getElementById('otherPlacementModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    const foodItemId = itemEl.dataset.foodItemId;
+    const edgeId = itemEl.dataset.placementEdgeId || null;
+    const aisleSide = itemEl.dataset.placementAisleSide || null;
+    const supermarketId = itemEl.dataset.supermarketId;
+
+    placementState.supermarketId = supermarketId;
+    placementState.foodItemId = foodItemId;
+
+    // Only select edge if one exists
+    if (edgeId) {
+        // preselectEdge(edgeId, aisleSide)
+    }
+    
+    modal.show();
+}
 
 
 </script>
