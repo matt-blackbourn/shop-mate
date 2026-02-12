@@ -2,7 +2,6 @@
 
 namespace App\Repository;
 
-use App\Entity\FoodCategory;
 use App\Entity\FoodItem;
 use App\Entity\ProductPlacement;
 use App\Entity\Supermarket;
@@ -21,25 +20,7 @@ class ProductPlacementRepository extends ServiceEntityRepository
         parent::__construct($registry, ProductPlacement::class);
     }
 
-    public function findOnePlacedByCategoryInSupermarket(
-        FoodCategory $category,
-        Supermarket $supermarket
-    ): ?ProductPlacement
-    {
-        return $this->createQueryBuilder('pp')
-            ->innerJoin('pp.foodItem', 'fi')
-            ->andWhere('fi.category = :category')
-            ->andWhere('pp.supermarket = :supermarket')
-    
-            // IMPORTANT: only already-mapped placements
-            ->andWhere('pp.edge IS NOT NULL')
-    
-            ->setParameter('category', $category)
-            ->setParameter('supermarket', $supermarket)
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
+
 
     public function findActiveUserPlacement(
         FoodItem $foodItem,
@@ -98,7 +79,7 @@ class ProductPlacementRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    public function findActiveCategoryPlacement(
+    public function findActiveGroupPlacement(
         FoodItem $foodItem,
         Supermarket $supermarket,
     ): ?ProductPlacement {
@@ -109,9 +90,11 @@ class ProductPlacementRepository extends ServiceEntityRepository
             ->andWhere('pp.supersededBy IS NULL')
             ->setParameter('foodItem', $foodItem)
             ->setParameter('supermarket', $supermarket)
-            ->setParameter('type', PlacementType::CATEGORY)
+            ->setParameter('type', PlacementType::GROUP)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+
 }

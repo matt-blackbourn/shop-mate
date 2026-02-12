@@ -6,7 +6,7 @@ enum PlacementType: string
 {
     case SYSTEM = 'system'; 
     case USER = 'user';  
-    case CATEGORY = 'category'; 
+    case GROUP = 'group'; 
 }
 
 

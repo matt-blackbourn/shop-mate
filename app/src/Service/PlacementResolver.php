@@ -50,13 +50,14 @@ final class PlacementResolver
             return $otherUserPlacement;
         }
 
+        
         /**
-         * 4️⃣ CATEGORY placement
+         * 4️⃣ GROUP placement
          */
-        $categoryPlacement = $this->placements->findActiveCategoryPlacement($foodItem, $supermarket);
-        if ($categoryPlacement) {
-            $listItem->setPlacementStatus(PlacementStatus::CATEGORY);
-            return $categoryPlacement;
+        $groupPlacement = $this->placements->findActiveGroupPlacement($foodItem, $supermarket);
+        if ($groupPlacement) {
+            $listItem->setPlacementStatus(PlacementStatus::GROUP);
+            return $groupPlacement;
         }
 
         /**

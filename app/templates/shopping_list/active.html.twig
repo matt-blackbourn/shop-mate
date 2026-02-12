@@ -107,7 +107,7 @@
                     {% if status in ['system', 'confirmed'] %}
                         <i class="bi bi-check-circle-fill placement-icon confirmed"></i>
 
-                    {% elseif status in ['provisional', 'category'] %}
+                    {% elseif status in ['provisional', 'group'] %}
                         <i class="bi bi-question-circle-fill placement-icon provisional"></i>
 
                     {% else %}
@@ -1163,7 +1163,7 @@ function openPlacementMenu(card) {
     const secondaryBtn = modal.querySelector('.modal-btn.secondary');
 
     // read placement status from data attribute or JS variable
-    const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'category', 'none'
+    const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'group', 'none'
 
     // reset buttons
     primaryBtn.style.display = 'inline-block';
@@ -1181,10 +1181,10 @@ function openPlacementMenu(card) {
             primaryBtn.textContent = "Confirm placement";
             secondaryBtn.textContent = "Place somewhere else";
             break;
-        case 'category':
-            textEl.textContent = "This item is located with other items in this category. Help us place it properly.";
-            primaryBtn.textContent = "Place somewhere else";
-            secondaryBtn.style.display = 'none';
+        case 'group':
+            textEl.textContent = "This is an approximate location based on similar items. Can you confirm it for us?";
+            primaryBtn.textContent = "Confirm location";
+            secondaryBtn.style.display = 'Place somewhere else';
             break;
         case 'none':
         default:

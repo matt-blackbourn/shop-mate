@@ -8,9 +8,11 @@ use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
 use App\Entity\Supermarket;
 use App\Enum\PlacementType;
+use App\Form\FoodItemGroupPlacementType;
 use App\Form\FoodItemType;
 use App\Form\ShoppingListType;
 use App\Repository\EdgeRepository;
+use App\Repository\FoodItemRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\PlacementTypeRepository;
@@ -102,6 +104,7 @@ final class ShoppingListController extends AbstractController
         ShoppingListRepository $shoppingListRepository,
         PathFinder $pathFinder,
         ProductPlacementRepository $productPlacementRepository,
+        FoodItemRepository $foodItemRepository,
         EntityManagerInterface $em,
         SupermarketRepository $supermarketRepository,
         MapBuilder $mapBuilder,
@@ -111,36 +114,37 @@ final class ShoppingListController extends AbstractController
     ): Response {
         $shoppingList = $shoppingListRepository->findOneByUser($this->getUser());
         if(!$shoppingList) {
+            $this->addFlash('warning', 'You have nothing in your shopping list!');
             $this->redirectToRoute('app_home');
         }
 
+        $supermarket = $supermarketRepository->find($supermarketId);
 
         // here we want to look for any items that do not have a mapped location
         // if those items have a category, we look for any item in this category in this supermarket that is mapped
         // if we find one, we create and persist a new ProductPlacement for this item, type=category, and then run the pathfinder
-        $supermarket = $supermarketRepository->find($supermarketId);
-        foreach ($shoppingList->getListItems() as $listItem) {
-            $placement = $productPlacementRepository->findOneBy([
-                'foodItem' => $listItem->getFoodItem(),
-                'supermarket' => $supermarket,
-            ]);
+        // foreach ($shoppingList->getListItems() as $listItem) {
+        //     $placement = $productPlacementRepository->findOneBy([
+        //         'foodItem' => $listItem->getFoodItem(),
+        //         'supermarket' => $supermarket,
+        //     ]);
 
-            if(!$placement){
-                $category = $listItem->getFoodItem()->getCategory();
-                if($category) {
-                    $similarPlacement = $productPlacementRepository->findOnePlacedByCategoryInSupermarket($category, $supermarket);
-                    if($similarPlacement) {
-                        $newPlacement = new ProductPlacement();
-                        $newPlacement->setFoodItem($listItem->getFoodItem());
-                        $newPlacement->setSupermarket($supermarket);
-                        $newPlacement->setEdge($similarPlacement->getEdge());
-                        $newPlacement->setType(PlacementType::CATEGORY);
-                        $newPlacement->setAisleSide($similarPlacement->getAisleSide());
-                        $em->persist($newPlacement);
-                    }
-                }
-            }
-        }
+        //     if(!$placement){
+        //         $category = $listItem->getFoodItem()->getCategory();
+        //         if($category) {
+        //             $similarPlacement = $productPlacementRepository->findOnePlacedByCategoryInSupermarket($category, $supermarket);
+        //             if($similarPlacement) {
+        //                 $newPlacement = new ProductPlacement();
+        //                 $newPlacement->setFoodItem($listItem->getFoodItem());
+        //                 $newPlacement->setSupermarket($supermarket);
+        //                 $newPlacement->setEdge($similarPlacement->getEdge());
+        //                 $newPlacement->setType(PlacementType::CATEGORY);
+        //                 $newPlacement->setAisleSide($similarPlacement->getAisleSide());
+        //                 $em->persist($newPlacement);
+        //             }
+        //         }
+        //     }
+        // }
 
         $this->getUser()->setLastUsedSupermarket($supermarket);
         $em->flush();
@@ -153,7 +157,7 @@ final class ShoppingListController extends AbstractController
         if($showModal){
             $unplacedItemCount = count(array_filter($orderedList, fn($item) => $item->placement === null));
             if($unplacedItemCount > 0) {
-                $this->addFlash('warning', '<i class="bi bi-exclamation-triangle-fill placement-icon missing"></i> You have ' . $unplacedItemCount . ' item(s) with no mapped location. Place them to update your list order!');
+                $this->addFlash('warning', '<i class="bi bi-exclamation-triangle-fill placement-icon missing"></i>' . $unplacedItemCount . ' item(s) have not been mapped. Place them to update your list order!');
             }
         }
         $segments = array_map(fn (RoutedListItemDto $dto) => [
@@ -162,8 +166,16 @@ final class ShoppingListController extends AbstractController
             'targetNodeId' => $dto->targetNodeId,
             'pathNodes' => $dto->path, // ordered list of node IDs
         ], $orderedList);
+
+        $foodItems = $foodItemRepository->findWithPlacementInSupermarket($supermarket);
+        $form = $this->createForm(FoodItemGroupPlacementType::class, null, [
+            'food_items' => $foodItems,
+            'action' => $this->generateUrl('app_product_placement_group'), // submit target
+            'method' => 'POST', // or GET if you prefer
+        ]);
         
         return $this->render('shopping_list/active.html.twig', [
+            'form' => $form->createView(),
             'orderedList' => $orderedList,
             'shoppingList' => $shoppingList,
             'supermarket' => $supermarket,

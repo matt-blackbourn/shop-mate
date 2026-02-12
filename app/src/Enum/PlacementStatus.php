@@ -7,7 +7,7 @@ enum PlacementStatus: string
     case SYSTEM = 'system';        // globally confirmed
     case CONFIRMED = 'confirmed';  // confirmed *for the current user*
     case PROVISIONAL = 'provisional'; // placed by someone else, needs confirmation
-    case CATEGORY = 'category';    // inferred
+    case GROUP = 'group';    // inferred
     case NONE = 'none';
 }
 
@@ -29,8 +29,8 @@ enum PlacementStatus: string
 // → PROVISIONAL
 // Bait to confirm
 
-// CATEGORY placement exists
-// → CATEGORY
+// GROUP placement exists
+// → GROUP
 
 // Nothing
 // → NONE

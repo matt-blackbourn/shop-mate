@@ -31,9 +31,6 @@ class FoodItem
     #[ORM\OneToMany(targetEntity: ListItem::class, mappedBy: 'foodItem')]
     private Collection $listItems;
 
-    #[ORM\ManyToOne(inversedBy: 'foodItems')]
-    private ?FoodCategory $category = null;
-
     /**
      * @var Collection<int, ProductPlacement>
      */
@@ -121,17 +118,6 @@ class FoodItem
         return $this;
     }
 
-    public function getCategory(): ?FoodCategory
-    {
-        return $this->category;
-    }
-
-    public function setCategory(?FoodCategory $category): static
-    {
-        $this->category = $category;
-
-        return $this;
-    }
 
     /**
      * @return Collection<int, ProductPlacement>

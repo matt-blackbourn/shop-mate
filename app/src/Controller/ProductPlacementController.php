@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\ProductPlacement;
 use App\Enum\PlacementType;
+use App\Form\FoodItemGroupPlacementType;
 use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
 use App\Repository\ProductPlacementRepository;
@@ -17,6 +18,27 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/placement')]
 class ProductPlacementController extends AbstractController
 {
+    #[Route('/group', name: 'app_product_placement_group', methods: ['POST'])]
+    public function group(
+        Request $request,
+        FoodItemRepository $repo
+    ): Response {
+        $form = $this->createForm(FoodItemGroupPlacementType::class, null, [
+            'food_items' => $repo->findWithPlacementInSupermarket($supermarket),
+        ]);
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $item = $form->get('foodItem')->getData();
+
+        }
+        
+        return $this->redirectToRoute('app_shopping_list_active', [
+            'supermarketId' => $item->getId(),
+        ]);
+    }
+
     #[Route('/save', name: 'app_product_placement_save', methods: ['POST'])]
     public function index(
         Request $request, 

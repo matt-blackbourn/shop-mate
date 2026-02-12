@@ -3,6 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\FoodItem;
+use App\Entity\ProductPlacement;
+use App\Entity\Supermarket;
+use App\Enum\PlacementType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -36,6 +39,21 @@ class FoodItemRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult()
         ;
+    }
+
+    
+    public function findWithPlacementInSupermarket(Supermarket $supermarket): array
+    {
+        return $this->createQueryBuilder('f')
+            ->select('DISTINCT f')
+            ->innerJoin(ProductPlacement::class, 'pp', 'WITH', 'pp.foodItem = f')
+            ->andWhere('pp.supermarket = :supermarket')
+            ->andWhere('pp.type != :groupType')
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('groupType', PlacementType::GROUP)
+            ->orderBy('f.name', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**
