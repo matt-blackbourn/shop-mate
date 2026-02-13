@@ -1221,8 +1221,8 @@ function openPlacementMenu(card) {
     };
 }
 
-function enqueuePick(card) {
-    pickQueue.push(card);
+function enqueuePick(itemId) {
+    pickQueue.push(itemId);
     processPickQueue();
 }
 
@@ -1231,8 +1231,7 @@ async function processPickQueue() {
     processingQueue = true;
 
     while (pickQueue.length > 0) {
-        const card = pickQueue.shift();
-        const id = card.dataset.id;
+        const id = pickQueue.shift();
 
         try {
             await fetch(`/shoppinglist/ajax/pick/${id}`, {
@@ -1253,7 +1252,7 @@ async function processPickQueue() {
 
 function pickItemById(itemId) {
     removeCardFromList(itemId);
-    enqueuePick(card);  // Add to queue for server update
+    enqueuePick(itemId);  // Add to queue for server update
     updateRouteState(itemId);
     updateMapView();
     highlightEdgesOnPathMap();
