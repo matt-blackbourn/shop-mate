@@ -1,0 +1,123 @@
+
+<div class="modal fade" id="groupItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Group With Another Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            {{ form_start(form) }}
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        {{ form_label(form.foodItem) }}
+                        {{ form_widget(form.foodItem, { attr: { class: 'form-select' } }) }}
+                        {{ form_errors(form.foodItem) }}
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="cancel-btn" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+
+                    <button type="submit" class="confirm-btn">
+                        Confirm
+                    </button>
+                </div>
+
+            {{ form_end(form) }}
+
+        </div>
+    </div>
+</div>
+
+
+<style>
+
+/* Modal background/content */
+#groupItemModal .modal-content {
+    background-color: #0f1115;
+    color: #e9ecef;
+    border: 1px solid #1f2430;
+}
+
+/* Modal header */
+#groupItemModal .modal-header {
+    background-color: #121520;
+    border-bottom: 1px solid #1f2430;
+}
+
+#groupItemModal .modal-title {
+    color: #f1f3f5;
+}
+
+/* Close button */
+#groupItemModal .btn-close {
+    filter: invert(1) opacity(0.8);
+}
+
+#groupItemModal .btn-close:hover {
+    opacity: 1;
+}
+
+/* Modal body */
+#groupItemModal .modal-body {
+    background-color: #0f1115;
+    padding: 1rem;
+}
+
+/* Form radio labels */
+#groupItemModal .form-check-label {
+    color: #e9ecef;
+}
+
+#groupItemModal .form-check-input:checked + .form-check-label {
+    color: #51cf66; /* accent for checked selection */
+}
+
+/* Modal footer */
+#groupItemModal .modal-footer {
+    background-color: #121520;
+    border-top: 1px solid #1f2430;
+}
+
+/* Cancel button */
+.cancel-btn {
+    background-color: #2b303b;
+    border: 1px solid #2b303b;
+    color: #f1f3f5;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+
+.cancel-btn:hover {
+    background-color: #343a46;
+}
+
+/* Confirm button */
+.confirm-btn {
+    background-color: #51cf66;
+    border: 1px solid #51cf66;
+    color: #0b0d12;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+
+
+</style>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+    new TomSelect('#{{ form.foodItem.vars.id }}', {
+        create: false,
+        sortField: { field: "text", direction: "asc" }
+    });
+});
+
+</script>

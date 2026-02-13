@@ -93,9 +93,9 @@
                         <div class="dots-modal">
                             <p class="modal-text"></p>
                             <div class="modal-actions">
-                                <button type="button" class="modal-btn primary"></button>
-                                <button type="button" class="modal-btn secondary"></button>
-                                <button type="button" class="modal-btn primary" id="skip-item">Skip Item</button>
+                                <button type="button" class="modal-btn" id="mapItem"></button>
+                                <button type="button" class="modal-btn" id="groupItem"></button>
+                                <button type="button" class="modal-btn" id="skip-item">Skip Item</button>
 
                             </div>
                         </div>
@@ -328,14 +328,6 @@
     font-size: 0.85rem;
     cursor: pointer;
     border: 1px solid transparent;
-}
-.modal-btn.secondary {
-    background-color: #
-    background-color: #51cf66;
-    color: #e9ecef;
-    border-color: #343a46;
-}
-.modal-btn.primary {
     background-color: #2b303b;
     color: #e9ecef;
     border-color: #343a46;
@@ -725,7 +717,7 @@ function highlightEdgesOnPathMap() {
 
     clearShelfHighlights('path-map');
 
-    if(!activeSegment) return;
+    if(!activeSegment || activeSegment.edges.length === 0) return; // no placed items
 
     const edge = activeSegment.edges[activeSegment.edges.length - 1]
     const shelves = shelvesNextToEdge(edge.id, shelfEls)
@@ -1159,38 +1151,39 @@ function openPlacementMenu(card) {
 
     const modal = wrapper.querySelector('.dots-modal');
     const textEl = modal.querySelector('.modal-text');
-    const primaryBtn = modal.querySelector('.modal-btn.primary');
-    const secondaryBtn = modal.querySelector('.modal-btn.secondary');
+    const mapItemBtn = modal.querySelector('#mapItem');
+    const groupItemBtn = modal.querySelector('#groupItem');
 
     // read placement status from data attribute or JS variable
     const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'group', 'none'
 
     // reset buttons
-    primaryBtn.style.display = 'inline-block';
-    secondaryBtn.style.display = 'inline-block';
+    mapItemBtn.style.display = 'inline-block';
+    groupItemBtn.style.display = 'inline-block';
+    console.log(status)
 
     switch (status) {
         case 'system':
         case 'confirmed':
             textEl.textContent = "This item has already been placed. Does it belong somewhere else?";
-            primaryBtn.textContent = "Place somewhere else";
-            secondaryBtn.style.display = 'none'; // optional, only 1 action
+            mapItemBtn.textContent = "Place somewhere else";
+            groupItemBtn.style.display = 'none'; // optional, only 1 action
             break;
         case 'provisional':
             textEl.textContent = "This item has been placed by another user.";
-            primaryBtn.textContent = "Confirm placement";
-            secondaryBtn.textContent = "Place somewhere else";
+            mapItemBtn.textContent = "Confirm placement";
+            groupItemBtn.textContent = "Place somewhere else";
             break;
         case 'group':
             textEl.textContent = "This is an approximate location based on similar items. Can you confirm it for us?";
-            primaryBtn.textContent = "Confirm location";
-            secondaryBtn.style.display = 'Place somewhere else';
+            mapItemBtn.textContent = "Confirm location";
+            groupItemBtn.style.display = 'Place somewhere else';
             break;
         case 'none':
         default:
             textEl.textContent = "We don’t know where this item belongs.";
-            primaryBtn.textContent = "Place somewhere";
-            secondaryBtn.style.display = 'none';
+            mapItemBtn.textContent = "Place On Map";
+            groupItemBtn.textContent = "Place With Similar Item";
             break;
     }
 
@@ -1206,18 +1199,21 @@ function openPlacementMenu(card) {
     document.addEventListener('click', closeOutside);
 
     // wire buttons
-    primaryBtn.onclick = () => {
+    mapItemBtn.onclick = () => {
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
 
-        const itemEl = primaryBtn.closest('.shopping-card');
+        const itemEl = mapItemBtn.closest('.shopping-card');
 
         openPlacementModal(itemEl);
     };
 
-    secondaryBtn.onclick = () => {
+    groupItemBtn.onclick = () => {
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
+        const itemEl = mapItemBtn.closest('.shopping-card');
+
+        openPlacementModal(itemEl);
     };
 }
 
