@@ -96,5 +96,28 @@ class ProductPlacementRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function findPreferredPlacement(
+        FoodItem $foodItem,
+        Supermarket $supermarket
+    ): ?ProductPlacement {
+        return $this->createQueryBuilder('pp')
+            ->andWhere('pp.foodItem = :foodItem')
+            ->andWhere('pp.supermarket = :supermarket')
+            ->andWhere('pp.supersededBy IS NULL')
+            ->andWhere('pp.type IN (:types)')
+            ->setParameter('foodItem', $foodItem)
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('types', [
+                PlacementType::SYSTEM,
+                PlacementType::USER,
+            ])
+            ->addOrderBy(
+                'CASE WHEN pp.type = :systemType THEN 0 ELSE 1 END'
+            )
+            ->setParameter('systemType', PlacementType::SYSTEM)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 
 }

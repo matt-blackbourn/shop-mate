@@ -14,13 +14,15 @@ class FoodItemGroupPlacementType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('foodItem', EntityType::class, [
+            ->add('groupWithItem', EntityType::class, [
                 'class' => FoodItem::class,
                 'choices' => $options['food_items'],
                 'choice_label' => 'name',
                 'placeholder' => false,
                 'required' => true,
                 'mapped' => false,
+                'placeholder' => 'Search for item...',
+                'label' => false,
             ])
             ->add('supermarketId', HiddenType::class)
             ->add('foodItemId', HiddenType::class)

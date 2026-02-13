@@ -154,6 +154,7 @@
 </div>
 
 {% include 'supermarket/_new_place_food_modal.html.twig' %}
+{% include 'food_item/_group_item_modal.html.twig' %}
 {% include 'supermarket/_show_path_modal.html.twig' %}
 
 
@@ -1176,8 +1177,8 @@ function openPlacementMenu(card) {
             break;
         case 'group':
             textEl.textContent = "This is an approximate location based on similar items. Can you confirm it for us?";
-            mapItemBtn.textContent = "Confirm location";
-            groupItemBtn.style.display = 'Place somewhere else';
+            mapItemBtn.textContent = "Confirm on map";
+            groupItemBtn.style.display = 'none';
             break;
         case 'none':
         default:
@@ -1202,20 +1203,17 @@ function openPlacementMenu(card) {
     mapItemBtn.onclick = () => {
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
-
-        const itemEl = mapItemBtn.closest('.shopping-card');
-
-        openPlacementModal(itemEl);
+        openPlacementModal(mapItemBtn.closest('.shopping-card'));
     };
 
     groupItemBtn.onclick = () => {
         wrapper.classList.remove('active');
         document.removeEventListener('click', closeOutside);
-        const itemEl = mapItemBtn.closest('.shopping-card');
-
-        openPlacementModal(itemEl);
+        openGroupingModal(groupItemBtn.closest('.shopping-card'));
     };
 }
+
+
 
 function enqueuePick(itemId) {
     pickQueue.push(itemId);
@@ -1344,9 +1342,7 @@ edgesData.forEach(e => {
 });
 
 function onShelfClicked(shelf, click) {
-    console.log(shelf)
     const edges = edgesNextToShelf(shelf, click);
-    console.log(edges)
     if (!edges.length) return;
 
     let index = 0;
@@ -1365,7 +1361,6 @@ function onShelfClicked(shelf, click) {
         edgeIndex: index
     };
 
-    // existing logic you already have
     placementState.aisleSide = aisleSide;
     placementState.edgeId = edge.id;
 
@@ -1377,11 +1372,18 @@ function onShelfClicked(shelf, click) {
 }
 
 
-
 function preselectShelf(edgeId, aisleSide) {
     const shelves = shelvesNextToEdge(edgeId, shelfElsOther)
     const edge = edgesData.find(e => e.id === edgeId);
     const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, aisleSide));
+
+    placementState.aisleSide = aisleSide;
+    placementState.edgeId = edgeId;
+    updatePlacementPayload();
+    
+    confirmBtn.disabled = false;
+
+    console.log(placementState)
 
     highlightShelfPortion(correctShelf, edge);
 }
@@ -1494,13 +1496,13 @@ function shelfOrientation(shelf) {
 }
 
 
-function openPlacementModal(itemEl) {
+function openPlacementModal(modalElement) {
     const modalEl = document.getElementById('placementModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    const foodItemId = itemEl.dataset.foodItemId;
-    const edgeId = itemEl.dataset.placementEdgeId || null;
-    const aisleSide = itemEl.dataset.placementAisleSide || null;
-    const supermarketId = itemEl.dataset.supermarketId;
+    const foodItemId = modalElement.dataset.foodItemId;
+    const edgeId = modalElement.dataset.placementEdgeId || null;
+    const aisleSide = modalElement.dataset.placementAisleSide || null;
+    const supermarketId = modalElement.dataset.supermarketId;
 
     placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
@@ -1510,6 +1512,19 @@ function openPlacementModal(itemEl) {
         preselectShelf(Number(edgeId), Number(aisleSide))
     }
     
+    modal.show();
+}
+
+function openGroupingModal(modalElement) {
+    const modalEl = document.getElementById('groupItemModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    const foodItemId = modalElement.dataset.foodItemId;
+    const supermarketId = modalElement.dataset.supermarketId;
+
+    // Set hidden fields
+    document.getElementById('{{ form.foodItemId.vars.id }}').value = foodItemId;
+    document.getElementById('{{ form.supermarketId.vars.id }}').value = supermarketId;
+
     modal.show();
 }
 

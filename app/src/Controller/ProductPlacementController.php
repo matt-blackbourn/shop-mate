@@ -21,21 +21,46 @@ class ProductPlacementController extends AbstractController
     #[Route('/group', name: 'app_product_placement_group', methods: ['POST'])]
     public function group(
         Request $request,
-        FoodItemRepository $repo
+        FoodItemRepository $foodItemRepo,
+        SupermarketRepository $supermarketRepo,
+        ProductPlacementRepository $productPlacementRepo,
+        EntityManagerInterface $em,
     ): Response {
+        // Extract supermarketId BEFORE creating form
+        $formData = $request->request->all();
+        $supermarketId = $formData['food_item_group_placement']['supermarketId'] ?? null;
+        $supermarket = $supermarketRepo->find($supermarketId);
+
+        if (!$supermarket) {
+            throw $this->createNotFoundException('Supermarket not found');
+        }
+
+        // Now build form using it
         $form = $this->createForm(FoodItemGroupPlacementType::class, null, [
-            'food_items' => $repo->findWithPlacementInSupermarket($supermarket),
+            'food_items' => $foodItemRepo->findWithPlacementInSupermarket($supermarket),
         ]);
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $item = $form->get('foodItem')->getData();
+            $toBeGroupedId = (int) $form->getData()['foodItemId'];
+            $groupWith = $form->get('groupWithItem')->getData();
 
+            $existingPlacement = $productPlacementRepo->findPreferredPlacement($groupWith, $supermarket);
+            $groupPlacement = new ProductPlacement();
+            $groupPlacement->setFoodItem($foodItemRepo->find($toBeGroupedId));
+            $groupPlacement->setSupermarket($supermarket);
+            $groupPlacement->setEdge($existingPlacement->getEdge());
+            $groupPlacement->setAisleSide($existingPlacement->getAisleSide());
+            $groupPlacement->setType(PlacementType::GROUP);
+            $groupPlacement->setSuggestedBy($this->getUser());  
+
+            $em->persist($groupPlacement);
+            $em->flush();
         }
         
         return $this->redirectToRoute('app_shopping_list_active', [
-            'supermarketId' => $item->getId(),
+            'supermarketId' => $supermarket->getId(),
         ]);
     }
 
@@ -58,26 +83,39 @@ class ProductPlacementController extends AbstractController
         $supermarket = $supermarketRepository->find($placement['supermarketId']);
         $foodItem    = $foodItemRepository->find($placement['foodItemId']);
 
-
         $existingPlacements = $productPlacementRepository->findBy([
             'supermarket' => $supermarket,
             'foodItem'    => $foodItem,
         ]);
 
-        // 1️⃣ User always updates their own placement
+        // need to do case where system is being overridden by users?
+
+        // If there is a GROUP placement that is being confirmed, we upgrate that to USER type, and change the suggestedBy to the current user.
         foreach ($existingPlacements as $existing) {
-            if ($existing->getSuggestedBy()?->getId() === $this->getUser()->getId()) {
+            if ($existing->getType() === PlacementType::GROUP) {
                 $existing->setEdge($edgeRepository->find($edgeId));
                 $existing->setAisleSide($aisleSide);
+                $existing->setType(PlacementType::USER);
+                $existing->setSuggestedBy($this->getUser());
                 $updated = true;
-                $uow = $em->getUnitOfWork();
-                $uow->computeChangeSets();
-                
                 break;
             }
         }
 
-        // 2️⃣ Otherwise, check for identical placement → SYSTEM
+        // User always updates their own placement
+        if (!$updated) {
+            foreach ($existingPlacements as $existing) {
+                if ($existing->getSuggestedBy()?->getId() === $this->getUser()->getId()) {
+                    $existing->setEdge($edgeRepository->find($edgeId));
+                    $existing->setAisleSide($aisleSide);
+                    $updated = true;
+                    break;
+                }
+            }
+        }
+
+        // Otherwise, check for identical placement → SYSTEM
+        // If identical placement already exists, we can upgrade it to SYSTEM. this now the source of truth for this item, and we don't need the USER placement anymore (if it exists)
         if (!$updated) {
             foreach ($existingPlacements as $existing) {
                 if (
@@ -92,7 +130,7 @@ class ProductPlacementController extends AbstractController
             }
         }
 
-        // 3️⃣ Otherwise create a new one
+        // 3Otherwise create a new one
         if (!$updated) {
             $productPlacement = new ProductPlacement();
             $productPlacement->setSupermarket($supermarketRepository->find($placement['supermarketId']));
