@@ -22,7 +22,7 @@
                 <nav class="side-menu" hidden>
                     <button type="button" class="menu-close" aria-label="Close menu">×</button>
                     <ul>
-                        <li><a id="quickAddItems" href="#" data-quick-add-items="{{ quickAddItems|json_encode|e('html_attr') }}">Quick-add Items</a></li>
+                        <li><button type="button" id="quickAddItems" data-quick-add-items="{{ quickAddItems|json_encode|e('html_attr') }}">Quick-add Items</button></li>
                         <li class="desktop-only"><a href="{{ path('app_food_item_new') }}">Add food</a></li>
                         <li class="desktop-only"><a href="{{ path('admin_assign_food_edges', {id: 1}) }}">Map food</a></li>
                         <li class="desktop-only"><a href="{{ path('app_supermarket_index') }}">Supermarkets</a></li>
@@ -174,6 +174,26 @@
     z-index: 10;
 }
 
+.side-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.side-menu a,
+.side-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 0;
+    text-decoration: none;
+    font-weight: 500;
+    color: #e9ecef;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+}
+
 .menu-overlay {
     position: fixed;
     inset: 0;
@@ -201,23 +221,7 @@
     color: #e9ecef;
 }
 
-.side-menu a:hover {
-    color: #51cf66; /* primary accent hover */
-}
 
-.side-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.side-menu a {
-    display: block;
-    padding: 0.75rem 0;
-    text-decoration: none;
-    font-weight: 500;
-    color: #e9ecef;
-}
 
 .menu-close:hover,
 .menu-button:hover {
@@ -423,6 +427,12 @@
     cursor: pointer;
 }
 
+.card.list-item.just-added {
+    background-color: rgba(63, 191, 127, 0.08);
+    border: 1px solid #f59e0b;
+    transition: all 0.5s ease;
+}
+
 
 
 </style>
@@ -498,14 +508,40 @@ document.getElementById('quickAddItems').addEventListener('click', () => {
         return;
     }
 
-    items.forEach(item => {
-        addItemToCollection({
+    items.forEach((item, i)=> {
+        const card = addItemToCollection({
             foodId: item.foodId,
             foodLabel: item.label,
             notes: item.notes,
             quantity: item.quantity
         });
+
+        if (card) {
+            card.classList.add('just-added');
+        }
+
+        if (i === items.length - 1) {
+            setTimeout(() => {
+                const lastCard = container.querySelector('.list-item');
+
+                if (!lastCard) return;
+
+                // Collapse card
+                lastCard.classList.remove('expanded');
+                lastCard.classList.add('collapsed');
+
+                // Close Tom Select
+                const select = lastCard.querySelector('select');
+                if (select?.tomselect) {
+                    select.tomselect.close();
+                    select.tomselect.blur();
+                }
+            }, 0);
+        }
     });
+
+    markDirty();
+    document.querySelector('.menu-close')?.click();
 });
 
 
@@ -534,7 +570,7 @@ function addItemToCollection({
 
     if (!foodSelect || !notesInput || !quantityInput) {
         console.error('Prototype missing expected fields');
-        return;
+        return null; 
     }
 
     // Inject values BEFORE inserting into DOM
@@ -565,16 +601,14 @@ function addItemToCollection({
             </div>
 
             <div class="item-body mt-2">
-                ${foodSelect.outerHTML}
+                <div class="select-container"></div>
 
                 <div class="d-flex align-items-center gap-2 mt-2">
-                    <div class="flex-grow-1">
-                        ${notesInput.outerHTML}
-                    </div>
+                    <div class="flex-grow-1 notes-container"></div>
                     <div class="d-flex align-items-center gap-1 qty-control">
                         <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
                         <span class="fw-semibold qty-display px-2">${quantity}</span>
-                        ${quantityInput.outerHTML}
+                        <div class="qty-container"></div>
                         <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
                     </div>
                 </div>
@@ -582,12 +616,15 @@ function addItemToCollection({
         </div>
     `;
 
+    wrapper.querySelector('.select-container').appendChild(foodSelect);
+    wrapper.querySelector('.notes-container').appendChild(notesInput);
+    wrapper.querySelector('.qty-container').appendChild(quantityInput);
     container.prepend(wrapper);
 
     document.dispatchEvent(new Event('collection:add'));
+
+    return wrapper;
 }
-
-
 
 
 container.addEventListener('change', e => {
@@ -726,69 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-/**
-// Capture clicks on the “Add new food” row
-let activeListItemRow = null;
-document.addEventListener('click', async (e) => {
-    const createRow = e.target.closest('.ts-create-food');
-    if (!createRow) return;
-
-    const name = (createRow.dataset.name || '').trim();
-    if (!name) return;
-
-    activeListItemRow = createRow.closest('.list-item');
-
-    // Optimistic UI update
-    if (activeListItemRow) {
-        // get name from modal form input
-        const nameInput = e.target.querySelector('[name$="[name]"]');
-        const foodName = nameInput?.value?.trim();
-        const label = activeListItemRow.querySelector('.food-label');
-        if (label) label.textContent = foodName ? foodName : 'Adding...';
-
-        activeListItemRow.classList.remove('expanded');
-        activeListItemRow.classList.add('collapsed');
-    }
-
-    try {
-        const response = await fetch(createRow.dataset.action, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({ name })
-        });
-
-        if (!response.ok) {
-            throw await response.json();
-        }
-
-        const data = await response.json();
-
-        if (!activeFoodSelect) return;
-
-        activeFoodSelect.addOption({
-            value: data.id,
-            text: data.label
-        });
-
-        activeFoodSelect.setValue(data.id);
-        activeFoodSelect.close();
-
-        activeFoodSelect = null;
-
-    } catch (err) {
-        console.error('Food creation failed:', err);
-
-        // Optional rollback
-        if (activeListItemRow) {
-            const label = activeListItemRow.querySelector('.food-label');
-            if (label) label.textContent = `Failed to add ${label}`;
-        }
-    }
-});
-*/
 
 const menuButton = document.querySelector('.menu-button');
 const menu = document.querySelector('.side-menu');
@@ -823,30 +797,24 @@ document.addEventListener('keydown', (e) => {
 
 
 // Any change marks the form dirty
-form.addEventListener('input', () => {
-    if (isDirty) return;
-
-    isDirty = true;
-    saveButton.disabled = false;
-    saveButton.classList.remove('btn-outline-secondary');
-    saveButton.classList.add('btn-outline-secondary');
-    updateActionButtons();
-});
+form.addEventListener('input', markDirty);
 
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('.remove-item');
     if (!btn) return;
 
+    markDirty()
+});
+
+function markDirty() {
     if (isDirty) return;
 
     isDirty = true;
     saveButton.disabled = false;
-
     saveButton.classList.remove('btn-outline-secondary');
-    saveButton.classList.add('btn-outline-warning'); // guessing this was intended
-
+    saveButton.classList.add('btn-outline-warning');
     updateActionButtons();
-});
+}
 
 function updateActionButtons() {
     if (isDirty) {

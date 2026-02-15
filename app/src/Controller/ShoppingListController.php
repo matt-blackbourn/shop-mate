@@ -2,26 +2,17 @@
 
 namespace App\Controller;
 
-use App\Entity\FoodItem;
 use App\Entity\ListItem;
-use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
-use App\Entity\Supermarket;
-use App\Enum\PlacementType;
 use App\Form\FoodItemGroupPlacementType;
-use App\Form\FoodItemType;
 use App\Form\ShoppingListType;
-use App\Repository\EdgeRepository;
 use App\Repository\FoodItemRepository;
 use App\Repository\ListItemRepository;
-use App\Repository\NodeRepository;
-use App\Repository\PlacementTypeRepository;
 use App\Repository\ProductPlacementRepository;
 use App\Repository\ShoppingListRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\MapBuilder;
 use App\Service\PathFinder;
-use App\Service\PlacementResolver;
 use App\Service\RoutedListItemDto;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -51,8 +42,8 @@ final class ShoppingListController extends AbstractController
             $em->flush();
         }
 
-         // if we dont render the picked items, doctrine will delete them when we flush
-         //so we cache them here and manually add them back afer form submission
+        // if we dont render the picked items, doctrine will delete them when we flush
+        //so we cache them here and manually add them back afer form submission
         $picked = $shoppingList->getListItems()->filter(fn($item) => $item->getPickedAt() !== null)->toArray();
 
         $form = $this->createForm(ShoppingListType::class, $shoppingList, [
