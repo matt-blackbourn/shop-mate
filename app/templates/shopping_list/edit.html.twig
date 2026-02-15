@@ -638,19 +638,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     row.classList.add('collapsed');
                 },
 
-                render: {
-                    no_results(data, escape) {
-                        activeFoodSelect = this;
-                        const query = escape(data.input);
+                create: function(input, callback) {
+                    const name = input.trim();
 
-                        return `
-                            <div class="ts-no-results">
-                                <div class="ts-create-food text-primary" data-name="${query}" data-action="/food/ajax/new">
-                                    ➕ Add <strong>"${query}"</strong>
-                                </div>
-                            </div>
-                        `;
-                    }
+                    fetch('/food/ajax/new', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ name })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        callback({
+                            value: data.id,
+                            text: data.label // this is returned from the server
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Food creation failed:', err);
+                        callback();
+                    });
+                },
+
+                onItemAdd(value) {
+                    console.log(this.settings.create);
+                    const row = this.input.closest('.list-item');
+                    if (!row) return;
+
+                    // Get the selected option properly from Tom Select
+                    const option = this.options[value];
+                    const labelText = option?.text ?? '';
+                    const label = row.querySelector('.food-label');
+                    if (label) label.textContent = labelText;
+
+                    row.classList.remove('expanded');
+                    row.classList.add('collapsed');
                 }
             });
 
@@ -668,6 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+/**
 // Capture clicks on the “Add new food” row
 let activeListItemRow = null;
 document.addEventListener('click', async (e) => {
@@ -729,7 +754,7 @@ document.addEventListener('click', async (e) => {
         }
     }
 });
-
+*/
 
 const menuButton = document.querySelector('.menu-button');
 const menu = document.querySelector('.side-menu');
