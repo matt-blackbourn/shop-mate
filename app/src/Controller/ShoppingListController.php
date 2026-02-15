@@ -46,6 +46,7 @@ final class ShoppingListController extends AbstractController
             $shoppingList = new ShoppingList();
             $shoppingList->setDateCreated(new \DateTimeImmutable());
             $shoppingList->setUser($this->getUser());
+            $shoppingList->setQuickAddList(false);
             $em->persist($shoppingList);
             $em->flush();
         }
@@ -84,15 +85,19 @@ final class ShoppingListController extends AbstractController
             }
         }
 
-        // Create form for new food modal
-        $food = new FoodItem();
-        $foodForm = $this->createForm(FoodItemType::class, $food, [
-            'action' => $this->generateUrl('app_food_new_modal'),
-        ]);
+        $quickAddItems = [];
+        foreach($shoppingListRepository->findQuickAddListByUser($this->getUser())->getListItems() ?? [] as $item) {
+            $quickAddItems[] = [
+                'foodId' => $item->getFoodItem()->getId(),
+                'label' => $item->getFoodItem()->getName(),
+                'quantity' => $item->getQuantity(),
+                'notes' => $item->getNotes(),
+            ];
+        }
 
         return $this->render('shopping_list/edit.html.twig', [
+            'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),
-            'foodForm' => $foodForm->createView(),
             'supermarkets' => $supermarketRepository->findAll(),
             'lastUsedSupermarketId' => $this->getUser()->getLastUsedSupermarket()?->getId(),
         ]);

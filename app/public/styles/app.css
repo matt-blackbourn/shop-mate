@@ -219,3 +219,9 @@ a:hover {
 }
 
 
+/* Hide on mobile */
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+}

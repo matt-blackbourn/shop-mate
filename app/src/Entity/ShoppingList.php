@@ -19,9 +19,6 @@ class ShoppingList
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dateCreated = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $dateCompleted = null;
-
     /**
      * @var Collection<int, ListItem>
      */
@@ -29,20 +26,13 @@ class ShoppingList
     #[ORM\OneToMany(targetEntity: ListItem::class, mappedBy: 'shoppingList', cascade: ['persist'], orphanRemoval: true)]
     private Collection $listItems;
 
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $dateModified = null;
-
     #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
     private ?User $user = null;
 
+    #[ORM\Column]
+    private ?bool $quickAddList = null;
+
     
-    #[ORM\PrePersist]
-    public function updateDateModified(): void
-    {
-        $this->dateModified = new \DateTimeImmutable();
-    }
-
-
     public function __construct()
     {
         $this->listItems = new ArrayCollection();
@@ -65,17 +55,6 @@ class ShoppingList
         return $this;
     }
 
-    public function getDateCompleted(): ?\DateTimeImmutable
-    {
-        return $this->dateCompleted;
-    }
-
-    public function setDateCompleted(?\DateTimeImmutable $dateCompleted): static
-    {
-        $this->dateCompleted = $dateCompleted;
-
-        return $this;
-    }
 
 
     /**
@@ -86,14 +65,13 @@ class ShoppingList
         return $this->listItems;
     }
 
+    
     public function addListItem(ListItem $listItem): static
     {
         if (!$this->listItems->contains($listItem)) {
             $this->listItems->add($listItem);
             $listItem->setShoppingList($this);
         }
-
-        $this->dateModified = new \DateTimeImmutable();
 
         return $this;
     }
@@ -105,24 +83,11 @@ class ShoppingList
             if ($listItem->getShoppingList() === $this) {
                 $listItem->setShoppingList(null);
             }
-
-            $this->dateModified = new \DateTimeImmutable();
         }
 
         return $this;
     }
 
-    public function getDateModified(): ?\DateTimeImmutable
-    {
-        return $this->dateModified;
-    }
-
-    public function setDateModified(?\DateTimeImmutable $dateModified): static
-    {
-        $this->dateModified = $dateModified;
-
-        return $this;
-    }
 
     public function getUser(): ?User
     {
@@ -132,6 +97,18 @@ class ShoppingList
     public function setUser(?User $user): static
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    public function isQuickAddList(): ?bool
+    {
+        return $this->quickAddList;
+    }
+
+    public function setQuickAddList(bool $quickAddList): static
+    {
+        $this->quickAddList = $quickAddList;
 
         return $this;
     }

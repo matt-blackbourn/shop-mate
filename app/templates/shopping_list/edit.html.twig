@@ -22,10 +22,11 @@
                 <nav class="side-menu" hidden>
                     <button type="button" class="menu-close" aria-label="Close menu">×</button>
                     <ul>
-                        <li><a href="{{ path('app_food_item_new') }}">Add food</a></li>
-                        <li><a href="{{ path('admin_assign_food_edges', {id: 1}) }}">Map food</a></li>
-                        <li><a href="{{ path('app_supermarket_index') }}">Supermarkets</a></li>
-                        <li><a href="{{ path('app_supermarket_map') }}">Mapper</a></li>
+                        <li><a id="quickAddItems" href="#" data-quick-add-items="{{ quickAddItems|json_encode|e('html_attr') }}">Quick-add Items</a></li>
+                        <li class="desktop-only"><a href="{{ path('app_food_item_new') }}">Add food</a></li>
+                        <li class="desktop-only"><a href="{{ path('admin_assign_food_edges', {id: 1}) }}">Map food</a></li>
+                        <li class="desktop-only"><a href="{{ path('app_supermarket_index') }}">Supermarkets</a></li>
+                        <li class="desktop-only"><a href="{{ path('app_supermarket_map') }}">Mapper</a></li>
                     </ul>
                 </nav>
             </div>
@@ -450,10 +451,17 @@ goShoppingBtn.addEventListener('click', async (e) => {
     // If using AJAX:
     const formData = new FormData(shoppingForm);
     try {
-        await fetch(shoppingForm.action, {
+        const response = await fetch(shoppingForm.action, {
             method: 'POST',
             body: formData,
         });
+
+        if (!response.ok) {
+            const text = await response.text(); // get Symfony error page
+            console.error('Server error:', response.status, text);
+            alert('Server error: ' + response.status);
+            return;
+        }
 
         // 2️⃣ Open the supermarket selection modal
         selectModal.show();
@@ -477,46 +485,78 @@ confirmBtn.addEventListener('click', () => {
     window.location.href = `/active/${supermarketId}/true`;
 });
 
+
 document.getElementById('add-item').addEventListener('click', () => {
-    // Get fully-named prototype
+    addItemToCollection();
+});
+
+const quickAddItemsBtn = document.getElementById('quickAddItems');
+document.getElementById('quickAddItems').addEventListener('click', () => {
+    const items = JSON.parse(quickAddItemsBtn.dataset.quickAddItems || '[]');
+    if (!items.length) {
+        alert('No quick-add items available.');
+        return;
+    }
+
+    items.forEach(item => {
+        addItemToCollection({
+            foodId: item.foodId,
+            foodLabel: item.label,
+            notes: item.notes,
+            quantity: item.quantity
+        });
+    });
+});
+
+
+function addItemToCollection({
+    foodId = null,
+    foodLabel = 'New item',
+    notes = '',
+    quantity = 1
+} = {}) {
+
     const prototypeHtml = container.dataset.prototype.replace(/__name__/g, index);
     index++;
 
-    // Collapse existing items
+    // Collapse existing
     container.querySelectorAll('.list-item').forEach(i => {
         i.classList.remove('expanded');
         i.classList.add('collapsed');
     });
 
-    // Parse prototype
     const temp = document.createElement('div');
     temp.innerHTML = prototypeHtml;
 
-    // Extract Symfony-managed fields
     const foodSelect = temp.querySelector('select');
     const notesInput = temp.querySelector('input[name$="[notes]"]');
     const quantityInput = temp.querySelector('input[name$="[quantity]"]');
 
-    // Defensive checks (optional but wise)
     if (!foodSelect || !notesInput || !quantityInput) {
         console.error('Prototype missing expected fields');
         return;
     }
 
-    // Styling hooks
+    // Inject values BEFORE inserting into DOM
+    if (foodId !== null) {
+        foodSelect.value = foodId;
+    }
+
+    notesInput.value = notes;
+    quantityInput.value = quantity;
+
     foodSelect.classList.add('food-select');
     notesInput.classList.add('form-control', 'form-control-sm');
     quantityInput.classList.add('quantity-input');
     quantityInput.type = 'hidden';
 
-    // Create card wrapper
     const wrapper = document.createElement('div');
     wrapper.className = 'card list-item expanded';
 
     wrapper.innerHTML = `
         <div class="card-body p-2">
             <div class="d-flex align-items-center justify-content-between item-header">
-                <div class="fw-semibold food-label">New item</div>
+                <div class="fw-semibold food-label">${foodLabel}</div>
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-sm btn-outline-danger remove-item">
                         <i class="bi bi-trash"></i>
@@ -533,7 +573,7 @@ document.getElementById('add-item').addEventListener('click', () => {
                     </div>
                     <div class="d-flex align-items-center gap-1 qty-control">
                         <button type="button" class="btn btn-sm btn-outline-secondary qty-down">−</button>
-                        <span class="fw-semibold qty-display px-2">1</span>
+                        <span class="fw-semibold qty-display px-2">${quantity}</span>
                         ${quantityInput.outerHTML}
                         <button type="button" class="btn btn-sm btn-outline-secondary qty-up">+</button>
                     </div>
@@ -544,9 +584,10 @@ document.getElementById('add-item').addEventListener('click', () => {
 
     container.prepend(wrapper);
 
-    // Let Tom Select initialise new selects
     document.dispatchEvent(new Event('collection:add'));
-});
+}
+
+
 
 
 container.addEventListener('change', e => {
@@ -657,7 +698,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
 
                 onItemAdd(value) {
-                    console.log(this.settings.create);
                     const row = this.input.closest('.list-item');
                     if (!row) return;
 
