@@ -383,6 +383,7 @@ class SupermarketController extends AbstractController
             $shelf->setY($item['y']);
             $shelf->setWidth($item['width']);
             $shelf->setHeight($item['height']);
+            $shelf->setFullSelect($item['fullSelect'] ?? false);
             $em->persist($shelf);
         }
 

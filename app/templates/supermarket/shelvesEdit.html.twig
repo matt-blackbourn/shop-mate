@@ -7,6 +7,7 @@
     <a href="{{ path('app_supermarket_index') }}" class="btn btn-outline-secondary btn-sm">← Back to list</a>
     <button type="button" class="btn btn-primary" id="createShelfBtn">Create New Shelf</button>
     <button type="button" class="btn btn-danger" id="deleteShelfBtn" disabled>Delete Shelf</button>
+    <button type="button" class="btn btn-secondary" id="toggleFullSelectBtn" disabled>Toggle Full Select</button>
 
     <form method="POST" action="/supermarket/{{ supermarket.id }}/shelves/save" id="shelfForm">
         <input type="hidden" name="shelves" id="shelfInput">
@@ -42,6 +43,10 @@
     stroke: #495057;
     stroke-width: 2;
     cursor: pointer;
+}
+.shelf.full-select {
+    stroke:rgb(157, 5, 5);
+    stroke-width: 6;
 }
 .shelf.selected {
     stroke-dasharray: 4;
@@ -79,7 +84,8 @@ document.getElementById('shelfForm').addEventListener('submit', e => {
         y: shelf.y,
         width: shelf.width,
         height: shelf.height,
-        deleted: !!shelf.deleted
+        deleted: !!shelf.deleted,
+        fullSelect: !!shelf.fullSelect,
     }));
 
     document.getElementById('shelfInput').value = JSON.stringify(payload);
@@ -105,6 +111,8 @@ function renderShelves() {
         rect.setAttribute('height', shelf.height);
         rect.classList.add('shelf');
 
+        if(shelf.fullSelect) rect.classList.add('full-select');
+
         rect.addEventListener('mousedown', () => selectShelf(shelf.clientId));
         if (shelf.clientId === activeShelfId) rect.classList.add('selected');
 
@@ -118,14 +126,29 @@ function renderShelves() {
 
 function selectShelf(clientId) {
     activeShelfId = clientId;
-    document.getElementById('deleteShelfBtn').disabled = !activeShelfId;
+    const hasSelection = !!activeShelfId;
+    document.getElementById('toggleFullSelectBtn').disabled = !hasSelection;
+    document.getElementById('deleteShelfBtn').disabled = !hasSelection;
     renderShelves();
 }
+
+// toggle full select button listener
+document.getElementById('toggleFullSelectBtn').addEventListener('click', () => {
+    if (!activeShelfId) return;
+
+    const shelf = shelves.find(s => s.clientId === activeShelfId);
+    if (!shelf) return;
+
+    shelf.fullSelect = !shelf.fullSelect;
+
+    renderShelves();
+    console.log('Toggled fullSelect for shelf', shelf.id, shelf.fullSelect);
+    console.log(shelves)
+});
 
 // Delete button listener
 document.getElementById('deleteShelfBtn').addEventListener('click', () => {
     if (!activeShelfId) return;
-
 
     // Use strict equality to match UUID strings
     const index = shelves.findIndex(s => s.clientId === activeShelfId);
@@ -162,7 +185,8 @@ svg.addEventListener('click', (e) => {
         x: svgP.x - 25, // small default size centered on click
         y: svgP.y - 10,
         width: 50,
-        height: 50
+        height: 50,
+        fullSelect: false,
     };
 
     shelves.push(newShelf);

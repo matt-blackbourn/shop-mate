@@ -56,6 +56,7 @@ final class MapBuilder
                 'x' => $shelf->getX(),
                 'y' => $shelf->getY(),
                 'deleted' => false,
+                'fullSelect' => $shelf->isFullSelect(),
             ];
         }
         return $shelves;

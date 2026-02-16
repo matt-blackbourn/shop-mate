@@ -29,6 +29,10 @@ class Shelf
     #[ORM\Column]
     private ?int $y = null;
 
+    #[ORM\Column]
+    private ?bool $fullSelect = false;
+
+
     public function getId(): ?int
     {
         return $this->id;
@@ -93,4 +97,17 @@ class Shelf
 
         return $this;
     }
+
+    public function isFullSelect(): ?bool
+    {
+        return $this->fullSelect;
+    }
+
+    public function setFullSelect(bool $fullSelect): static
+    {
+        $this->fullSelect = $fullSelect;
+
+        return $this;
+    }
+
 }

@@ -740,7 +740,7 @@ function highlightShelfPortion(shelf, edge) {
     const halfHeight = shelf.height / 2;
     const halfWidth  = shelf.width / 2;
 
-    const wallShelf = isWallShelf(shelf, edge);
+    const fullSelect = isWallShelf(shelf, edge) || shelf.fullSelect;
 
     // 🔹 Edge runs left-right (above or below shelf)
     if (edgeIsHorizontal) {
@@ -754,9 +754,9 @@ function highlightShelfPortion(shelf, edge) {
         drawShelfHighlight(
             shelf,
             x1,
-            wallShelf ? shelfMinY : (edgeIsAbove ? shelfMinY : shelfMinY + halfHeight),
+            fullSelect ? shelfMinY : (edgeIsAbove ? shelfMinY : shelfMinY + halfHeight),
             x2 - x1,
-            wallShelf ? shelf.height : halfHeight
+            fullSelect ? shelf.height : halfHeight
         );
     }
 
@@ -771,9 +771,9 @@ function highlightShelfPortion(shelf, edge) {
 
         drawShelfHighlight(
             shelf,
-            wallShelf ? shelfMinX : (edgeIsLeft ? shelfMinX : shelfMinX + halfWidth),
+            fullSelect ? shelfMinX : (edgeIsLeft ? shelfMinX : shelfMinX + halfWidth),
             y1,
-            wallShelf ? shelf.width : halfWidth,
+            fullSelect ? shelf.width : halfWidth,
             y2 - y1
         );
     }
@@ -1380,10 +1380,8 @@ function preselectShelf(edgeId, aisleSide) {
     placementState.aisleSide = aisleSide;
     placementState.edgeId = edgeId;
     updatePlacementPayload();
-    
-    confirmBtn.disabled = false;
 
-    console.log(placementState)
+    confirmBtn.disabled = false;
 
     highlightShelfPortion(correctShelf, edge);
 }
