@@ -3,16 +3,7 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <div class="modal-title">
-                    <div class="title">
-                        <span id="modalItemName" class="title"></span>
-                        <span id="modalItemQty" class="app-muted"></span>
-                    </div>
-
-                    <div id="modalItemNotes" class="notes app-muted"></div>
-                </div>
                 <button type="button" id="pathCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Back To List</button>
-
             </div>
 
             <div class="modal-body">
@@ -25,9 +16,14 @@
             </div>
 
             <div class="modal-footer">
+                <div class="title">
+                    <span id="modalItemName" class="title"></span>
+                    <span id="modalItemQty"></span>
+                    <!-- wrap notes in its own block container -->
+                    <div id="modalItemNotes"></div>
+                </div>
                 <button id="skip-item-map" class="pick-skip skip" type="button">Skip</button>
                 <button id="pick" class="pick-skip" type="button">Pick Item</button>
-
             </div>
         </div>
     </div>

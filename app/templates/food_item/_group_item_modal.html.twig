@@ -14,7 +14,7 @@
 
                     <div class="mb-3">
                         {{ form_label(form.groupWithItem) }}
-                        {{ form_widget(form.groupWithItem, { attr: { class: 'form-select' } }) }}
+                        {{ form_widget(form.groupWithItem) }}
                         {{ form_errors(form.groupWithItem) }}
                     </div>
 
@@ -108,6 +108,40 @@
     padding: 0.5rem 1rem;
 }
 
+/* Header TomSelect variant */
+#groupItemModal .ts-wrapper.single .ts-control {
+    background-color: #1c212b;   /* match header */
+    color: #e9ecef;
+    border: 1px solid #343a46;
+}
+
+/* Input text */
+#groupItemModal .ts-wrapper.single .ts-control input {
+    background-color: transparent;
+    color: #e9ecef;
+}
+
+/* Dropdown */
+#groupItemModal .ts-dropdown {
+    background-color: #2b303b;
+    color: #e9ecef;
+    border: 1px solid #343a46;
+}
+
+/* Dropdown options */
+#groupItemModal .ts-dropdown .ts-dropdown-option {
+    color: #e9ecef;
+}
+
+/* Active option */
+#groupItemModal .ts-dropdown .active,
+#groupItemModal .ts-dropdown .active.create {
+    background-color: #343a46;
+    color: #e9ecef;
+}
+#groupItemModal .ts-control input::placeholder {
+    color:rgb(128, 128, 128);      /* light gray for dark bg */
+}
 
 </style>
 

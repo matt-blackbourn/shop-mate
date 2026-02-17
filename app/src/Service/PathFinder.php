@@ -137,7 +137,7 @@ class PathFinder
             }
         }
 
-        return array_merge($orderedList, $unmappedItems);
+        return array_merge($unmappedItems, $orderedList);
     }
 
     private function reconstructPath(array $prev, string $targetNode): array

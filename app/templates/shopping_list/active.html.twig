@@ -383,13 +383,11 @@
 }
 
 .map-modal .modal-header {
+    height: 3rem; 
     border-bottom: 1px solid #1f2430;
     background: #121520;
-}
-
-.map-modal .modal-title {
-    color: #f1f3f5;
-    font-weight: 500;
+    align-items: center;        /* vertically center button/title */
+    justify-content: flex-start;/* left-align navigation button */
 }
 
 .map-modal .btn-close {
@@ -410,11 +408,12 @@
 }
 
 .map-modal .modal-footer {
+    height: 7.5rem;   
     border-top: 1px solid #1f2430;
     background: #121520;
     flex-shrink: 0;    /* never shrink */
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 0.5rem;
 }
 
@@ -440,6 +439,13 @@
     background: #2a2f3a;
     border-color: #2a2f3a;
     color: #6c757d;
+}
+
+#modalItemNotes {
+    font-size: 0.9rem;
+    color: #adb5bd;
+    margin-top: 0.25rem;
+    font-style: italic;
 }
 
 .shelf-highlight {
@@ -543,7 +549,6 @@ const currentItemState = {
     notes: null,
 };
 
-
 // other state
 let processingQueue = false;
 const pickQueue = [];
@@ -605,8 +610,13 @@ edgesData.forEach(edge => {
 });
 
 // 2. Build routeState
+const mappedSegments = segments.filter(s => s.placementEdgeId !== null);
+const unmappedSegments = segments.filter(s => s.placementEdgeId === null);
 const routeState = {
-    segments: segments.map(s => ({
+    segments: [
+        ...mappedSegments,
+        ...unmappedSegments // appended AFTER mapped
+    ].map(s => ({
         ...s,
         edges: []
     })),
@@ -625,6 +635,8 @@ const routeState = {
 routeState.segments.forEach(segment => {
     segment.edges = resolveEdgesForSegment(segment);
 });
+
+
 
 // draw shelves on maps
 drawShelves(shelvesData, document.getElementById('placement-map'))
@@ -656,7 +668,16 @@ function updateMapView() {
         };
     }
 
-    document.getElementById('modalItemName').textContent = routeState.currentItem.name;
+    // If there's no edgeId, prepend the warning icon
+    const nameEl = document.getElementById('modalItemName');
+    if (routeState.segments[routeState.currentSegment] && !routeState.segments[routeState.currentSegment].placementEdgeId) {
+        nameEl.innerHTML = `
+            <i class="bi bi-exclamation-triangle-fill placement-icon missing"></i>
+            ${routeState.currentItem.name}
+        `;
+    } else {
+        nameEl.textContent = routeState.currentItem.name;
+    }
 
     const qtyEl = document.getElementById('modalItemQty');
     qtyEl.textContent = routeState.currentItem.quantity && routeState.currentItem.quantity > 1 ? ` (${routeState.currentItem.quantity})` : '';
@@ -1121,6 +1142,7 @@ document.querySelectorAll('.pick-btn').forEach(btn => {
 });
 // pick from map view
 document.querySelector('#pick').addEventListener('click', () => {
+    checkForFinishedList();
     pickItemById(routeState.currentItem.itemId);
 });
 
@@ -1129,8 +1151,18 @@ document.querySelector('#skip-item').addEventListener('click', () => {
     skipItemById(routeState.currentItem.itemId);
 });
 document.querySelector('#skip-item-map').addEventListener('click', () => {
+    checkForFinishedList();
     skipItemById(routeState.currentItem.itemId);
 });
+
+function checkForFinishedList() {
+    if(routeState.currentSegment === routeState.segments.length -1) {
+        // all items picked or skipped, close modal
+        const modalEl = document.getElementById('pathModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    }
+}
 
 document.querySelectorAll('.dots-btn').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -1161,7 +1193,6 @@ function openPlacementMenu(card) {
     // reset buttons
     mapItemBtn.style.display = 'inline-block';
     groupItemBtn.style.display = 'inline-block';
-    console.log(status)
 
     switch (status) {
         case 'system':
