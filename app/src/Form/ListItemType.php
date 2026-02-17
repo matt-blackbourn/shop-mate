@@ -33,6 +33,9 @@ class ListItemType extends AbstractType
             ->add('quantity', IntegerType::class, [
                 'attr' => ['min' => 1],
                 'required' => false,
+                'attr' => [
+                    'class' => 'quantity-input',
+                ],
             ])
             ->add('notes', TextType::class, [
                 'required' => false,
