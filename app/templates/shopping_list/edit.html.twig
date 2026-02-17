@@ -33,14 +33,17 @@
 
             <!-- Center: heading -->
             <div class="header-center flex-grow-1 d-flex justify-content-center">
-                <h6>My Shopping List</h6>
+                <select id="supermarketSelect">
+                    {% for supermarket in supermarkets %}
+                        <option value="{{ supermarket.id }}">{{ supermarket.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <!-- Right: Go shopping button -->
                <div class="header-right d-flex align-items-center">
                 <a href="" id="go-shopping-btn" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
                     <i class="bi bi-cart-fill"></i>
-                    <span class="d-none d-sm-inline">Go Shopping</span>
                 </a>
             </div>
         </div>
@@ -141,11 +144,10 @@
 
     {{ form_end(form) }}
 
-    {# {% include 'food_item/_new_food_modal.html.twig' with { foodForm: foodForm } %} #}
-    {% include 'supermarket/_select_supermarket_modal.html.twig' %}
 </div>
 
 <style>
+
 .container {
     background-color: #0f1115; /* dark background */
     color: #e9ecef;            /* light text */
@@ -161,6 +163,7 @@
 .sticky-header h1 {
     color: #e9ecef;
 }
+
 
 .side-menu {
     background-color: #2b303b;
@@ -242,8 +245,8 @@
 
 #add-item {
     background-color: #2b303b;   /* dark */
-    border: 1px solid #3a4152;
-    color: #e9ecef;
+    border: 1px solid #f59e0b;
+    color: #ffbf33;
     border-radius: 0.5rem;
     padding: 0.5rem 1rem;
 }
@@ -292,7 +295,7 @@
 /* Card background and border */
 .card.list-item {
     background-color: #1c212b; /* dark slate */
-    border: 1px solid #3a4152;
+    border: 1px solidrgb(8, 8, 9);
     color: #e9ecef;
     border-radius: 0.5rem;
 }
@@ -438,11 +441,47 @@
     cursor: pointer;
 }
 
+
+
+/* Header TomSelect variant */
+.sticky-header .ts-wrapper.single .ts-control {
+    background-color: #1c212b;   /* match header */
+    color: #e9ecef;
+    border: 1px solid #343a46;
+}
+
+/* Input text */
+.sticky-header .ts-wrapper.single .ts-control input {
+    background-color: transparent;
+    color: #e9ecef;
+}
+
+/* Dropdown */
+.sticky-header .ts-dropdown {
+    background-color: #2b303b;
+    color: #e9ecef;
+    border: 1px solid #343a46;
+}
+
+/* Dropdown options */
+.sticky-header .ts-dropdown .ts-dropdown-option {
+    color: #e9ecef;
+}
+
+/* Active option */
+.sticky-header .ts-dropdown .active,
+.sticky-header .ts-dropdown .active.create {
+    background-color: #343a46;
+    color: #e9ecef;
+}
+
+
 .card.list-item.just-added {
     background-color: rgba(63, 191, 127, 0.08);
     border: 1px solid #f59e0b;
     transition: all 0.5s ease;
 }
+
 
 
 
@@ -460,12 +499,9 @@ const refreshButton = document.getElementById('refresh-page');
 
 updateActionButtons();
 
-const goShoppingBtn = document.getElementById('go-shopping-btn');
-const selectModalEl = document.getElementById('selectSupermarketModal');
-const selectModal = new bootstrap.Modal(selectModalEl);
-const confirmBtn = document.getElementById('confirm-supermarket-btn');
 const shoppingForm = document.querySelector('form[name="shopping_list"]');
 
+const goShoppingBtn = document.getElementById('go-shopping-btn');
 goShoppingBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     // 1️⃣ Submit the main form via AJAX or normal submit if you prefer
@@ -484,26 +520,20 @@ goShoppingBtn.addEventListener('click', async (e) => {
             return;
         }
 
-        // 2️⃣ Open the supermarket selection modal
-        selectModal.show();
+         // 1️⃣ Get the selected supermarket
+        const supermarketId = supermarketSelect.value;
+        if (!supermarketId) {
+            alert('Please select a supermarket first.');
+            return;
+        }
+
+        // 2️⃣ Redirect to the active page
+        window.location.href = `/active/${supermarketId}/true`;
+
     } catch (err) {
         console.error('Failed to save list', err);
         alert('Could not save your list. Try again.');
     }
-});
-
-// 3️⃣ Handle confirmation
-confirmBtn.addEventListener('click', () => {
-    const selected = selectModalEl.querySelector('input[name="supermarketId"]:checked');
-    if (!selected) {
-        alert('Please select a supermarket.');
-        return;
-    }
-
-    const supermarketId = selected.value;
-
-    // redirect to the shopping page with supermarketId in URL
-    window.location.href = `/active/${supermarketId}/true`;
 });
 
 
@@ -798,6 +828,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle Symfony collection add
     document.addEventListener('collection:add', (e) => {
         initFoodSelect(e.target);
+    });
+
+    // select supermarket Tom select
+    new TomSelect('#supermarketSelect', {
+        create: false,
+        allowEmptyOption: true,
     });
 });
 
