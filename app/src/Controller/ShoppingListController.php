@@ -156,6 +156,12 @@ final class ShoppingListController extends AbstractController
                 $this->addFlash('warning', '<i class="bi bi-exclamation-triangle-fill placement-icon missing"></i>' . $unplacedItemCount . ' item(s) have not been mapped. Place them to update your list order!');
             }
         }
+
+        $placementStatus = [];
+        foreach ($orderedList as $dto) {
+            $placementStatus[$dto->item->getId()] = $dto->item->getPlacementStatus()->value;
+        }
+
         $segments = array_map(fn (RoutedListItemDto $dto) => [
             'itemId' => $dto->item->getId(),
             'placementEdgeId' => $dto->placement?->getEdge()->getId(),
@@ -175,6 +181,7 @@ final class ShoppingListController extends AbstractController
             'orderedList' => $orderedList,
             'shoppingList' => $shoppingList,
             'supermarket' => $supermarket,
+            'placementStatus' => $placementStatus,
             'nodes' => $mapBuilder->getAllNodes($supermarket),
             'edges' => $mapBuilder->getAllEdges($supermarket),
             'shelves' => $mapBuilder->getAllShelves($supermarket),

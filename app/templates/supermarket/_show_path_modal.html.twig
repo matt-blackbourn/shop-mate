@@ -2,8 +2,19 @@
     <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
         <div class="modal-content">
 
-            <div class="modal-header">
-                <button type="button" id="pathCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Back To List</button>
+            <div class="modal-header d-flex justify-content-between">
+                <button type="button"
+                        id="pathCancelBtn"
+                        class="map-nav-button"
+                        data-bs-dismiss="modal">
+                    Back To List
+                </button>
+
+                <button type="button"
+                        id="place-item-map"
+                        class="map-nav-button">
+                    Place Item On Map
+                </button>
             </div>
 
             <div class="modal-body">
@@ -23,7 +34,7 @@
                     <div id="modalItemNotes"></div>
                 </div>
                 <button id="skip-item-map" class="pick-skip skip" type="button">Skip</button>
-                <button id="pick" class="pick-skip" type="button">Pick Item</button>
+                <button id="pick-item-map" class="pick-skip pick" type="button">Pick Item</button>
             </div>
         </div>
     </div>

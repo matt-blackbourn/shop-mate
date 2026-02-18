@@ -63,7 +63,7 @@
     {% endif %}
 
     <!-- Shopping items -->
-    <div class="shopping-cards">
+    <div class="shopping-cards" id="data" data-placement-status="{{ placementStatus|json_encode|e('html_attr') }}">
 
     {% for routedItem in orderedList %}
         {% set listItem = routedItem.item %}
@@ -131,7 +131,7 @@
                     {% endif %}
                 </div>
 
-                <button class="pick-btn pick-skip" type="button">Pick Item</button>
+                <button class="pick-btn-list pick-skip pick" type="button">Pick Item</button>
 
             </div>
         </div>
@@ -255,11 +255,28 @@
     color: #fa5252;
 }
 
+.map-nav-button {
+    display: inline-block;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    cursor: pointer;
+
+    background-color: #212529;
+    border: 1px solid #212529;
+
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    border-radius: 0.375rem;
+}
 .pick-skip {
     all: unset;
     display: inline-flex;
     align-items: center;
-    font-size: 0.8rem;
+    font-size: .8rem;
     padding: 4px 10px;
     border-radius: 999px;
     background-color: #2b303b;
@@ -269,10 +286,18 @@
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
-    border: 1px solid #51cf66;
 }
 .skip{
     border: 1px solid #fab005;
+}
+.pick{
+    border: 1px solid #51cf66;
+}
+.no-placement{
+    border: 1px solid #fa5252;
+}
+#pick-item-map, #skip-item-map {
+    font-size: 1rem;
 }
 
 
@@ -534,6 +559,7 @@ const edgesData = JSON.parse(container.dataset.edges);
 const shelvesData = JSON.parse(container.dataset.shelves);
 const segments = JSON.parse(container.dataset.segments);
 const entranceNodeId = container.dataset.entranceNodeId;  
+const placementStatuses = JSON.parse(document.getElementById('data').dataset.placementStatus);
 const placementEdgeEls = new Map(); // Keep references to all edges
 const otherPlacementEdgeEls = new Map(); // Keep references to all edges
 const pathEdgeEls = new Map(); // Keep references to all edges
@@ -541,7 +567,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
 const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 const shelfElsOther = []; // keep refs + geometry
-
+console.log(placementStatuses);
 const currentItemState = {
     itemId: null,
     name: null,
@@ -685,6 +711,51 @@ function updateMapView() {
     const notesEl = document.getElementById('modalItemNotes');
     notesEl.textContent = routeState.currentItem.notes ?? '';
     notesEl.style.display = routeState.currentItem.notes ? '' : 'none';
+
+    // update place item button on map view
+    const placeBtn = document.getElementById('place-item-map');
+    console.log(placeBtn)
+    const status = placementStatuses[segment.itemId]; // 'system', 'confirmed', 'provisional', 'group', 'none'
+    switch (status) {
+        case 'system':
+            placeBtn.classList.add('pick');
+            break;
+        case 'confirmed':
+            placeBtn.classList.add('pick');
+            break;
+        case 'provisional':
+            placeBtn.classList.add('skip');
+            break;
+        case 'group':
+            placeBtn.classList.add('skip');
+            break;
+        case 'none':
+        default:
+            placeBtn.classList.add('no-placement');
+            break;
+    }
+     /**       case 'system':
+        case 'confirmed':
+            textEl.textContent = "This item has already been placed. Does it belong somewhere else?";
+            mapItemBtn.textContent = "Place somewhere else";
+            groupItemBtn.style.display = 'none'; // optional, only 1 action
+            break;
+        case 'provisional':
+            textEl.textContent = "This item has been placed by another user.";
+            mapItemBtn.textContent = "Confirm placement";
+            groupItemBtn.textContent = "Place somewhere else";
+            break;
+        case 'group':
+            textEl.textContent = "This is an approximate location based on similar items. Can you confirm it for us?";
+            mapItemBtn.textContent = "Confirm on map";
+            groupItemBtn.style.display = 'none';
+            break;
+        case 'none':
+        default:
+            textEl.textContent = "We don’t know where this item belongs.";
+            mapItemBtn.textContent = "Place On Map";
+            groupItemBtn.textContent = "Place With Similar Item";
+            break; */
 }
 
 
@@ -1133,7 +1204,7 @@ function openPlacementModal(itemEl) {
 
 
 // Pick item function
-document.querySelectorAll('.pick-btn').forEach(btn => {
+document.querySelectorAll('.pick-btn-list').forEach(btn => {
     btn.addEventListener('click', e => {
         const card = e.target.closest('.shopping-card');
         const itemId = Number(card.dataset.id);
@@ -1141,7 +1212,7 @@ document.querySelectorAll('.pick-btn').forEach(btn => {
     });
 });
 // pick from map view
-document.querySelector('#pick').addEventListener('click', () => {
+document.querySelector('#pick-item-map').addEventListener('click', () => {
     checkForFinishedList();
     pickItemById(routeState.currentItem.itemId);
 });
@@ -1187,8 +1258,7 @@ function openPlacementMenu(card) {
     const mapItemBtn = modal.querySelector('#mapItem');
     const groupItemBtn = modal.querySelector('#groupItem');
 
-    // read placement status from data attribute or JS variable
-    const status = card.dataset.placementStatus; // 'system', 'confirmed', 'provisional', 'group', 'none'
+    const status = placementStatuses[card.dataset.id]; // 'system', 'confirmed', 'provisional', 'group', 'none'
 
     // reset buttons
     mapItemBtn.style.display = 'inline-block';

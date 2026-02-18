@@ -137,7 +137,7 @@ class PathFinder
             }
         }
 
-        return array_merge($unmappedItems, $orderedList);
+        return array_merge($unmappedItems, $orderedList); // Show unmapped items at the start of the list to prompt user to place them
     }
 
     private function reconstructPath(array $prev, string $targetNode): array
