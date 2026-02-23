@@ -60,6 +60,12 @@ class Supermarket
     #[ORM\OneToMany(targetEntity: Shelf::class, mappedBy: 'supermarket')]
     private Collection $shelves;
 
+    /**
+     * @var Collection<int, ShoppingSession>
+     */
+    #[ORM\OneToMany(targetEntity: ShoppingSession::class, mappedBy: 'supermarket')]
+    private Collection $shoppingSessions;
+
     public function __construct()
     {
         $this->edges = new ArrayCollection();
@@ -67,6 +73,7 @@ class Supermarket
         $this->productPlacements = new ArrayCollection();
         $this->users = new ArrayCollection();
         $this->shelves = new ArrayCollection();
+        $this->shoppingSessions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -279,6 +286,36 @@ class Supermarket
             // set the owning side to null (unless already changed)
             if ($shelf->getSupermarket() === $this) {
                 $shelf->setSupermarket(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShoppingSession>
+     */
+    public function getShoppingSessions(): Collection
+    {
+        return $this->shoppingSessions;
+    }
+
+    public function addShoppingSession(ShoppingSession $shoppingSession): static
+    {
+        if (!$this->shoppingSessions->contains($shoppingSession)) {
+            $this->shoppingSessions->add($shoppingSession);
+            $shoppingSession->setSupermarket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShoppingSession(ShoppingSession $shoppingSession): static
+    {
+        if ($this->shoppingSessions->removeElement($shoppingSession)) {
+            // set the owning side to null (unless already changed)
+            if ($shoppingSession->getSupermarket() === $this) {
+                $shoppingSession->setSupermarket(null);
             }
         }
 

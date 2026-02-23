@@ -4,12 +4,14 @@ namespace App\Controller;
 
 use App\Entity\ListItem;
 use App\Entity\ShoppingList;
+use App\Entity\ShoppingSession;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\ProductPlacementRepository;
 use App\Repository\ShoppingListRepository;
+use App\Repository\ShoppingSessionRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\MapBuilder;
 use App\Service\PathFinder;
@@ -191,12 +193,72 @@ final class ShoppingListController extends AbstractController
     }
 
     // maybe needs to go in list item controller later
-    #[Route('/shoppinglist/ajax/pick/{id}', name: 'app_shopping_pick', methods: ['POST'])]
-    public function pick(ListItem $item, EntityManagerInterface $em): JsonResponse
+    #[Route('/shoppinglist/ajax/pick', name: 'app_shopping_pick', methods: ['POST'])]
+    public function pick(
+        Request $request, 
+        EntityManagerInterface $em, 
+        ShoppingSessionRepository $shoppingSessionRepository, 
+        ListItemRepository $listItemRepository,
+        SupermarketRepository $supermarketRepository,
+    ): JsonResponse
     {
-        $item->markPicked();
+        $data = json_decode($request->getContent(), true);
+
+        $listItemId = $data['listItemId'] ?? null;
+        $supermarketId = $data['supermarketId'] ?? null;
+
+        if (!$listItemId || !$supermarketId) {
+            return new JsonResponse(['error' => 'Invalid payload'], 400);
+        }
+
+        // fetch entities
+        $item = $listItemRepository->find($listItemId);
+        $supermarket = $supermarketRepository->find($supermarketId);
+
+        // your pick logic here
+
+        $session = $shoppingSessionRepository->findActiveByListAndSupermarket($item->getShoppingList(), $supermarket);
+
+        // 1️⃣ Create session if none exists
+        if (!$session) {
+            $session = new ShoppingSession();
+            $session->setShoppingList($item->getShoppingList());
+            $session->setStartedAt(new \DateTimeImmutable());
+            $session->setSupermarket($supermarket);
+            $em->persist($session);
+        }
+
+        // 2️⃣ Mark item picked
+        $item->setPickedAt(new \DateTimeImmutable());
+        $item->setSession($session);
+
         $em->flush();
 
         return new JsonResponse(['ok' => true]);
+    }
+
+    // maybe needs to go in list item controller later
+    #[Route('/shoppinglist/undo', name: 'app_shopping_undo', methods: ['POST'])]
+    public function undo(ListItem $item, ListItemRepository $listItemRepository, EntityManagerInterface $em)
+    {
+        // $lastPicked = $listItemRepository->findLastPicked($item->getShoppingList());
+        // if (!$lastPicked) {
+        //     return $this->redirectToRoute('route_view', [
+        //         'startNode' => $startNodeId
+        //     ]);
+        // }
+
+        // $lastPicked->setPickedAt(null);
+        // $entityManager->flush();
+
+        // if ($previousPicked) {
+        //     $startNodeId = $previousPicked->getEdge()->getStartNode()->getId();
+        // } else {
+        //     $startNodeId = $defaultStartNodeId;
+        // }
+
+        return $this->redirectToRoute('route_view', [
+            // 'startNode' => $startNodeId
+        ]);
     }
 }

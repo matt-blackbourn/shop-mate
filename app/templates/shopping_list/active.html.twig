@@ -12,6 +12,7 @@
     data-shelves="{{ shelves|json_encode|e('html_attr') }}"
     data-segments="{{ segments|json_encode|e('html_attr') }}"
     data-entrance-node-id="{{ supermarket.entranceNode.id }}"
+    data-supermarket-id="{{ supermarket.id }}" 
 >
 
     <div class="sticky-header">
@@ -20,8 +21,12 @@
             <div class="header-left d-flex align-items-center">
                 <a href="{{ path('app_home') }}" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
                     <i class="bi bi-check-circle-fill"></i>
-                    <span class="d-none d-sm-inline">Finished</span>
                 </a>
+                <form method="POST" action="/shoppinglist/undo">
+                    <button type="submit" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </form>
             </div>
 
             <div class="header-center flex-grow-1 d-flex justify-content-center">
@@ -33,7 +38,6 @@
             <div class="header-right d-flex align-items-center">
                 <a href="" id="mapButton" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
                     <i class="bi bi-geo-alt-fill"></i>
-                    <span class="d-none d-sm-inline">Map</span>
                 </a>
             </div>
         </div>
@@ -71,7 +75,6 @@
         <div 
             class="shopping-card"
             data-id="{{ listItem.id }}"
-            data-supermarket-id="{{ supermarket.id }}"  
             data-placement-status="{{ listItem.placementStatus.value }}"
             data-food-item-id="{{ listItem.foodItem.id }}"
             data-food-item-name="{{ listItem.foodItem.name }}"
@@ -559,6 +562,7 @@ const edgesData = JSON.parse(container.dataset.edges);
 const shelvesData = JSON.parse(container.dataset.shelves);
 const segments = JSON.parse(container.dataset.segments);
 const entranceNodeId = container.dataset.entranceNodeId;  
+const supermarketId = container.dataset.supermarketId;  
 const placementStatuses = JSON.parse(document.getElementById('data').dataset.placementStatus);
 const placementEdgeEls = new Map(); // Keep references to all edges
 const otherPlacementEdgeEls = new Map(); // Keep references to all edges
@@ -567,7 +571,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
 const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 const shelfElsOther = []; // keep refs + geometry
-console.log(placementStatuses);
+
 const currentItemState = {
     itemId: null,
     name: null,
@@ -579,7 +583,7 @@ const currentItemState = {
 let processingQueue = false;
 const pickQueue = [];
 const placementState = {
-    supermarketId: null,
+    supermarketId: supermarketId,
     foodItemId: null,
     edgeId: null,
     aisleSide: null,
@@ -673,6 +677,7 @@ updateMapView();
 // 4. 🔥 Render initial route
 highlightEdgesOnPathMap();
 
+
 function updateMapView() {
     const segment = routeState.segments[routeState.currentSegment];
     if(!segment) {
@@ -714,7 +719,6 @@ function updateMapView() {
 
     // update place item button on map view
     const placeBtn = document.getElementById('place-item-map');
-    console.log(placeBtn)
     const status = placementStatuses[segment.itemId]; // 'system', 'confirmed', 'provisional', 'group', 'none'
     switch (status) {
         case 'system':
@@ -734,28 +738,7 @@ function updateMapView() {
             placeBtn.classList.add('no-placement');
             break;
     }
-     /**       case 'system':
-        case 'confirmed':
-            textEl.textContent = "This item has already been placed. Does it belong somewhere else?";
-            mapItemBtn.textContent = "Place somewhere else";
-            groupItemBtn.style.display = 'none'; // optional, only 1 action
-            break;
-        case 'provisional':
-            textEl.textContent = "This item has been placed by another user.";
-            mapItemBtn.textContent = "Confirm placement";
-            groupItemBtn.textContent = "Place somewhere else";
-            break;
-        case 'group':
-            textEl.textContent = "This is an approximate location based on similar items. Can you confirm it for us?";
-            mapItemBtn.textContent = "Confirm on map";
-            groupItemBtn.style.display = 'none';
-            break;
-        case 'none':
-        default:
-            textEl.textContent = "We don’t know where this item belongs.";
-            mapItemBtn.textContent = "Place On Map";
-            groupItemBtn.textContent = "Place With Similar Item";
-            break; */
+
 }
 
 
@@ -1188,9 +1171,7 @@ function openPlacementModal(itemEl) {
     const foodItemId = itemEl.dataset.foodItemId;
     const edgeId = itemEl.dataset.placementEdgeId || null;
     const aisleSide = itemEl.dataset.placementAisleSide || null;
-    const supermarketId = itemEl.dataset.supermarketId;
 
-    placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
 
     // Only select edge if one exists
@@ -1325,20 +1306,28 @@ async function processPickQueue() {
     if (processingQueue) return;
     processingQueue = true;
 
+
     while (pickQueue.length > 0) {
-        const id = pickQueue.shift();
+        const listItemId = pickQueue.shift();
+    console.log(JSON.stringify({
+                    listItemId: listItemId,
+                    supermarketId: supermarketId
+                }));
 
         try {
-            await fetch(`/shoppinglist/ajax/pick/${id}`, {
+            await fetch(`/shoppinglist/ajax/pick`, {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    listItemId: listItemId,
+                    supermarketId: supermarketId
+                })
             });
         } catch (e) {
-            // console.error('Failed to mark item as picked', id);
-            // optional: stash failed IDs for retry
+            // optional retry handling
         }
     }
 
@@ -1601,9 +1590,7 @@ function openPlacementModal(modalElement) {
     const foodItemId = modalElement.dataset.foodItemId;
     const edgeId = modalElement.dataset.placementEdgeId || null;
     const aisleSide = modalElement.dataset.placementAisleSide || null;
-    const supermarketId = modalElement.dataset.supermarketId;
 
-    placementState.supermarketId = supermarketId;
     placementState.foodItemId = foodItemId;
 
     // Only select placement if one exists
@@ -1618,7 +1605,6 @@ function openGroupingModal(modalElement) {
     const modalEl = document.getElementById('groupItemModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     const foodItemId = modalElement.dataset.foodItemId;
-    const supermarketId = modalElement.dataset.supermarketId;
 
     // Set hidden fields
     document.getElementById('{{ form.foodItemId.vars.id }}').value = foodItemId;
@@ -1635,7 +1621,6 @@ document.getElementById('placementCancelBtn').addEventListener('click', () => {
     placementState.edgeId = null;
     placementState.aisleSide = null;
     placementState.foodItemId = null;
-    placementState.supermarketId = null;
 
     updatePlacementPayload();
     confirmBtn.disabled = true;

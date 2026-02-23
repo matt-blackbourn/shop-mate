@@ -35,6 +35,9 @@ class ListItem
 
     // Not mapped
     private ?PlacementStatus $placementStatus = null;
+
+    #[ORM\ManyToOne(inversedBy: 'listItems')]
+    private ?ShoppingSession $session = null;
     public function setPlacementStatus(PlacementStatus $status): void {
         $this->placementStatus = $status;
     }
@@ -108,6 +111,18 @@ class ListItem
     public function setPickedAt(?\DateTimeImmutable $pickedAt): static
     {
         $this->pickedAt = $pickedAt;
+
+        return $this;
+    }
+
+    public function getSession(): ?ShoppingSession
+    {
+        return $this->session;
+    }
+
+    public function setSession(?ShoppingSession $session): static
+    {
+        $this->session = $session;
 
         return $this;
     }

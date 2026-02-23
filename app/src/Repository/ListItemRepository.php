@@ -28,4 +28,16 @@ class ListItemRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function findLastPicked(ShoppingList $shoppingList): ?ListItem {
+        return $this->createQueryBuilder('li')
+            ->where('li.shoppingList = :list')
+            ->andWhere('li.pickedAt >= :today')
+            ->setParameter('list', $shoppingList)
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('li.pickedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

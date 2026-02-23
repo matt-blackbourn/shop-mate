@@ -32,10 +32,17 @@ class ShoppingList
     #[ORM\Column]
     private ?bool $quickAddList = null;
 
+    /**
+     * @var Collection<int, ShoppingSession>
+     */
+    #[ORM\OneToMany(targetEntity: ShoppingSession::class, mappedBy: 'shoppingList')]
+    private Collection $shoppingSessions;
+
     
     public function __construct()
     {
         $this->listItems = new ArrayCollection();
+        $this->shoppingSessions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -109,6 +116,36 @@ class ShoppingList
     public function setQuickAddList(bool $quickAddList): static
     {
         $this->quickAddList = $quickAddList;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShoppingSession>
+     */
+    public function getShoppingSessions(): Collection
+    {
+        return $this->shoppingSessions;
+    }
+
+    public function addShoppingSession(ShoppingSession $shoppingSession): static
+    {
+        if (!$this->shoppingSessions->contains($shoppingSession)) {
+            $this->shoppingSessions->add($shoppingSession);
+            $shoppingSession->setShoppingList($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShoppingSession(ShoppingSession $shoppingSession): static
+    {
+        if ($this->shoppingSessions->removeElement($shoppingSession)) {
+            // set the owning side to null (unless already changed)
+            if ($shoppingSession->getShoppingList() === $this) {
+                $shoppingSession->setShoppingList(null);
+            }
+        }
 
         return $this;
     }

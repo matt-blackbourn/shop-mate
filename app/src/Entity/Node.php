@@ -42,11 +42,18 @@ class Node
     #[ORM\ManyToOne(inversedBy: 'nodes')]
     private ?Supermarket $supermarket = null;
 
+    /**
+     * @var Collection<int, ShoppingSession>
+     */
+    #[ORM\OneToMany(targetEntity: ShoppingSession::class, mappedBy: 'currentNode')]
+    private Collection $shoppingSessions;
+
     public function __construct()
     {
         $this->edgeStart = new ArrayCollection();
         $this->edgeEnd = new ArrayCollection();
         $this->supermarkets = new ArrayCollection();
+        $this->shoppingSessions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -176,6 +183,36 @@ class Node
     public function setSupermarket(?Supermarket $supermarket): static
     {
         $this->supermarket = $supermarket;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShoppingSession>
+     */
+    public function getShoppingSessions(): Collection
+    {
+        return $this->shoppingSessions;
+    }
+
+    public function addShoppingSession(ShoppingSession $shoppingSession): static
+    {
+        if (!$this->shoppingSessions->contains($shoppingSession)) {
+            $this->shoppingSessions->add($shoppingSession);
+            $shoppingSession->setCurrentNode($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShoppingSession(ShoppingSession $shoppingSession): static
+    {
+        if ($this->shoppingSessions->removeElement($shoppingSession)) {
+            // set the owning side to null (unless already changed)
+            if ($shoppingSession->getCurrentNode() === $this) {
+                $shoppingSession->setCurrentNode(null);
+            }
+        }
 
         return $this;
     }
