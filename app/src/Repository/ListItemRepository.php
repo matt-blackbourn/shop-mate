@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\ListItem;
 use App\Entity\ShoppingList;
+use App\Entity\ShoppingSession;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -35,6 +36,18 @@ class ListItemRepository extends ServiceEntityRepository
             ->andWhere('li.pickedAt >= :today')
             ->setParameter('list', $shoppingList)
             ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('li.pickedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function findLastPickedInSession(ShoppingSession $session): ?ListItem
+    {
+        return $this->createQueryBuilder('li')
+            ->where('li.session = :session')
+            ->andWhere('li.pickedAt IS NOT NULL')
+            ->setParameter('session', $session)
             ->orderBy('li.pickedAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()

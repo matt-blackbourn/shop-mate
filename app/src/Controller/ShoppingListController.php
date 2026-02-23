@@ -102,6 +102,8 @@ final class ShoppingListController extends AbstractController
         ShoppingListRepository $shoppingListRepository,
         PathFinder $pathFinder,
         ProductPlacementRepository $productPlacementRepository,
+        ShoppingSessionRepository $shoppingSessionRepository,
+        ListItemRepository $listItemRepository,
         FoodItemRepository $foodItemRepository,
         EntityManagerInterface $em,
         SupermarketRepository $supermarketRepository,
@@ -117,6 +119,16 @@ final class ShoppingListController extends AbstractController
         }
 
         $supermarket = $supermarketRepository->find($supermarketId);
+
+        // find any open sessions for this list and supermarket, and close them (we open a new session once the first item is picked)
+        $openSessions = $shoppingSessionRepository->findRecentActiveByListAndSupermarket($shoppingList, $supermarket);
+        if($openSessions) {
+            foreach($openSessions as $session) {
+                $lastPicked = $listItemRepository->findLastPickedInSession($session);
+                $session->setCompletedAt($lastPicked?->getPickedAt() ?? new \DateTimeImmutable());
+            }
+        }
+        
 
         // here we want to look for any items that do not have a mapped location
         // if those items have a category, we look for any item in this category in this supermarket that is mapped
@@ -207,6 +219,9 @@ final class ShoppingListController extends AbstractController
         $listItemId = $data['listItemId'] ?? null;
         $supermarketId = $data['supermarketId'] ?? null;
 
+        // need to send current node to here
+        // should be the node of the last picked item, unless that ite was picked out of order, in which case we do not update it.
+
         if (!$listItemId || !$supermarketId) {
             return new JsonResponse(['error' => 'Invalid payload'], 400);
         }
@@ -214,21 +229,19 @@ final class ShoppingListController extends AbstractController
         // fetch entities
         $item = $listItemRepository->find($listItemId);
         $supermarket = $supermarketRepository->find($supermarketId);
-
-        // your pick logic here
-
         $session = $shoppingSessionRepository->findActiveByListAndSupermarket($item->getShoppingList(), $supermarket);
 
-        // 1️⃣ Create session if none exists
+        // Create session if none exists
         if (!$session) {
             $session = new ShoppingSession();
             $session->setShoppingList($item->getShoppingList());
             $session->setStartedAt(new \DateTimeImmutable());
             $session->setSupermarket($supermarket);
+            $session->setCurrentNode($supermarket->getEntranceNode());
             $em->persist($session);
         }
 
-        // 2️⃣ Mark item picked
+        // Mark item picked
         $item->setPickedAt(new \DateTimeImmutable());
         $item->setSession($session);
 
@@ -238,8 +251,8 @@ final class ShoppingListController extends AbstractController
     }
 
     // maybe needs to go in list item controller later
-    #[Route('/shoppinglist/undo', name: 'app_shopping_undo', methods: ['POST'])]
-    public function undo(ListItem $item, ListItemRepository $listItemRepository, EntityManagerInterface $em)
+    #[Route('/shoppinglist/ajax/unpick', name: 'app_shopping_unpick', methods: ['POST'])]
+    public function unpick(ListItem $item, ListItemRepository $listItemRepository, EntityManagerInterface $em)
     {
         // $lastPicked = $listItemRepository->findLastPicked($item->getShoppingList());
         // if (!$lastPicked) {

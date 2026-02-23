@@ -33,4 +33,24 @@ class ShoppingSessionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findRecentActiveByListAndSupermarket(
+        ShoppingList $list,
+        Supermarket $supermarket,
+    ): ?ShoppingSession {
+        $cutoff =  new \DateTimeImmutable('-1 hour');
+
+        return $this->createQueryBuilder('s')
+            ->where('s.shoppingList = :list')
+            ->andWhere('s.supermarket = :supermarket')
+            ->andWhere('s.completedAt IS NULL')
+            ->andWhere('s.startedAt <= :cutoff')
+            ->setParameter('list', $list)
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('cutoff', $cutoff)
+            ->orderBy('s.startedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

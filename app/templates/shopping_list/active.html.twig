@@ -1314,6 +1314,8 @@ async function processPickQueue() {
                     supermarketId: supermarketId
                 }));
 
+                // need to send the current node to the server unless this item was picked out of order
+
         try {
             await fetch(`/shoppinglist/ajax/pick`, {
                 method: 'POST',
