@@ -109,11 +109,7 @@ class PathFinder
                             } elseif ($lastNode === $endId) {
                                 // approaching from end → walk to start
                                 $pathToClosestNode[] = $startId;
-                            } else {
-                                // defensive fallback: attach whole edge
-                                $pathToClosestNode[] = $startId;
-                                $pathToClosestNode[] = $endId;
-                            }
+                            } 
                         }
                     }
                 }

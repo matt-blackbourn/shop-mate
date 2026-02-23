@@ -9,6 +9,7 @@ use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
 use App\Repository\ListItemRepository;
+use App\Repository\NodeRepository;
 use App\Repository\ProductPlacementRepository;
 use App\Repository\ShoppingListRepository;
 use App\Repository\ShoppingSessionRepository;
@@ -128,6 +129,14 @@ final class ShoppingListController extends AbstractController
                 $session->setCompletedAt($lastPicked?->getPickedAt() ?? new \DateTimeImmutable());
             }
         }
+
+        $this->getUser()->setLastUsedSupermarket($supermarket);
+
+        $em->flush();
+
+        // Now check for a current session, and get the current node if it exists, so we can start the path from there
+        $currentSession = $shoppingSessionRepository->findActiveByListAndSupermarket($shoppingList, $supermarket);
+        $currentNodeId = $currentSession ? $currentSession->getCurrentNode()->getId() : null;
         
 
         // here we want to look for any items that do not have a mapped location
@@ -156,10 +165,8 @@ final class ShoppingListController extends AbstractController
         //     }
         // }
 
-        $this->getUser()->setLastUsedSupermarket($supermarket);
-        $em->flush();
         
-        $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, $request->query->get('startNode', null));
+        $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, $currentNodeId);
         if(count($orderedList) === 0) {
             return $this->redirectToRoute('app_home');
         }
@@ -212,12 +219,14 @@ final class ShoppingListController extends AbstractController
         ShoppingSessionRepository $shoppingSessionRepository, 
         ListItemRepository $listItemRepository,
         SupermarketRepository $supermarketRepository,
+        NodeRepository $nodeRepository,
     ): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
         $listItemId = $data['listItemId'] ?? null;
         $supermarketId = $data['supermarketId'] ?? null;
+        $currentNodeId = $data['currentNodeId'] ?? null;
 
         // need to send current node to here
         // should be the node of the last picked item, unless that ite was picked out of order, in which case we do not update it.
@@ -239,6 +248,13 @@ final class ShoppingListController extends AbstractController
             $session->setSupermarket($supermarket);
             $session->setCurrentNode($supermarket->getEntranceNode());
             $em->persist($session);
+        }
+
+        // Update current node if provided (if item is being picked in order)
+        // We will use that current node to render the map from the correct location in case of reloads etc
+        if($currentNodeId) {
+            $currentNode = $nodeRepository->find($currentNodeId);
+            $session->setCurrentNode($currentNode);
         }
 
         // Mark item picked

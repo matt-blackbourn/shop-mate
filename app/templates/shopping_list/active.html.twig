@@ -1306,15 +1306,11 @@ async function processPickQueue() {
     if (processingQueue) return;
     processingQueue = true;
 
-
     while (pickQueue.length > 0) {
         const listItemId = pickQueue.shift();
-    console.log(JSON.stringify({
-                    listItemId: listItemId,
-                    supermarketId: supermarketId
-                }));
 
-                // need to send the current node to the server unless this item was picked out of order
+        // need to send the current node to the server unless this item was picked out of order
+        const currentNodeId = routeState.currentItem.itemId == listItemId ? routeState.segments[routeState.currentSegment].targetNodeId : null;
 
         try {
             await fetch(`/shoppinglist/ajax/pick`, {
@@ -1325,7 +1321,8 @@ async function processPickQueue() {
                 },
                 body: JSON.stringify({
                     listItemId: listItemId,
-                    supermarketId: supermarketId
+                    supermarketId: supermarketId,
+                    currentNodeId: currentNodeId
                 })
             });
         } catch (e) {
