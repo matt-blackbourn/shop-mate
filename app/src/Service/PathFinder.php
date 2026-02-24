@@ -73,17 +73,17 @@ class PathFinder
             while (!empty($remainingItems)) {
                 $result = $this->dijkstra($graph, $currentNodeId);  // get distances from current node to all other, plus prev nodes
                 $distances = $result['dist'];
-                $prev = $result['prev'];
+                $prevNodeArray = $result['prev'];
     
                 $closestListItem  = null;
-                $closestNode = null;
-                $closestDistance = INF;
-                $pathToClosestNode = null;
                 $closestPlacement = null;
+                $closestEntryNode = null;
+                $closestExitNode = null;
+                $closestDistance = INF;
     
                 // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
-                    $result = $this->getFurthestNodeOnEdge($distances, $listItem, $supermarket);
+                    $result = $this->getEntryAndExitOfEdge($distances, $listItem, $supermarket);
                     if ($result === null) {
                         continue;
                     }
@@ -92,28 +92,15 @@ class PathFinder
                     if ($result['distance'] < $closestDistance) {
                         $closestListItem = $listItem;
                         $closestPlacement = $result['placement'];
-                        $closestNode = $result['node'];
-                        $closestDistance = $result['distance'];
-                        $pathToClosestNode = $this->reconstructPath($prev, $closestNode);
-
-                        // Extend path to include the placement edge itself
-                        // I thnkk this is redundant because we already get the furthest node on the edge
-                        // if ($closestPlacement) {
-                        //     $edge = $closestPlacement->getEdge();
-                        //     $startId = $edge->getStart()->getId();
-                        //     $endId   = $edge->getEnd()->getId();
-                        
-                        //     $lastNode = end($pathToClosestNode);
-                        
-                        //     if ($lastNode === $startId) {
-                        //         // approaching from start → walk to end
-                        //         $pathToClosestNode[] = $endId;
-                        //     } elseif ($lastNode === $endId) {
-                        //         // approaching from end → walk to start
-                        //         $pathToClosestNode[] = $startId;
-                        //     } 
-                        // }
+                        $closestEntryNode = $result['entryNode'];
+                        $closestExitNode  = $result['exitNode'];
+                        $closestDistance  = $result['distance'];
                     }
+                }
+
+                $pathToClosestNode = $this->reconstructPath($prevNodeArray, $closestEntryNode);
+                if ($closestExitNode !== null) {
+                    $pathToClosestNode[] = $closestExitNode; // Append the exit node to the path to ensure we traverse the whole edge where the item is located
                 }
     
                 // Safety check (should not happen, but avoids infinite loop)
@@ -121,12 +108,13 @@ class PathFinder
                     break;
                 }
     
-                $currentNodeId = $closestNode;
+                $finalNodeId = $closestExitNode ?? $closestEntryNode; // The node we will be at after picking this item
+                $currentNodeId = $finalNodeId; // Update this for next iteration
 
                 $orderedList[] = new RoutedListItemDto(
                     item: $closestListItem,
                     placement: $closestPlacement,
-                    targetNodeId: $closestNode,
+                    targetNodeId: $finalNodeId,
                     distanceFromPrevious: $closestDistance,
                     path: $pathToClosestNode
                 );
@@ -138,14 +126,14 @@ class PathFinder
         return array_merge($unmappedItems, $orderedList); // Show unmapped items at the start of the list to prompt user to place them
     }
 
-    private function reconstructPath(array $prev, string $targetNode): array
+    private function reconstructPath(array $prevNodeArray, string $targetNode): array
     {
         $path = [];
         $node = $targetNode;
 
         while ($node !== null) {
             $path[] = (int) $node;  // ← cast every node to int
-            $node = $prev[$node] ?? null;
+            $node = $prevNodeArray[$node] ?? null;
         }
 
         return array_reverse($path);
@@ -177,7 +165,7 @@ class PathFinder
      * Distance from a node to a food item (edge-based)
      * A food item is on an edge, not a node — so we take the closest endpoint.
      */
-    private function getFurthestNodeOnEdge(array $distances, ListItem $listItem, Supermarket $supermarket): ?array
+    private function getEntryAndExitOfEdge(array $distances, ListItem $listItem, Supermarket $supermarket): ?array
     {
         // Look up the placement for this item from the cache
         $placement = $this->placementCache[$listItem->getId()] ?? null;
@@ -185,8 +173,10 @@ class PathFinder
         // If there is no placement, return a default "last node in supermarket"
         if (!$placement) {
             return [
-                'node' => $this->nodeRepository->findLastNodeInSupermarket($supermarket)->getId(),
+                'entryNode' => $this->nodeRepository->findLastNodeInSupermarket($supermarket)->getId(),
+                'exitNode' => null,
                 'distance' => INF,
+                'placement' => null,
             ];
         }
 
@@ -199,18 +189,29 @@ class PathFinder
         $distanceEnd   = $distances[$endId] ?? INF;
 
         // Choose the node that is further away (furthest from current position)
-        if ($distanceStart >= $distanceEnd) {
-            $furthestNode = $startId;
-            $distance = $distanceStart;
+        // if ($distanceStart >= $distanceEnd) {
+        //     $furthestNode = $startId;
+        //     $distance = $distanceStart;
+        // } else {
+        //     $furthestNode = $endId;
+        //     $distance = $distanceEnd;
+        // }
+
+        // Choose NEAREST as entry
+        if ($distanceStart <= $distanceEnd) {
+            $entryNode = $startId;
+            $exitNode  = $endId;
+            $distance  = $distanceStart;
         } else {
-            $furthestNode = $endId;
-            $distance = $distanceEnd;
+            $entryNode = $endId;
+            $exitNode  = $startId;
+            $distance  = $distanceEnd;
         }
 
-        // Return the chosen node, its distance, and the placement object
         return [
-            'distance' => $distance,
-            'node' => $furthestNode,
+            'entryNode' => $entryNode,
+            'exitNode'  => $exitNode,
+            'distance'  => $distance,
             'placement' => $placement,
         ];
     }
