@@ -81,13 +81,14 @@ class PathFinder
                 $pathToClosestNode = null;
                 $closestPlacement = null;
     
-                 // Find the closest item out of the remaining list items in the phase
+                // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
                     $result = $this->getFurthestNodeOnEdge($distances, $listItem, $supermarket);
                     if ($result === null) {
                         continue;
                     }
 
+                    // if we find an item that is closer than our current closest, update closest item
                     if ($result['distance'] < $closestDistance) {
                         $closestListItem = $listItem;
                         $closestPlacement = $result['placement'];
@@ -96,21 +97,22 @@ class PathFinder
                         $pathToClosestNode = $this->reconstructPath($prev, $closestNode);
 
                         // Extend path to include the placement edge itself
-                        if ($closestPlacement) {
-                            $edge = $closestPlacement->getEdge();
-                            $startId = $edge->getStart()->getId();
-                            $endId   = $edge->getEnd()->getId();
+                        // I thnkk this is redundant because we already get the furthest node on the edge
+                        // if ($closestPlacement) {
+                        //     $edge = $closestPlacement->getEdge();
+                        //     $startId = $edge->getStart()->getId();
+                        //     $endId   = $edge->getEnd()->getId();
                         
-                            $lastNode = end($pathToClosestNode);
+                        //     $lastNode = end($pathToClosestNode);
                         
-                            if ($lastNode === $startId) {
-                                // approaching from start → walk to end
-                                $pathToClosestNode[] = $endId;
-                            } elseif ($lastNode === $endId) {
-                                // approaching from end → walk to start
-                                $pathToClosestNode[] = $startId;
-                            } 
-                        }
+                        //     if ($lastNode === $startId) {
+                        //         // approaching from start → walk to end
+                        //         $pathToClosestNode[] = $endId;
+                        //     } elseif ($lastNode === $endId) {
+                        //         // approaching from end → walk to start
+                        //         $pathToClosestNode[] = $startId;
+                        //     } 
+                        // }
                     }
                 }
     
