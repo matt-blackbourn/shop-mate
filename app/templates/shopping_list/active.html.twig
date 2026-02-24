@@ -22,7 +22,9 @@
                 <a href="{{ path('app_home') }}" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
                     <i class="bi bi-check-circle-fill"></i>
                 </a>
-                <form method="POST" action="/shoppinglist/undo">
+                <form method="POST" action="/shoppinglist/unpick">
+                    <input type="hidden" name="shoppingListId" value="{{ shoppingList.id }}">
+                    <input type="hidden" name="supermarketId" value="{{ supermarket.id }}">
                     <button type="submit" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </button>

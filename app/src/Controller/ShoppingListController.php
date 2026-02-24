@@ -19,6 +19,7 @@ use App\Service\PathFinder;
 use App\Service\RoutedListItemDto;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -135,7 +136,7 @@ final class ShoppingListController extends AbstractController
         $em->flush();
 
         // Now check for a current session, and get the current node if it exists, so we can start the path from there
-        $currentSession = $shoppingSessionRepository->findActiveByListAndSupermarket($shoppingList, $supermarket);
+        $currentSession = $shoppingSessionRepository->findCurrentSession($shoppingList->getId(), $supermarket->getId());
         $currentNodeId = $currentSession ? $currentSession->getCurrentNode()->getId() : null;
         
 
@@ -228,9 +229,6 @@ final class ShoppingListController extends AbstractController
         $supermarketId = $data['supermarketId'] ?? null;
         $currentNodeId = $data['currentNodeId'] ?? null;
 
-        // need to send current node to here
-        // should be the node of the last picked item, unless that ite was picked out of order, in which case we do not update it.
-
         if (!$listItemId || !$supermarketId) {
             return new JsonResponse(['error' => 'Invalid payload'], 400);
         }
@@ -238,7 +236,7 @@ final class ShoppingListController extends AbstractController
         // fetch entities
         $item = $listItemRepository->find($listItemId);
         $supermarket = $supermarketRepository->find($supermarketId);
-        $session = $shoppingSessionRepository->findActiveByListAndSupermarket($item->getShoppingList(), $supermarket);
+        $session = $shoppingSessionRepository->findCurrentSession($item->getShoppingList()->getId(), $supermarket->getId());
 
         // Create session if none exists
         if (!$session) {
@@ -267,27 +265,30 @@ final class ShoppingListController extends AbstractController
     }
 
     // maybe needs to go in list item controller later
-    #[Route('/shoppinglist/ajax/unpick', name: 'app_shopping_unpick', methods: ['POST'])]
-    public function unpick(ListItem $item, ListItemRepository $listItemRepository, EntityManagerInterface $em)
+    #[Route('/shoppinglist/unpick', name: 'app_shopping_unpick', methods: ['POST'])]
+    public function unpick(
+        Request $request,
+        ListItemRepository $listItemRepository, 
+        EntityManagerInterface $em, 
+        ShoppingSessionRepository $shoppingSessionRepository,
+    )
     {
-        // $lastPicked = $listItemRepository->findLastPicked($item->getShoppingList());
-        // if (!$lastPicked) {
-        //     return $this->redirectToRoute('route_view', [
-        //         'startNode' => $startNodeId
-        //     ]);
-        // }
+        $shoppingListId = $request->request->get('shoppingListId');
+        $supermarketId  = $request->request->get('supermarketId');
 
-        // $lastPicked->setPickedAt(null);
-        // $entityManager->flush();
+        $session = $shoppingSessionRepository->findCurrentSession($shoppingListId, $supermarketId);
+        if(!$session){
+            return $this->redirectToRoute('app_shopping_list_active', ['supermarketId' => $supermarketId]);
+        }
 
-        // if ($previousPicked) {
-        //     $startNodeId = $previousPicked->getEdge()->getStartNode()->getId();
-        // } else {
-        //     $startNodeId = $defaultStartNodeId;
-        // }
+        $lastPicked = $listItemRepository->findLastPickedInSession($session);
+        if(!$lastPicked){
+            return $this->redirectToRoute('app_shopping_list_active', ['supermarketId' => $supermarketId]);
+        }
 
-        return $this->redirectToRoute('route_view', [
-            // 'startNode' => $startNodeId
-        ]);
+        $lastPicked->setPickedAt(null);
+        $em->flush();
+
+        return $this->redirectToRoute('app_shopping_list_active', ['supermarketId' => $supermarketId]);
     }
 }

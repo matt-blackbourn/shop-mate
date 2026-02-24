@@ -18,16 +18,13 @@ class ShoppingSessionRepository extends ServiceEntityRepository
         parent::__construct($registry, ShoppingSession::class);
     }
 
-    public function findActiveByListAndSupermarket(
-        ShoppingList $list,
-        Supermarket $supermarket
-    ): ?ShoppingSession {
+    public function findCurrentSession($listId, $supermarketId){
         return $this->createQueryBuilder('s')
             ->where('s.shoppingList = :list')
             ->andWhere('s.supermarket = :supermarket')
             ->andWhere('s.completedAt IS NULL')
-            ->setParameter('list', $list)
-            ->setParameter('supermarket', $supermarket)
+            ->setParameter('list', $listId)
+            ->setParameter('supermarket', $supermarketId)
             ->orderBy('s.startedAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
