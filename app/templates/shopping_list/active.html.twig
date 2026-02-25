@@ -388,13 +388,18 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease;
-    z-index: 1040;
+    z-index: 1040; /* below placement-menu (1050) */
 }
 
 .sheet-backdrop.active {
     opacity: 1;
     visibility: visible;
 }
+
+#placementModal{
+    z-index: 1070;
+}
+
 
 /* MOBILE BOTTOM SHEET */
 @media (max-width: 768px) {
@@ -408,7 +413,7 @@
         height: 50vh;
         border-radius: 1rem 1rem 0 0;
         padding: 1rem;
-        z-index: 1050;
+        z-index: 1050;  /* below placementModal (1070) */
 
         touch-action: none; /* important */
 
@@ -614,6 +619,7 @@
     fill: #f59e0b80
 }
 
+
 /* ----------------------
    Animations
    ---------------------- */
@@ -738,7 +744,6 @@ routeState.segments.forEach(segment => {
 });
 
 
-
 // draw shelves on maps
 drawShelves(shelvesData, document.getElementById('placement-map'))
 drawShelves(shelvesData, document.getElementById('path-map'))
@@ -790,6 +795,9 @@ function updateMapView() {
 
     // update place item button on map view
     const placeBtn = document.getElementById('place-item-map');
+    // Remove old status classes first
+    placeBtn.classList.remove('pick', 'skip', 'no-placement');
+
     const status = placementStatuses[segment.itemId]; // 'system', 'confirmed', 'provisional', 'group', 'none'
     switch (status) {
         case 'system':
@@ -809,6 +817,19 @@ function updateMapView() {
             placeBtn.classList.add('no-placement');
             break;
     }
+
+    // ---- MAKE BUTTON OPEN PLACEMENT MODAL ----
+    placeBtn.onclick = () => {
+        if (!segment) return;
+
+        const card = document.querySelector(
+            `.shopping-card[data-id="${segment.itemId}"]`
+        );
+
+        if (card) {
+            openPlacementModal(card);
+        }
+    };
 
 }
 
