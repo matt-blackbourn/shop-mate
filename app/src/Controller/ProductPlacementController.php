@@ -108,6 +108,7 @@ class ProductPlacementController extends AbstractController
                 if ($existing->getSuggestedBy()?->getId() === $this->getUser()->getId()) {
                     $existing->setEdge($edgeRepository->find($edgeId));
                     $existing->setAisleSide($aisleSide);
+                    $existing->setType(PlacementType::USER);
                     $updated = true;
                     break;
                 }

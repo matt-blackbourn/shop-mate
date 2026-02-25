@@ -981,14 +981,6 @@ function onItemPicked(itemId) {
     highlightEdgesOnPathMap();
 }
 
-function highlightPlacementEdge(segment, state) {
-    const edgeEl = document.querySelector(`[data-edge-id="${segment.placementEdgeId}"]`);
-    edgeEl?.classList.add(`placement-${state}`);
-}
-
-
-
-
 // draw shelves
 function drawShelves(shelvesData, svg) {
     shelvesData.forEach(shelf => {
