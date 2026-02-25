@@ -39,7 +39,7 @@
 
             <div class="header-right d-flex align-items-center">
                 <a href="" id="mapButton" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
-                    <i class="bi bi-geo-alt-fill"></i>
+                    <i class="bi-grid-3x3"></i>
                 </a>
             </div>
         </div>
@@ -92,7 +92,18 @@
                 <div class="card-meta">
                     <div class="dots-wrapper">
                         <button class="dots-btn" type="button" aria-label="Item options">
-                            ⋯
+                            {# placement indicator #}
+                            {% set status = listItem.placementStatus.value %}
+
+                            {% if status in ['system', 'confirmed'] %}
+                                <i class="bi-geo-alt-fill placement-icon confirmed"></i>
+
+                            {% elseif status in ['provisional', 'group'] %}
+                                <i class="bi-geo-alt-fill placement-icon provisional"></i>
+
+                            {% else %}
+                                <i class="bi-geo-alt-fill placement-icon missing"></i>
+                            {% endif %}
                         </button>
 
                         <div class="dots-modal">
@@ -101,23 +112,11 @@
                                 <button type="button" class="modal-btn" id="mapItem"></button>
                                 <button type="button" class="modal-btn" id="groupItem"></button>
                                 <button type="button" class="modal-btn" id="skip-item">Skip Item</button>
-
                             </div>
                         </div>
                     </div>
 
-                    {# placement indicator #}
-                    {% set status = listItem.placementStatus.value %}
-
-                    {% if status in ['system', 'confirmed'] %}
-                        <i class="bi bi-check-circle-fill placement-icon confirmed"></i>
-
-                    {% elseif status in ['provisional', 'group'] %}
-                        <i class="bi bi-question-circle-fill placement-icon provisional"></i>
-
-                    {% else %}
-                        <i class="bi bi-exclamation-triangle-fill placement-icon missing"></i>
-                    {% endif %}
+               
                 </div>
 
                 <!-- MAIN CONTENT -->
@@ -413,7 +412,7 @@
 }
 
 .map-modal .modal-header {
-    height: 3rem; 
+    height: 5rem; 
     border-bottom: 1px solid #1f2430;
     background: #121520;
     align-items: center;        /* vertically center button/title */
@@ -438,7 +437,7 @@
 }
 
 .map-modal .modal-footer {
-    height: 7.5rem;   
+    height: 5rem;   
     border-top: 1px solid #1f2430;
     background: #121520;
     flex-shrink: 0;    /* never shrink */

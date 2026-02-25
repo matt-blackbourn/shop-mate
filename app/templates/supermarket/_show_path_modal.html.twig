@@ -3,18 +3,14 @@
         <div class="modal-content">
 
             <div class="modal-header d-flex justify-content-between">
-                <button type="button"
-                        id="pathCancelBtn"
-                        class="map-nav-button"
-                        data-bs-dismiss="modal">
-                    Back To List
-                </button>
+            <div class="title">
+                    <span id="modalItemName" class="title"></span>
+                    <span id="modalItemQty"></span>
+                    <!-- wrap notes in its own block container -->
+                    <div id="modalItemNotes"></div>
+                </div>
 
-                <button type="button"
-                        id="place-item-map"
-                        class="map-nav-button">
-                    Place Item On Map
-                </button>
+                <button type="button" id="place-item-map" class="map-nav-button"><i class="bi-geo-alt-fill"></i></button>
             </div>
 
             <div class="modal-body">
@@ -27,11 +23,8 @@
             </div>
 
             <div class="modal-footer">
-                <div class="title">
-                    <span id="modalItemName" class="title"></span>
-                    <span id="modalItemQty"></span>
-                    <!-- wrap notes in its own block container -->
-                    <div id="modalItemNotes"></div>
+                <div>
+                    <button type="button" id="pathCancelBtn" class="map-nav-button" data-bs-dismiss="modal">Back To List</button>
                 </div>
                 <button id="skip-item-map" class="pick-skip skip" type="button">Skip</button>
                 <button id="pick-item-map" class="pick-skip pick" type="button">Pick Item</button>
@@ -41,8 +34,3 @@
 </div>
 
 
-<style>
-
-
-
-</style>
