@@ -31,7 +31,7 @@ class PathFinder
     private $nodeCache = []; // Cache for nodes to avoid redundant DB calls
 
     /**
-     * Nearest-neighbour route (the core algorithm)
+     * Nearest-neighbour route 
      */
     public function orderShoppingList(ShoppingList $shoppingList, Supermarket $supermarket, ?int $startNode = null): array {
         // Convert collection to id-indexed array, and separate by phase and unmapped items
@@ -65,6 +65,7 @@ class PathFinder
         // Set some variables before building the route
         $orderedList = [];
         $currentNodeId = $startNode ?? (int) $supermarket->getEntranceNode()->getId();
+        $backtrackAvoidanceNode = null;
         $graph = $this->buildGraph($supermarket);
 
         // Process each phase in order
@@ -72,9 +73,10 @@ class PathFinder
             $remainingItems = $mappedItems[$phase];
             
             while (!empty($remainingItems)) {
-                $result = $this->dijkstra($graph, $currentNodeId);  // get distances from current node to all other, plus prev nodes
-                $distances = $result['dist'];
-                $prevNodeArray = $result['prev'];
+                $dijkstraResult = $this->dijkstra($graph, $currentNodeId, $backtrackAvoidanceNode);  // get distances from current node to all other, plus prev nodes
+
+                $distances = $dijkstraResult['dist'];
+                $prevNodeArray = $dijkstraResult['prev'];
     
                 $closestListItem  = null;
                 $closestPlacement = null;
@@ -82,7 +84,6 @@ class PathFinder
                 $closestExitNode = null;
                 $closestDistance = INF;
                 $closestPath = null;
-
     
                 // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
@@ -90,14 +91,13 @@ class PathFinder
                     if ($result === null) {
                         continue;
                     }
-
+                    
                     $entryNode = $result['entryNode'];
                     $distance  = $result['distance'];
-
-                    $path = $this->reconstructPath($prevNodeArray, $entryNode);
-                
                     $score = $distance;
-                    if ($this->isPathStraight($path)) {
+                    
+                    $path = $this->reconstructPath($prevNodeArray, $entryNode);
+                    if ($this->isStraightPath($path)) {
                         $score = $distance * 0.4; // arbitrary bonus for straight paths, to encourage them over short zig-zags
                     }
 
@@ -123,6 +123,7 @@ class PathFinder
                 }
     
                 $finalNodeId = $closestExitNode ?? $closestEntryNode; // The node we will be at after picking this item
+                $backtrackAvoidanceNode = $closestPath[count($closestPath) -2]; // The penultimate node in the path
                 $currentNodeId = $finalNodeId; // Update this for next iteration
 
                 $orderedList[] = new RoutedListItemDto(
@@ -137,10 +138,11 @@ class PathFinder
             }
         }
 
+
         return array_merge($unmappedItems, $orderedList); // Show unmapped items at the start of the list to prompt user to place them
     }
 
-    private function isPathStraight(array $path): bool
+    private function isStraightPath(array $path): bool
     {
         if (count($path) < 2) {
             return false;
@@ -181,6 +183,9 @@ class PathFinder
         return true;
     }
 
+    /**
+     * Convert prev array of nodes to nodeId array in the correct order (Dijkstra gives us breadcrumbs in reverse, so we need to reverse them back)
+     */
     private function reconstructPath(array $prevNodeArray, string $targetNode): array
     {
         $path = [];
@@ -278,7 +283,7 @@ class PathFinder
      * 3 => 14
      * 4 => 22...]
      */
-    public function dijkstra(array $graph, string $startNode): array
+    public function dijkstra(array $graph, string $startNode, ?int $backtrackAvoidanceNode = null): array
     {
         $distances = [];
         $prev = []; // tracks breadcrumbs for the shortest path
@@ -298,10 +303,15 @@ class PathFinder
         while (!$queue->isEmpty()) {
             // Extract the node with the smallest distance (highest priority)
             $shortest = (int) $queue->extract(); //normalize here
-    
+
             // Iterate through all neighboring nodes of the current node
             foreach ($graph[$shortest] ?? [] as $nodeId => $length) {
                 $nodeId = (int) $nodeId; //normalize here
+
+                // Skip moving back to the node we just came from
+                if ($backtrackAvoidanceNode !== null && $nodeId === $backtrackAvoidanceNode) {
+                    continue;
+                }
                 
                 // Calculate the alternative distance to the neighboring node
                 $alt = $distances[$shortest] + $length;
@@ -315,7 +325,6 @@ class PathFinder
                     $queue->insert($nodeId, -$alt);
                 }
             }
-
         }
 
         return [
