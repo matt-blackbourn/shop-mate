@@ -65,7 +65,6 @@ class PathFinder
         // Set some variables before building the route
         $orderedList = [];
         $currentNodeId = $startNode ?? (int) $supermarket->getEntranceNode()->getId();
-        $previousNodeId = null;
         $graph = $this->buildGraph($supermarket);
 
         // Process each phase in order
@@ -82,20 +81,8 @@ class PathFinder
                 $closestEntryNode = null;
                 $closestExitNode = null;
                 $closestDistance = INF;
+                $closestPath = null;
 
-                $currentAxis = null; // first move, or no movement
-
-                if($previousNodeId){
-                    $dx = $this->nodeCache[$currentNodeId]->getXValue() - $this->nodeCache[$previousNodeId]->getXValue();
-                    $dy = $this->nodeCache[$currentNodeId]->getYValue() - $this->nodeCache[$previousNodeId]->getYValue();
-
-                    if($dx){
-                        $currentAxis = 'x';
-                    } elseif($dy) {
-                        $currentAxis = 'y';
-                    } 
-                }
-                dump($currentAxis);
     
                 // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
@@ -106,32 +93,26 @@ class PathFinder
 
                     $entryNode = $result['entryNode'];
                     $distance  = $result['distance'];
-              
+
+                    $path = $this->reconstructPath($prevNodeArray, $entryNode);
                 
                     $score = $distance;
-                    if ($this->isStraightContinuation($currentNodeId, $entryNode, $currentAxis)) {
-                        // dd($listItem->getFoodItem()->getName(), 'is straight continuation!');
-                        $score = 0;
+                    if ($this->isPathStraight($path)) {
+                        $score = $distance * 0.4; // arbitrary bonus for straight paths, to encourage them over short zig-zags
                     }
 
                     // if we find an item that is closer than our current closest, update closest item
-                    // if ($result['distance'] < $closestDistance) {
-                    //     $closestListItem = $listItem;
-                    //     $closestPlacement = $result['placement'];
-                    //     $closestEntryNode = $result['entryNode'];
-                    //     $closestExitNode  = $result['exitNode'];
-                    //     $closestDistance  = $result['distance'];
-                    // }
                     if ($score < $closestDistance) {
                         $closestListItem = $listItem;
                         $closestPlacement = $result['placement'];
                         $closestEntryNode = $result['entryNode'];
                         $closestExitNode  = $result['exitNode'];
                         $closestDistance  = $score;
+                        $closestPath = $path;
                     }
                 }
 
-                $pathToClosestNode = $this->reconstructPath($prevNodeArray, $closestEntryNode);
+                $pathToClosestNode = $closestPath;
                 if ($closestExitNode !== null) {
                     $pathToClosestNode[] = $closestExitNode; // Append the exit node to the path to ensure we traverse the whole edge where the item is located
                 }
@@ -142,7 +123,6 @@ class PathFinder
                 }
     
                 $finalNodeId = $closestExitNode ?? $closestEntryNode; // The node we will be at after picking this item
-                $previousNodeId = $currentNodeId;
                 $currentNodeId = $finalNodeId; // Update this for next iteration
 
                 $orderedList[] = new RoutedListItemDto(
@@ -156,33 +136,49 @@ class PathFinder
                 unset($remainingItems[$closestListItem->getId()]);
             }
         }
-        exit;
-        // dd($orderedList);
 
         return array_merge($unmappedItems, $orderedList); // Show unmapped items at the start of the list to prompt user to place them
     }
 
-    private function isStraightContinuation(
-        int $currentNodeId,
-        int $entryNodeId,
-        ?string $currentAxis
-    ): bool {
-        if ($currentAxis === null) {
-            return false; // first move
+    private function isPathStraight(array $path): bool
+    {
+        if (count($path) < 2) {
+            return false;
         }
-    
-        $current = $this->nodeCache[$currentNodeId];
-        $entry   = $this->nodeCache[$entryNodeId];
-    
-        if ($currentAxis === 'x') {
-            return $current->getYValue() === $entry->getYValue();
+
+        $first = $this->nodeCache[$path[0]];
+        $second = $this->nodeCache[$path[1]];
+
+        $dx = $second->getXValue() - $first->getXValue();
+        $dy = $second->getYValue() - $first->getYValue();
+
+        // Determine axis of first segment
+        if (abs($dx) > 0 && abs($dy) === 0) {
+            $axis = 'x';
+        } elseif (abs($dy) > 0 && abs($dx) === 0) {
+            $axis = 'y';
+        } else {
+            return false; // diagonal or weird
         }
-    
-        if ($currentAxis === 'y') {
-            return $current->getXValue() === $entry->getXValue();
+
+        // Check all segments
+        for ($i = 1; $i < count($path) - 1; $i++) {
+            $a = $this->nodeCache[$path[$i]];
+            $b = $this->nodeCache[$path[$i + 1]];
+
+            $dx = $b->getXValue() - $a->getXValue();
+            $dy = $b->getYValue() - $a->getYValue();
+
+            if ($axis === 'x' && abs($dy) > 0) {
+                return false;
+            }
+
+            if ($axis === 'y' && abs($dx) > 0) {
+                return false;
+            }
         }
-    
-        return false;
+
+        return true;
     }
 
     private function reconstructPath(array $prevNodeArray, string $targetNode): array
@@ -208,20 +204,20 @@ class PathFinder
         $graph = [];
 
         foreach ($this->edgeRepository->findAllInSupermarket($supermarket) as $edge) {
-            $start = $edge->getStart()->getId();
-            $end = $edge->getEnd()->getId();
+            $startNode = $edge->getStart();
+            $endNode   = $edge->getEnd();
+
+            $startId = $startNode->getId();
+            $endId   = $endNode->getId();
+            
             $length = $edge->getLength();
 
-            $graph[(int) $start][(int) $end] = $length;
-            $graph[(int) $end][(int) $start] = $length; // both directions
+            $graph[$startId][$endId] = $length;
+            $graph[$endId][$startId] = $length; // both directions
 
             // build node cache at the same time to avoid redundant DB calls later
-            if (!isset($this->nodeCache[$edge->getStart()->getId()])) {
-                $this->nodeCache[$edge->getStart()->getId()] = $edge->getStart();
-            }
-            if (!isset($this->nodeCache[$edge->getEnd()->getId()])) {
-                $this->nodeCache[$edge->getEnd()->getId()] = $edge->getEnd();
-            }
+            $this->nodeCache[$startId] ??= $startNode;
+            $this->nodeCache[$endId]   ??= $endNode;
         }
 
         return $graph;
@@ -254,15 +250,6 @@ class PathFinder
         // Lookup distances to both nodes from current position
         $distanceStart = $distances[$startId] ?? INF;
         $distanceEnd   = $distances[$endId] ?? INF;
-
-        // Choose the node that is further away (furthest from current position)
-        // if ($distanceStart >= $distanceEnd) {
-        //     $furthestNode = $startId;
-        //     $distance = $distanceStart;
-        // } else {
-        //     $furthestNode = $endId;
-        //     $distance = $distanceEnd;
-        // }
 
         // Choose NEAREST as entry
         if ($distanceStart <= $distanceEnd) {
