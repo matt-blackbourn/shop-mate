@@ -123,7 +123,7 @@ class PathFinder
                 }
     
                 $finalNodeId = $closestExitNode ?? $closestEntryNode; // The node we will be at after picking this item
-                $backtrackAvoidanceNode = $closestPath[count($closestPath) -2]; // The penultimate node in the path
+                $backtrackAvoidanceNode = $closestPath[count($closestPath) -2] ?? null; // The penultimate node in the path
                 $currentNodeId = $finalNodeId; // Update this for next iteration
 
                 $orderedList[] = new RoutedListItemDto(
