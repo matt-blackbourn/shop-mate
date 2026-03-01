@@ -676,7 +676,6 @@ nodesData.forEach(n => {
     nodes[n.id] = n;
 });
 
-
 // Draw edges (path display)
 edgesData.forEach(e => {
     const from = nodes[e.from];
@@ -885,15 +884,28 @@ function highlightEdgesOnPathMap() {
 
     clearShelfHighlights('path-map');
 
-    if(!activeSegment || activeSegment.edges.length === 0) return; // no placed items
+    if(!activeSegment) return; // no placed items
 
-    const edge = activeSegment.edges[activeSegment.edges.length - 1]
+    let edge = null
+    if (activeSegment.edges.length > 0) {
+        // If we moved, use last traversed edge
+        edge = activeSegment.edges[activeSegment.edges.length - 1];
+    } else if (activeSegment.placementEdgeId) {
+        // If no movement (same-edge item), resolve placement edge
+        edge = getEdgeById(activeSegment.placementEdgeId);
+    }
+
+    if (!edge) return;
+
     const shelves = shelvesNextToEdge(edge.id, shelfEls)
     const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, Number(routeState.currentItem.aisleSide)));
 
     highlightShelfPortion(correctShelf, edge);
 }
 
+function getEdgeById(id) {
+    return edgesData.find(e => e.id === id);
+}
 
 function highlightShelfPortion(shelf, edge) {
     const edgeIsHorizontal = edge.y1 === edge.y2;

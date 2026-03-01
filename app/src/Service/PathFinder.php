@@ -164,13 +164,10 @@ class PathFinder
                 $currentEdgeEntryNode = $closestEntryNode;
                 $currentEdgeExitNode = $closestExitNode;
 
-
                 $pathToClosestNode = $closestPath;
                 if ($closestExitNode !== null) {
                     $pathToClosestNode[] = $closestExitNode; // Append the exit node to the path to ensure we traverse the whole edge where the item is located
                 }
-
-                
                 
                 // Safety check (should not happen, but avoids infinite loop)
                 if ($closestListItem === null) {
