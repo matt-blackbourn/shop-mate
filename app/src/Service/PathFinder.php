@@ -54,6 +54,14 @@ class PathFinder
             }
         }
 
+        // $foodItems = [];
+        // foreach ($mappedItems as $phase => $items) {
+        //     foreach ($items as $id => $listItem) {
+        //         $foodItems[$id] = $listItem->getFoodItem()->getName();
+        //     }
+        // }
+        // dd($foodItems);
+
         // Apply phase processing rules
         // If we have no entrance phase items, main phase becomes entrance phase
         // Note, we only apply this when starting a shop from the entrance node; if starting mid-shop ($startNode !== null) we disregard
@@ -71,13 +79,47 @@ class PathFinder
         // Process each phase in order
         foreach($this->phases as $phase) {
             $remainingItems = $mappedItems[$phase];
+
+            // State to track whether we are on the same edge as the previous item
+            // If so, we can skip dijkstra etc
+            $currentEdgeId = null;
+            $currentEdgeEntryNode = null;
+            $currentEdgeExitNode = null;
             
             while (!empty($remainingItems)) {
-                $dijkstraResult = $this->dijkstra($graph, $currentNodeId, $backtrackAvoidanceNode);  // get distances from current node to all other, plus prev nodes
 
+                // Check for items on the same edge as the previous item
+                // If found, we just stay on this edge. Saves work and cleans up backtracking in route
+                if ($currentEdgeId !== null) {
+                    foreach ($remainingItems as $listItem) {
+
+                        $placement = $this->placementCache[$listItem->getId()] ?? null;
+                        if ($placement && $placement->getEdge()->getId() === $currentEdgeId) {
+                
+                            $finalNodeId = $currentEdgeExitNode ?? $currentEdgeEntryNode;
+                
+                            $orderedList[] = new RoutedListItemDto(
+                                item: $listItem,
+                                placement: $placement,
+                                targetNodeId: $finalNodeId,
+                                distanceFromPrevious: 0,
+                                path: []
+                            );
+                
+                            unset($remainingItems[$listItem->getId()]);
+                            continue 2; // skip full routing logic
+                        }
+                    }
+                    
+                    $currentEdgeId = null; // No more items on this edge - continue with normal routing for next item
+                }
+
+                // Run Dijkstra from current node to get distances to all other nodes, and the previous node for each (for path reconstruction)
+                $dijkstraResult = $this->dijkstra($graph, $currentNodeId, $backtrackAvoidanceNode); 
                 $distances = $dijkstraResult['dist'];
                 $prevNodeArray = $dijkstraResult['prev'];
     
+                // State to track closest item in this iteration
                 $closestListItem  = null;
                 $closestPlacement = null;
                 $closestEntryNode = null;
@@ -91,6 +133,7 @@ class PathFinder
                     if ($result === null) {
                         continue;
                     }
+
                     
                     $entryNode = $result['entryNode'];
                     $distance  = $result['distance'];
@@ -100,7 +143,7 @@ class PathFinder
                     if ($this->isStraightPath($path)) {
                         $score = $distance * 0.4; // arbitrary bonus for straight paths, to encourage them over short zig-zags
                     }
-
+                    
                     // if we find an item that is closer than our current closest, update closest item
                     if ($score < $closestDistance) {
                         $closestListItem = $listItem;
@@ -109,22 +152,40 @@ class PathFinder
                         $closestExitNode  = $result['exitNode'];
                         $closestDistance  = $score;
                         $closestPath = $path;
+                        // if($listItem->getId() === 390){
+                        //     dump($closestListItem, $placement);
+                        //     dd($closestListItem->getFoodItem()->getName(), 'entry:', $closestEntryNode, 'exit', $closestExitNode,$closestPath);
+                        // }
                     }
                 }
+
+                // Update state edge
+                $currentEdgeId = $closestPlacement->getEdge()->getId();
+                $currentEdgeEntryNode = $closestEntryNode;
+                $currentEdgeExitNode = $closestExitNode;
+
 
                 $pathToClosestNode = $closestPath;
                 if ($closestExitNode !== null) {
                     $pathToClosestNode[] = $closestExitNode; // Append the exit node to the path to ensure we traverse the whole edge where the item is located
                 }
-    
+
+                
+                
                 // Safety check (should not happen, but avoids infinite loop)
                 if ($closestListItem === null) {
                     break;
                 }
-    
+                
                 $finalNodeId = $closestExitNode ?? $closestEntryNode; // The node we will be at after picking this item
-                $backtrackAvoidanceNode = $closestPath[count($closestPath) -2] ?? null; // The penultimate node in the path
+                // $backtrackAvoidanceNode = $pathToClosestNode[count($pathToClosestNode) -2] ?? null; // The penultimate node in the path
+                $backtrackAvoidanceNode = $closestPath[count($closestPath) -1] ?? null; // The penultimate node in the path
+                // $backtrackAvoidanceNode = $closestPath[count($closestPath) -2] ?? null; // The penultimate node in the path
                 $currentNodeId = $finalNodeId; // Update this for next iteration
+
+                // if($closestEntryNode === 44){
+                //     dd($closestListItem, $closestEntryNode, $closestExitNode, $closestPath, $pathToClosestNode, $finalNodeId, $currentNodeId, $backtrackAvoidanceNode);
+                // }
 
                 $orderedList[] = new RoutedListItemDto(
                     item: $closestListItem,
