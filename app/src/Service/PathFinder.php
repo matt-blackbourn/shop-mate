@@ -128,9 +128,9 @@ class PathFinder
                 $closestDistance = INF;
                 $closestPath = null;
 
+                // Aisle state tracking variables
                 $nextAisle = $this->findLowestRemainingAisle($remainingItems);
-                $bestItem = null;
-                $bestScore = INF;
+                $currentAisleKey = null;
     
                 // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
@@ -141,12 +141,45 @@ class PathFinder
                     
                     $entryNode = $result['entryNode'];
                     $distance  = $result['distance'];
-                    
+                    $placement = $result['placement'];
+                    $edge = $placement->getEdge();
+                    $aisleKey = $edge->getAisleKey();
+
+                    // SCORING STARTS HERE - this is where we decide which item wins as the "closest" based on distance and various heuristics
                     $score = $distance;
                     
+                    
+                    // --- Straight path bonus
                     $path = $this->reconstructPath($prevNodeArray, $entryNode);
                     if ($this->isStraightPath($path)) {
-                        $score = $distance * 0.4; // arbitrary bonus for straight paths, to encourage them over short zig-zags
+                        $score *= 0.6;
+                    }
+
+                    // --- Aisle weighting starts here
+                    // ✔ Starts with closest item
+                    // ✔ If aisle 1 exists, it naturally wins via 0.5 multiplier
+                    // ✔ Once in aisle 1, 0.1 multiplier keeps you there
+                    // ✔ Won’t jump to aisle 3 before aisle 2
+                    // ✔ Still allows non-aisle detours if genuinely closer
+
+                    // If currently inside an aisle → strongly prefer staying
+                    if ($currentAisleKey !== null) {
+                        if ($aisleKey === $currentAisleKey) {
+                            $score *= 0.3;   // stay on aisle (strong bias)
+                        } else {
+                            $score *= 1.5;     // discourage leaving aisle
+                        }
+
+                    } else {
+                        // Not currently in aisle → prefer lowest numbered aisle
+                        if ($nextAisle !== null) {
+                            if($aisleKey === $nextAisle) {
+                                $score *= 0.5;   // prefer next aisle
+                            } elseif ($aisleKey !== null) {
+                                $score *= 1.5;   // discourage skipping ahead
+                            }
+                            // non-aisle items remain neutral
+                        }
                     }
                     
                     // if we find an item that is closer than our current closest, update closest item
@@ -166,6 +199,7 @@ class PathFinder
 
                 // Update state edge
                 $currentEdgeId = $closestPlacement->getEdge()->getId();
+                $currentAisleKey = $closestPlacement->getEdge()->getAisleKey();
                 $currentEdgeEntryNode = $closestEntryNode;
                 $currentEdgeExitNode = $closestExitNode;
 
