@@ -237,6 +237,13 @@ class SupermarketController extends AbstractController
         ]);
     }
 
+    
+    #[Route('/{id}/clear-aisles', name: 'app_supermarket_clear_aisles', methods: ['POST'])]
+    public function removeAisles(EdgeRepository $edgeRepository, Supermarket $supermarket): Response
+    {
+        $edgeRepository->clearAisleKeys($supermarket);
+        return $this->redirectToRoute('app_supermarket_draw_edges', ['id' => $supermarket->getId()]);
+    }
 
     #[Route('/{id}/edges/save', methods: ['POST'])]
     public function saveEdgesBulk(
@@ -292,6 +299,12 @@ class SupermarketController extends AbstractController
                     $edge->setLength($length);
         
                     $em->persist($edge);
+                }
+
+                // Save aisle
+                if($item['aisleKey'] === true) {
+                    $key = $edgeRepository->getNextAvailableAisleKey($supermarket);
+                    $edge->setAisleKey($key);
                 }
             }
     

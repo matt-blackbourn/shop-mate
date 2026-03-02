@@ -38,6 +38,9 @@
                     <option value="4">End Phase</option>
                 </select>
 
+                <button id="save-aisle" type="button" class="btn btn-outline-secondary btn-sm">Save Aisle</button>
+                <button id="remove-aisles" type="button" class="btn btn-outline-secondary btn-sm">Remove Aisles</button>
+
                 {# Save edges form #}
                 <form method="POST" action="/supermarket/{{ supermarket.id }}/edges/save"
                     id="edgesForm" class="d-flex align-items-center gap-2">
@@ -121,6 +124,10 @@
         stroke-dasharray: 6 4; /* optional but very nice */
     }
 
+    .aisle {
+        stroke: black; 
+    }
+
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -128,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const svg = document.getElementById('overlay');
     const nodesData = JSON.parse(wrapper.dataset.nodes);
     const edgeData = JSON.parse(wrapper.dataset.edges);
+    const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
 
     const nodes = {};   // id -> { id, x, y, element }
     const edges = [];
@@ -189,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         line.dataset.id = edge.id;
         line.dataset.phase = edge.phase;
 
-          const colorMap = {
+        const colorMap = {
             '1': '#4caf50', // green
             '2': '#2196f3', // blue
             '3': '#ff9800', // orange
@@ -198,6 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         line.setAttribute('stroke', colorMap[edge.phase] || '#999');
         line.setAttribute('stroke-width', STROKE_WIDTH);
+        if(edge.aisleKey) {
+            line.classList.add('aisle');
+        }
 
         // Click listener toggles selection
         line.addEventListener('click', () => {
@@ -255,7 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
             y2: b.y,
             phase: phaseSelector.value,
             selected: false,
-            element: null
+            element: null,
+            aisleKey: null,
         };
 
         const line = drawEdge(edge);
@@ -300,6 +312,41 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    const aisleSaveButton = document.getElementById('save-aisle');
+    aisleSaveButton.addEventListener('click', () => {
+        let edgeSelected = false;
+        edges.forEach(edge => {
+            if (edge.selected) {
+                edgeSelected = true;
+                edge.aisleKey = true;
+            }
+        });
+
+        if(!edgeSelected || edges.length === 0) {
+            alert('Select at least one edge to save as an aisle');
+            return;
+        }
+
+        // Populate hidden input here if needed
+        const payload = edges.map(({ element, ...data }) => data);
+        document.getElementById('edgesInput').value = JSON.stringify(payload);
+
+        // Submit the form directly
+        document.getElementById('edgesForm').submit();
+    });
+
+    const removeAislesButton = document.getElementById('remove-aisles');
+    removeAislesButton.addEventListener('click', () => {
+        if (!confirm('Are you sure you want to remove all aisle keys in this supermarket?')) return;
+
+        // Create a temporary form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/supermarket/${supermarketId}/clear-aisles`; // backend route
+
+        document.body.appendChild(form);
+        form.submit(); // this triggers a full page request and follows backend redirect
+    });
 
     const phaseSelector = document.getElementById('phaseSelector');
     phaseSelector.addEventListener('change', () => {

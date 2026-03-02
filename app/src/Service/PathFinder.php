@@ -54,6 +54,7 @@ class PathFinder
             }
         }
 
+        // keep for debugging
         // $foodItems = [];
         // foreach ($mappedItems as $phase => $items) {
         //     foreach ($items as $id => $listItem) {
@@ -126,6 +127,10 @@ class PathFinder
                 $closestExitNode = null;
                 $closestDistance = INF;
                 $closestPath = null;
+
+                $nextAisle = $this->findLowestRemainingAisle($remainingItems);
+                $bestItem = null;
+                $bestScore = INF;
     
                 // Find the closest item out of the remaining list items in the phase
                 foreach ($remainingItems as $listItem) {
@@ -133,10 +138,10 @@ class PathFinder
                     if ($result === null) {
                         continue;
                     }
-
                     
                     $entryNode = $result['entryNode'];
                     $distance  = $result['distance'];
+                    
                     $score = $distance;
                     
                     $path = $this->reconstructPath($prevNodeArray, $entryNode);
@@ -196,8 +201,22 @@ class PathFinder
             }
         }
 
-
         return array_merge($unmappedItems, $orderedList); // Show unmapped items at the start of the list to prompt user to place them
+    }
+
+    private function findLowestRemainingAisle(array $remainingItems): ?int
+    {
+        $aisles = [];
+
+        foreach ($remainingItems as $item) {
+            $placement = $this->placementCache[$item->getId()];
+            $aisleKey = $placement->getEdge()->getAisleKey();
+            if ($aisleKey !== null) {
+                $aisles[] = $aisleKey;
+            }
+        }
+
+        return empty($aisles) ? null : min($aisles);
     }
 
     private function isStraightPath(array $path): bool

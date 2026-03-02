@@ -41,4 +41,39 @@ class EdgeRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function getNextAvailableAisleKey(Supermarket $supermarket): int
+    {
+        // Fetch all aisle keys for this supermarket, ordered ascending
+        $qb = $this->createQueryBuilder('e')
+            ->select('e.aisleKey')
+            ->where('e.supermarket = :supermarket')
+            ->setParameter('supermarket', $supermarket)
+            ->orderBy('e.aisleKey', 'ASC');
+
+        $existingKeys = array_map('intval', array_column($qb->getQuery()->getArrayResult(), 'aisleKey'));
+
+        $nextKey = 1;
+        foreach ($existingKeys as $key) {
+            if ($key === $nextKey) {
+                $nextKey++;
+            } elseif ($key > $nextKey) {
+                break; // found a gap
+            }
+        }
+
+        return $nextKey;
+    }
+
+    public function clearAisleKeys(Supermarket $supermarket): void
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->update()
+            ->set('e.aisleKey', ':null')
+            ->where('e.supermarket = :supermarket')
+            ->setParameter('supermarket', $supermarket)
+            ->setParameter('null', null);
+
+        $qb->getQuery()->execute();
+    }
 }

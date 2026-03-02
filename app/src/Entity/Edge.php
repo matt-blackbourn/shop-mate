@@ -49,6 +49,9 @@ class Edge
     #[ORM\OneToMany(targetEntity: ProductPlacement::class, mappedBy: 'edge')]
     private Collection $productPlacements;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $aisleKey = null;
+
     public function __construct()
     {
         $this->foodItems = new ArrayCollection();
@@ -176,6 +179,18 @@ class Edge
                 $productPlacement->setEdge(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAisleKey(): ?int
+    {
+        return $this->aisleKey;
+    }
+
+    public function setAisleKey(?int $aisleKey): static
+    {
+        $this->aisleKey = $aisleKey;
 
         return $this;
     }

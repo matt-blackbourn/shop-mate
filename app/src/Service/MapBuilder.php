@@ -40,6 +40,7 @@ final class MapBuilder
                 'y2'   => $edge->getEnd()->getYValue(),
                 'phase'=> $edge->getPhase(),
                 'element'=> null, // placeholder for front-end use
+                'aisleKey' => $edge->getAisleKey(),
             ];
         }
         return $edges;
