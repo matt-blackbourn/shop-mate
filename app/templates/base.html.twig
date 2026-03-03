@@ -37,30 +37,33 @@
             const overlay = document.querySelector('.menu-overlay');
             const closeButton = document.querySelector('.menu-close');
 
-            // Prevent default click behavior to avoid form submission
-            menuButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                openMenu();
-            });
+            if(menuButton) {
 
-            closeButton.addEventListener('click', closeMenu);
-            overlay.addEventListener('click', closeMenu);
+                // Prevent default click behavior to avoid form submission
+                menuButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openMenu();
+                });
 
-            // Optional: close menu with Escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    closeMenu();
+                closeButton.addEventListener('click', closeMenu);
+                overlay.addEventListener('click', closeMenu);
+
+                // Optional: close menu with Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeMenu();
+                    }
+                });
+
+                function openMenu() {
+                    menu.hidden = false;
+                    overlay.hidden = false;
                 }
-            });
 
-            function openMenu() {
-                menu.hidden = false;
-                overlay.hidden = false;
-            }
-
-            function closeMenu() {
-                menu.hidden = true;
-                overlay.hidden = true;
+                function closeMenu() {
+                    menu.hidden = true;
+                    overlay.hidden = true;
+                }
             }
         </script>
     </body>

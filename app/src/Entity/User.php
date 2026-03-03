@@ -54,11 +54,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToOne(inversedBy: 'users')]
     private ?Supermarket $lastUsedSupermarket = null;
 
+    /**
+     * @var Collection<int, FloorPlan>
+     */
+    #[ORM\OneToMany(targetEntity: FloorPlan::class, mappedBy: 'user')]
+    private Collection $floorPlans;
+
     public function __construct()
     {
         $this->productPlacements = new ArrayCollection();
         $this->shoppingLists = new ArrayCollection();
         $this->foodItems = new ArrayCollection();
+        $this->floorPlans = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -240,6 +247,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastUsedSupermarket(?Supermarket $lastUsedSupermarket): static
     {
         $this->lastUsedSupermarket = $lastUsedSupermarket;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FloorPlan>
+     */
+    public function getFloorPlans(): Collection
+    {
+        return $this->floorPlans;
+    }
+
+    public function addFloorPlan(FloorPlan $floorPlan): static
+    {
+        if (!$this->floorPlans->contains($floorPlan)) {
+            $this->floorPlans->add($floorPlan);
+            $floorPlan->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFloorPlan(FloorPlan $floorPlan): static
+    {
+        if ($this->floorPlans->removeElement($floorPlan)) {
+            // set the owning side to null (unless already changed)
+            if ($floorPlan->getUser() === $this) {
+                $floorPlan->setUser(null);
+            }
+        }
 
         return $this;
     }
