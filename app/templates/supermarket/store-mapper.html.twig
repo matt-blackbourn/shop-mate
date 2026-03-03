@@ -22,6 +22,9 @@
 
             <!-- Right: Save -->
             <div class="header-right d-flex align-items-center">
+            <button type="button" class="btn-dark-base">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
             <button type="button" id="save-map" disabled title="Save changes" class="btn-dark-base border-green">
                 <i class="bi bi-check-lg"></i>
             </button>
@@ -71,11 +74,11 @@
         <!-- Number Pad -->
         <div class="mapper-numpad">
             {% for n in [1,2,3,4,5,6,7,8,9] %}
-                <button class="btn-dark-base border-yellow keypad" data-number="{{ n }}">{{ n }}</button>
+                <button class="btn-dark-base" data-number="{{ n }}">{{ n }}</button>
             {% endfor %}
-            <button class="btn-dark-base border-red keypad">⌫</button>
-            <button class="btn-dark-base border-yellow keypad" data-number="0">0</button>
-            <button class="btn-dark-base border-green keypad">Enter</button>
+            <button class="btn-dark-base border-red">⌫</button>
+            <button class="btn-dark-base" data-number="0">0</button>
+            <button class="btn-dark-base border-green">Enter</button>
 
         </div>
 
@@ -191,10 +194,198 @@
     flex: 1;  
 }
 
-.keypad {
-    padding: 0.25rem 0.5rem;
-}
 
 </style>
+
+<script>
+(function() {
+
+    const svg = document.querySelector('.mapper-svg');
+    const arrowSVG = document.querySelector('.mapper-arrow');
+    const arrow = arrowSVG.querySelector('polygon');
+    const stepDisplay = document.getElementById('stepDisplay');
+
+    const footer = document.querySelector('.mapper-footer');
+    const undoBtn = document.querySelector('.bi-arrow-counterclockwise')?.closest('button');
+    const saveBtn = document.getElementById('save-map');
+
+    let stepsBuffer = '';
+    let path = [{ x: 0, y: 0, steps: 0 }];
+    let headings = [0];
+    let currentHeading = 0;
+    let hasChanges = false;
+
+    /* -----------------------------
+        UI Updates
+    ----------------------------- */
+
+    function updateArrow() {
+        arrowSVG.style.transform =
+        `translate(-50%, -50%) rotate(${currentHeading * 180 / Math.PI}deg)`;
+    }
+
+    function updateDisplay() {
+        stepDisplay.textContent = stepsBuffer || '0';
+    }
+
+    function enableSave() {
+        hasChanges = true;
+        if (saveBtn) saveBtn.disabled = false;
+    }
+
+    /* -----------------------------
+        Drawing
+    ----------------------------- */
+
+    function drawPath() {
+        svg.innerHTML = '';
+
+        for (let i = 1; i < path.length; i++) {
+        const p1 = path[i - 1];
+        const p2 = path[i];
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute('x1', p1.x);
+        line.setAttribute('y1', p1.y);
+        line.setAttribute('x2', p2.x);
+        line.setAttribute('y2', p2.y);
+        line.setAttribute('stroke', 'black');
+        line.setAttribute('stroke-width', '2');
+        svg.appendChild(line);
+
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute('cx', p2.x);
+        dot.setAttribute('cy', p2.y);
+        dot.setAttribute('r', 3);
+        dot.setAttribute('fill', 'blue');
+        svg.appendChild(dot);
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute('x', (p1.x + p2.x) / 2);
+        text.setAttribute('y', (p1.y + p2.y) / 2 - 5);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '8');
+        text.textContent = p2.steps;
+        svg.appendChild(text);
+        }
+
+        updateViewBox();
+    }
+
+    function updateViewBox() {
+        if (!path.length) return;
+
+        const padding = 40;
+        let minX = path[0].x, maxX = path[0].x;
+        let minY = path[0].y, maxY = path[0].y;
+
+        for (let p of path) {
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+        }
+
+        const width = maxX - minX + padding * 2;
+        const height = maxY - minY + padding * 2;
+
+        svg.setAttribute('viewBox',
+        `${minX - padding} ${minY - padding} ${width} ${height}`);
+    }
+
+    /* -----------------------------
+        Actions
+    ----------------------------- */
+
+    function turn(dir) {
+        if (dir === 'left') currentHeading -= Math.PI / 2;
+        if (dir === 'right') currentHeading += Math.PI / 2;
+        updateArrow();
+    }
+
+    function addLeg() {
+        const steps = parseInt(stepsBuffer);
+        if (!steps || steps <= 0) return;
+
+        const last = path[path.length - 1];
+        const scale = 2;
+
+        const newX = last.x + steps * scale * Math.sin(currentHeading);
+        const newY = last.y - steps * scale * Math.cos(currentHeading);
+
+        path.push({ x: newX, y: newY, steps });
+        headings.push(currentHeading);
+
+        stepsBuffer = '';
+        updateDisplay();
+        drawPath();
+        enableSave();
+    }
+
+    function undoLeg() {
+        if (path.length > 1) {
+        path.pop();
+        headings.pop();
+        drawPath();
+        enableSave();
+        }
+    }
+
+    function backspace() {
+        stepsBuffer = stepsBuffer.slice(0, -1);
+        updateDisplay();
+    }
+
+    function addDigit(digit) {
+        stepsBuffer += digit;
+        updateDisplay();
+    }
+
+    /* -----------------------------
+        Event Delegation (Footer)
+    ----------------------------- */
+
+    footer.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        if (btn.dataset.direction) {
+        turn(btn.dataset.direction);
+        return;
+        }
+
+        if (btn.dataset.number !== undefined) {
+        addDigit(btn.dataset.number);
+        return;
+        }
+
+        if (btn.textContent.trim() === 'Enter') {
+        addLeg();
+        return;
+        }
+
+        if (btn.textContent.trim() === '⌫') {
+        backspace();
+        return;
+        }
+    });
+
+    /* -----------------------------
+        Header Undo Button
+    ----------------------------- */
+
+    if (undoBtn) {
+        undoBtn.addEventListener('click', undoLeg);
+    }
+
+    /* -----------------------------
+        Init
+    ----------------------------- */
+
+    updateArrow();
+    updateDisplay();
+
+})();
+</script>
 
 {% endblock %}

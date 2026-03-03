@@ -97,20 +97,20 @@
   function drawPath(){
     svg.innerHTML = '';
     for(let i=1;i<path.length;i++){
-      const p1 = path[i-1];
-      const p2 = path[i];
+        const p1 = path[i-1];
+        const p2 = path[i];
 
-      // line
-      const line = document.createElementNS("http://www.w3.org/2000/svg","line");
-      line.setAttribute('x1',p1.x);
-      line.setAttribute('y1',p1.y);
-      line.setAttribute('x2',p2.x);
-      line.setAttribute('y2',p2.y);
-      line.setAttribute('stroke','black');
-      line.setAttribute('stroke-width','2');
-      svg.appendChild(line);
+        // line
+        const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+        line.setAttribute('x1',p1.x);
+        line.setAttribute('y1',p1.y);
+        line.setAttribute('x2',p2.x);
+        line.setAttribute('y2',p2.y);
+        line.setAttribute('stroke','black');
+        line.setAttribute('stroke-width','2');
+        svg.appendChild(line);
 
-      // waypoint/turn marker as blue dot
+        // waypoint/turn marker as blue dot
         const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
         dot.setAttribute('cx', p2.x);
         dot.setAttribute('cy', p2.y);
@@ -118,16 +118,16 @@
         dot.setAttribute('fill', 'blue');
         svg.appendChild(dot);
 
-      // step label
-      const text = document.createElementNS("http://www.w3.org/2000/svg","text");
-      text.setAttribute('x',(p1.x+p2.x)/2);
-      text.setAttribute('y',(p1.y+p2.y)/2 - 5);
-      text.setAttribute('text-anchor','middle');
-      text.setAttribute('font-size','8');
-      text.setAttribute('fill','black');
-      const stepCount = Math.round(Math.hypot(p2.x-p1.x,p2.y-p1.y));
-      text.textContent = p2.steps; // use original step count entered by user
-      svg.appendChild(text);
+        // step label
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute('x',(p1.x+p2.x)/2);
+        text.setAttribute('y',(p1.y+p2.y)/2 - 5);
+        text.setAttribute('text-anchor','middle');
+        text.setAttribute('font-size','8');
+        text.setAttribute('fill','black');
+        const stepCount = Math.round(Math.hypot(p2.x-p1.x,p2.y-p1.y));
+        text.textContent = p2.steps; // use original step count entered by user
+        svg.appendChild(text);
     }
 
     // auto-center
