@@ -1,0 +1,223 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Store Mapper{% endblock %}
+
+{% block body %}
+
+<div class="mapper-page d-flex flex-column">
+
+    <!-- HEADER -->
+    <div class="page-header">
+        <div class="d-flex align-items-center px-2 py-2 w-100">
+
+            <!-- Left: Menu -->
+            <div class="header-left d-flex align-items-center">
+                <button class="menu-button" aria-label="Open menu">☰</button>
+            </div>
+
+            <!-- Center: Title -->
+            <div class="header-center flex-grow-1 text-center fw-semibold">
+                Store Mapper
+            </div>
+
+            <!-- Right: Save -->
+            <div class="header-right d-flex align-items-center">
+                <button class="btn btn-sm header-btn" id="save-map">
+                    <i class="bi bi-save"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MENU (outside header for z-index safety) -->
+    <div class="menu-overlay" hidden></div>
+    <nav class="side-menu" hidden>
+        <button type="button" class="menu-close">×</button>
+        <ul>
+            <li><a href="#">Back to List</a></li>
+            <li><a href="#">Supermarkets</a></li>
+        </ul>
+    </nav>
+
+    <!-- BODY (MAP) -->
+    <div class="page-body">
+        <div class="mapper-map-container">
+            <svg class="mapper-svg"></svg>
+
+            <svg class="mapper-arrow" viewBox="-10 -10 20 20">
+                <polygon points="0,-10 5,5 -5,5" fill="#00d4ff"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- FOOTER (NUMBERPAD CONTROLS) -->
+    <div class="page-footer mapper-footer">
+
+        <!-- Display -->
+        <div class="mapper-display">
+            <span id="stepDisplay">0</span>
+        </div>
+
+        <!-- Direction + Enter Row -->
+        <div class="mapper-actions">
+            <button class="mapper-action-btn" data-direction="left">
+                <i class="bi bi-arrow-left"></i>
+            </button>
+
+            <button class="mapper-action-btn enter-btn">
+                Enter
+            </button>
+
+            <button class="mapper-action-btn" data-direction="right">
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Number Pad -->
+        <div class="mapper-numpad">
+            {% for n in [1,2,3,4,5,6,7,8,9] %}
+                <button class="num-btn" data-number="{{ n }}">{{ n }}</button>
+            {% endfor %}
+            <button class="num-btn clear-btn">C</button>
+            <button class="num-btn" data-number="0">0</button>
+            <button class="num-btn backspace-btn">⌫</button>
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+<style>
+.mapper-page {
+    height: 100vh;
+    background: #1c212b;
+    color: #e9ecef;
+}
+
+/* HEADER */
+.page-header {
+    background-color: #2b303b;
+    border-bottom: 1px solid #343a46;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+
+.header-btn {
+    background: #1c212b;
+    color: #e9ecef;
+    border: 1px solid #343a46;
+}
+
+.header-btn:hover {
+    background: #343a46;
+}
+
+/* BODY */
+.page-body {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.mapper-map-container {
+    position: absolute;
+    inset: 0;
+}
+
+.mapper-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.mapper-arrow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    transform-origin: 50% 50%;
+    pointer-events: none;
+}
+
+/* FOOTER */
+.mapper-footer {
+    background: #2b303b;
+    border-top: 1px solid #343a46;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Display */
+.mapper-display {
+    background: #11151c;
+    border: 1px solid #343a46;
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: right;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* Direction Row */
+.mapper-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.mapper-action-btn {
+    flex: 1;
+    padding: 10px;
+    background: #1c212b;
+    border: 1px solid #343a46;
+    color: #e9ecef;
+    border-radius: 6px;
+}
+
+.mapper-action-btn:hover {
+    background: #343a46;
+}
+
+.enter-btn {
+    background: #00d4ff;
+    color: #000;
+    font-weight: bold;
+}
+
+/* Numpad */
+.mapper-numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.num-btn {
+    padding: 14px;
+    font-size: 18px;
+    background: #1c212b;
+    border: 1px solid #343a46;
+    color: #e9ecef;
+    border-radius: 6px;
+}
+
+.num-btn:hover {
+    background: #343a46;
+}
+
+.clear-btn {
+    background: #6c757d;
+}
+
+.backspace-btn {
+    background: #dc3545;
+}
+
+</style>
+
+{% endblock %}

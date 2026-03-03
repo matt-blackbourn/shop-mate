@@ -37,7 +37,7 @@ class SupermarketController extends AbstractController
     #[Route('/map', name: 'app_supermarket_map', methods: ['GET'])]
     public function map(SupermarketRepository $supermarketRepository): Response
     {
-        return $this->render('supermarket/map.html.twig');
+        return $this->render('supermarket/store-mapper.html.twig');
     }
 
 
