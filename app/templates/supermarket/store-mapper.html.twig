@@ -22,9 +22,9 @@
 
             <!-- Right: Save -->
             <div class="header-right d-flex align-items-center">
-                <button class="btn btn-sm header-btn" id="save-map">
-                    <i class="bi bi-save"></i>
-                </button>
+            <button type="button" id="save-map" disabled title="Save changes" class="btn-dark-base border-green">
+                <i class="bi bi-check-lg"></i>
+            </button>
             </div>
         </div>
     </div>
@@ -34,8 +34,7 @@
     <nav class="side-menu" hidden>
         <button type="button" class="menu-close">×</button>
         <ul>
-            <li><a href="#">Back to List</a></li>
-            <li><a href="#">Supermarkets</a></li>
+            <li><a href="{{ path('app_home') }}">Back to List</a></li>
         </ul>
     </nav>
 
@@ -53,22 +52,18 @@
     <!-- FOOTER (NUMBERPAD CONTROLS) -->
     <div class="page-footer mapper-footer">
 
-        <!-- Display -->
-        <div class="mapper-display">
-            <span id="stepDisplay">0</span>
-        </div>
-
         <!-- Direction + Enter Row -->
         <div class="mapper-actions">
-            <button class="mapper-action-btn" data-direction="left">
+            <button class="btn-dark-base border-yellow" data-direction="left">
                 <i class="bi bi-arrow-left"></i>
             </button>
 
-            <button class="mapper-action-btn enter-btn">
-                Enter
-            </button>
+        <!-- Display -->
+            <div class="mapper-display">
+                <span id="stepDisplay">0</span>
+            </div>
 
-            <button class="mapper-action-btn" data-direction="right">
+            <button class="btn-dark-base border-yellow" data-direction="right">
                 <i class="bi bi-arrow-right"></i>
             </button>
         </div>
@@ -76,11 +71,12 @@
         <!-- Number Pad -->
         <div class="mapper-numpad">
             {% for n in [1,2,3,4,5,6,7,8,9] %}
-                <button class="num-btn" data-number="{{ n }}">{{ n }}</button>
+                <button class="btn-dark-base border-yellow keypad" data-number="{{ n }}">{{ n }}</button>
             {% endfor %}
-            <button class="num-btn clear-btn">C</button>
-            <button class="num-btn" data-number="0">0</button>
-            <button class="num-btn backspace-btn">⌫</button>
+            <button class="btn-dark-base border-red keypad">⌫</button>
+            <button class="btn-dark-base border-yellow keypad" data-number="0">0</button>
+            <button class="btn-dark-base border-green keypad">Enter</button>
+
         </div>
 
     </div>
@@ -92,9 +88,11 @@
 
 <style>
 .mapper-page {
-    height: 100vh;
+    height: 100dvh;   /* important for mobile */
     background: #1c212b;
     color: #e9ecef;
+    display: flex;
+    flex-direction: column;
 }
 
 /* HEADER */
@@ -119,6 +117,7 @@
 /* BODY */
 .page-body {
     flex: 1;
+    min-height: 0;      /* CRITICAL */
     overflow: hidden;
     position: relative;
 }
@@ -147,10 +146,14 @@
 .mapper-footer {
     background: #2b303b;
     border-top: 1px solid #343a46;
-    padding: 10px;
+
+    height: 30dvh;          /* 👈 controlled size */
+    max-height: 420px;      /* safety cap for large phones */
+
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    padding: 8px;
 }
 
 /* Display */
@@ -158,64 +161,38 @@
     background: #11151c;
     border: 1px solid #343a46;
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 6px 10px;
+    font-size: 18px;
     text-align: right;
-    font-size: 20px;
     font-weight: bold;
-}
 
-/* Direction Row */
-.mapper-actions {
     display: flex;
-    justify-content: space-between;
-    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+
+    width: 100%;
+    height: 100%;
 }
 
-.mapper-action-btn {
-    flex: 1;
-    padding: 10px;
-    background: #1c212b;
-    border: 1px solid #343a46;
-    color: #e9ecef;
-    border-radius: 6px;
+.mapper-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    align-items: stretch;
 }
 
-.mapper-action-btn:hover {
-    background: #343a46;
-}
-
-.enter-btn {
-    background: #00d4ff;
-    color: #000;
-    font-weight: bold;
-}
 
 /* Numpad */
 .mapper-numpad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    grid-template-rows: repeat(4, 1fr); /* force 4 even rows */
+    gap: 6px;
+    flex: 1;  
 }
 
-.num-btn {
-    padding: 14px;
-    font-size: 18px;
-    background: #1c212b;
-    border: 1px solid #343a46;
-    color: #e9ecef;
-    border-radius: 6px;
-}
-
-.num-btn:hover {
-    background: #343a46;
-}
-
-.clear-btn {
-    background: #6c757d;
-}
-
-.backspace-btn {
-    background: #dc3545;
+.keypad {
+    padding: 0.25rem 0.5rem;
 }
 
 </style>

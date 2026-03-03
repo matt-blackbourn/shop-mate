@@ -136,7 +136,7 @@
                     {% endif %}
                 </div>
 
-                <button class="pick-btn-list pick-skip pick" type="button">Pick Item</button>
+                <button class="pick-btn-list btn-dark-base border-green" type="button">Pick Item</button>
 
             </div>
         </div>
@@ -261,7 +261,7 @@
     color: #fa5252;
 }
 
-.map-nav-button {
+{# .map-nav-button {
     display: inline-block;
     font-weight: 400;
     line-height: 1.5;
@@ -277,28 +277,21 @@
     padding: 0.375rem 0.75rem;
     font-size: 1rem;
     border-radius: 0.375rem;
+} #}
+.map-nav-button {
+    background-color: #212529;
+    border: 1px solid #212529;
+    color: #fff;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
 }
-.pick-skip {
-    all: unset;
-    display: inline-flex;
-    align-items: center;
+
+
+
+.pick-btn-list{
     font-size: .8rem;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background-color: #2b303b;
-    color: #e9ecef;
-    font-weight: 500;
-    min-height: 32px;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
 }
-.skip{
-    border: 1px solid #fab005;
-}
-.pick{
-    border: 1px solid #51cf66;
-}
+
 .no-placement{
     border: 1px solid #fa5252;
 }

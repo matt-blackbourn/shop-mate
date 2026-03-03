@@ -25,9 +25,43 @@
 
 
 		{% block javascripts %}{% endblock %}
+            
 	</head>
 	<body>
 		<div class="app"> {% block body %}{% endblock %}
         </div>
+        <script>
+            /* SIDE MENU */
+            const menu = document.querySelector('.side-menu');
+            const menuButton = document.querySelector('.menu-button');
+            const overlay = document.querySelector('.menu-overlay');
+            const closeButton = document.querySelector('.menu-close');
+
+            // Prevent default click behavior to avoid form submission
+            menuButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                openMenu();
+            });
+
+            closeButton.addEventListener('click', closeMenu);
+            overlay.addEventListener('click', closeMenu);
+
+            // Optional: close menu with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeMenu();
+                }
+            });
+
+            function openMenu() {
+                menu.hidden = false;
+                overlay.hidden = false;
+            }
+
+            function closeMenu() {
+                menu.hidden = true;
+                overlay.hidden = true;
+            }
+        </script>
     </body>
 </html>

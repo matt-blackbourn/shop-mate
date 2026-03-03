@@ -218,6 +218,7 @@ a:hover {
     padding: 0;
 }
 
+/* play with getting rid of everything above here */
 
 /* Hide on mobile */
 @media (max-width: 768px) {
@@ -225,4 +226,88 @@ a:hover {
         display: none !important;
     }
 }
+
+
+/* SIDE MENU  */
+.side-menu {
+    background-color: #2b303b;
+    color: #e9ecef;
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: 70%;
+    max-width: 280px;
+    box-shadow: -8px 0 20px rgba(0, 0, 0, 0.08);
+    padding: 1.25rem;
+    z-index: 2001;
+}
+
+.side-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.side-menu a,
+.side-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 0;
+    text-decoration: none;
+    font-weight: 500;
+    color: #e9ecef;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(2px);
+    z-index: 2000;
+}
+
+.menu-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    color: #e9ecef;
+}
+
+.menu-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    color: #e9ecef;
+}
+
+/* BUTTONS */
+.btn-dark-base {
+    background-color: #212529;
+    border: 1px solid #212529;
+    color: #fff;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Modifiers */
+.border-green {
+    border-color: #51cf66;
+}
+
+.border-yellow {
+    border-color: #fab005;
+}
+
+.border-red {
+    border-color: #fa5252;
+}
+
 
