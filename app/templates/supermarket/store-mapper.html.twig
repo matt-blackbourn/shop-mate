@@ -46,9 +46,6 @@
         <div class="mapper-map-container">
             <svg class="mapper-svg"></svg>
 
-            <svg class="mapper-arrow" viewBox="-10 -10 20 20">
-                <polygon points="0,-10 5,5 -5,5" fill="#00d4ff"/>
-            </svg>
         </div>
     </div>
 
@@ -194,21 +191,34 @@
     flex: 1;  
 }
 
+/* temporary highlight state */
+.btn-dark-base.clicked {
+    background-color: #fab005; /* yellow highlight */
+    color: #000;               /* optional text color change */
+}
+
+
 
 </style>
 
 <script>
 (function() {
 
+    const SVG_NS = "http://www.w3.org/2000/svg";
     const svg = document.querySelector('.mapper-svg');
-    const arrowSVG = document.querySelector('.mapper-arrow');
-    const arrow = arrowSVG.querySelector('polygon');
-    const stepDisplay = document.getElementById('stepDisplay');
+    const pathLayer = document.createElementNS(SVG_NS, 'g');
+    pathLayer.classList.add('path-layer');
+    svg.appendChild(pathLayer);
+    svg.setAttribute('viewBox', '-150 -150 300 300');
 
+    const stepDisplay = document.getElementById('stepDisplay');
     const footer = document.querySelector('.mapper-footer');
     const undoBtn = document.querySelector('.bi-arrow-counterclockwise')?.closest('button');
     const saveBtn = document.getElementById('save-map');
+    const STEP_SCALE = 20; // pixels per step
+    let VISUAL_SCALE = 20;
 
+    let directionArrow; // persistent arrow group
     let stepsBuffer = '';
     let path = [{ x: 0, y: 0, steps: 0 }];
     let headings = [0];
@@ -219,10 +229,75 @@
         UI Updates
     ----------------------------- */
 
-    function updateArrow() {
-        arrowSVG.style.transform =
-        `translate(-50%, -50%) rotate(${currentHeading * 180 / Math.PI}deg)`;
+    createDirectionArrow();
+
+    // button highlight on click (temporary visual feedback)
+    document.querySelectorAll('.btn-dark-base').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.classList.add('clicked');
+            setTimeout(() => btn.classList.remove('clicked'), 50);
+        });
+    });
+
+    function createDirectionArrow() {
+        directionArrow = document.createElementNS(SVG_NS, 'g');
+        directionArrow.classList.add('direction-arrow');
+
+        // Arrow line
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', 0);
+        line.setAttribute('y1', 0);
+        line.setAttribute('x2', 25); // initial length, will be scaled
+        line.setAttribute('y2', 0);
+        line.setAttribute('stroke', '#fab005');
+        line.setAttribute('stroke-width', VISUAL_SCALE / 10);
+        line.classList.add('arrow-line');
+
+        // Arrow tip
+        const tip = document.createElementNS(SVG_NS, 'path');
+        tip.setAttribute('d', `M0 -4 L8 0 L0 4 Z`); // initial tip
+        tip.setAttribute('fill', '#fab005');
+        tip.classList.add('arrow-tip');
+        tip.setAttribute('transform', `translate(25,0)`);
+
+        directionArrow.appendChild(line);
+        directionArrow.appendChild(tip);
+
+        svg.appendChild(directionArrow);
+
+        // initial positioning
+        updateDirectionArrow();
     }
+
+    function updateDirectionArrow() {
+        if (!directionArrow) return;
+        const last = path[path.length - 1];
+
+        const angleDeg = currentHeading * (180 / Math.PI);
+
+        // update transform (position & rotation)
+        directionArrow.setAttribute(
+            'transform',
+            `translate(${last.x}, ${last.y}) rotate(${angleDeg - 90})`
+        );
+
+        // --- scale visuals ---
+        const line = directionArrow.querySelector('.arrow-line');
+        const tip = directionArrow.querySelector('.arrow-tip');
+
+        // Line length can be proportional to VISUAL_SCALE
+        const lineLength = 10 * VISUAL_SCALE / 10; 
+        line.setAttribute('x2', lineLength);
+        line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 5));
+
+        // Tip size & position scaled
+        const tipWidth = 6 * VISUAL_SCALE / 10;
+        const tipHeight = 3 * VISUAL_SCALE / 10;
+        tip.setAttribute('d', `M0 ${-tipHeight} L${tipWidth} 0 L0 ${tipHeight} Z`);
+        tip.setAttribute('transform', `translate(${lineLength},0)`);
+    }
+
+
 
     function updateDisplay() {
         stepDisplay.textContent = stepsBuffer || '0';
@@ -238,35 +313,46 @@
     ----------------------------- */
 
     function drawPath() {
-        svg.innerHTML = '';
+
+        pathLayer.innerHTML = '';
 
         for (let i = 1; i < path.length; i++) {
-        const p1 = path[i - 1];
-        const p2 = path[i];
+            const p1 = path[i - 1];
+            const p2 = path[i];
 
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute('x1', p1.x);
-        line.setAttribute('y1', p1.y);
-        line.setAttribute('x2', p2.x);
-        line.setAttribute('y2', p2.y);
-        line.setAttribute('stroke', 'black');
-        line.setAttribute('stroke-width', '2');
-        svg.appendChild(line);
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute('x1', p1.x);
+            line.setAttribute('y1', p1.y);
+            line.setAttribute('x2', p2.x);
+            line.setAttribute('y2', p2.y);
+            line.setAttribute('stroke-width', VISUAL_SCALE / 10);
+            line.setAttribute('stroke', '#51cf66');
 
-        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        dot.setAttribute('cx', p2.x);
-        dot.setAttribute('cy', p2.y);
-        dot.setAttribute('r', 3);
-        dot.setAttribute('fill', 'blue');
-        svg.appendChild(dot);
 
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute('x', (p1.x + p2.x) / 2);
-        text.setAttribute('y', (p1.y + p2.y) / 2 - 5);
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('font-size', '8');
-        text.textContent = p2.steps;
-        svg.appendChild(text);
+            // scale dash array
+            const dashLength = Math.max(1, VISUAL_SCALE / 5); // length of dash
+            const gapLength = Math.max(1, VISUAL_SCALE / 5);  // gap between dashes
+            line.setAttribute('stroke-dasharray', `${dashLength} ${gapLength}`);
+            pathLayer.appendChild(line);
+
+            const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            dot.setAttribute('cx', p2.x);
+            dot.setAttribute('cy', p2.y);
+            dot.setAttribute('r', VISUAL_SCALE / 6);
+            dot.setAttribute('fill', '#51cf66');
+            
+            pathLayer.appendChild(dot);
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute('x', (p1.x + p2.x) / 2);
+            text.setAttribute('y', (p1.y + p2.y)/2 - VISUAL_SCALE / 5);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('font-size', Math.max(8, VISUAL_SCALE / 2));
+            text.setAttribute('stroke', '#fa5252');
+            text.setAttribute('fill', '#fa5252'); 
+            text.textContent = p2.steps;
+            
+            pathLayer.appendChild(text);
         }
 
         updateViewBox();
@@ -280,17 +366,17 @@
         let minY = path[0].y, maxY = path[0].y;
 
         for (let p of path) {
-        minX = Math.min(minX, p.x);
-        maxX = Math.max(maxX, p.x);
-        minY = Math.min(minY, p.y);
-        maxY = Math.max(maxY, p.y);
+            minX = Math.min(minX, p.x);
+            maxX = Math.max(maxX, p.x);
+            minY = Math.min(minY, p.y);
+            maxY = Math.max(maxY, p.y);
         }
 
         const width = maxX - minX + padding * 2;
         const height = maxY - minY + padding * 2;
 
-        svg.setAttribute('viewBox',
-        `${minX - padding} ${minY - padding} ${width} ${height}`);
+        svg.setAttribute('viewBox', `${minX - padding} ${minY - padding} ${width} ${height}`);
+
     }
 
     /* -----------------------------
@@ -300,7 +386,10 @@
     function turn(dir) {
         if (dir === 'left') currentHeading -= Math.PI / 2;
         if (dir === 'right') currentHeading += Math.PI / 2;
-        updateArrow();
+
+        currentHeading = (currentHeading + Math.PI * 2) % (Math.PI * 2);
+
+        updateDirectionArrow(); // rotate instantly
     }
 
     function addLeg() {
@@ -308,15 +397,39 @@
         if (!steps || steps <= 0) return;
 
         const last = path[path.length - 1];
-        const scale = 2;
+        const scaledDistance = steps * STEP_SCALE;
 
-        const newX = last.x + steps * scale * Math.sin(currentHeading);
-        const newY = last.y - steps * scale * Math.cos(currentHeading);
+        // --- compute new leg coordinates ---
+        const newX = last.x + scaledDistance * Math.sin(currentHeading);
+        const newY = last.y - scaledDistance * Math.cos(currentHeading);
 
-        path.push({ x: newX, y: newY, steps });
+        // --- push new leg first ---
+        path.push({ 
+            x: newX, 
+            y: newY, 
+            steps: steps
+        });
         headings.push(currentHeading);
 
+        // --- compute bounds and VISUAL_SCALE using updated path ---
+        const allX = path.map(p => p.x);
+        const allY = path.map(p => p.y);
+        const minX = Math.min(...allX);
+        const maxX = Math.max(...allX);
+        const minY = Math.min(...allY);
+        const maxY = Math.max(...allY);
+
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        const baseSize = 20;          
+        const referenceSize = 200;    
+        VISUAL_SCALE = Math.max(4, baseSize * Math.sqrt(width * height) / referenceSize);
+        console.log('VISUAL_SCALE:', VISUAL_SCALE);
+
+        // --- reset step buffer and update visuals ---
         stepsBuffer = '';
+        updateDirectionArrow();
         updateDisplay();
         drawPath();
         enableSave();
@@ -324,10 +437,29 @@
 
     function undoLeg() {
         if (path.length > 1) {
-        path.pop();
-        headings.pop();
-        drawPath();
-        enableSave();
+            path.pop();           // remove last point
+            headings.pop();       // remove last heading
+
+            // --- recompute bounds ---
+            const allX = path.map(p => p.x);
+            const allY = path.map(p => p.y);
+            const minX = Math.min(...allX);
+            const maxX = Math.max(...allX);
+            const minY = Math.min(...allY);
+            const maxY = Math.max(...allY);
+
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            // --- recompute VISUAL_SCALE dynamically ---
+            const baseSize = 20;       // starting base size
+            const referenceSize = 200; // designed reference width/height
+            VISUAL_SCALE = Math.max(4, baseSize * Math.sqrt(width * height) / referenceSize);
+
+            // --- update visuals ---
+            updateDirectionArrow();
+            drawPath();
+            enableSave();
         }
     }
 
@@ -382,7 +514,6 @@
         Init
     ----------------------------- */
 
-    updateArrow();
     updateDisplay();
 
 })();
