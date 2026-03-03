@@ -38,6 +38,7 @@
         <button type="button" class="menu-close">×</button>
         <ul>
             <li><a href="{{ path('app_home') }}">Back to List</a></li>
+            <li><button type="button" id="clearSession">Clear Session</button></li>
         </ul>
     </nav>
 
@@ -50,15 +51,13 @@
     </div>
 
     <!-- FOOTER (NUMBERPAD CONTROLS) -->
-    <div class="page-footer mapper-footer">
+    <div class="mapper-footer">
 
-        <!-- Direction + Enter Row -->
         <div class="mapper-actions">
             <button class="btn-dark-base border-yellow" data-direction="left">
                 <i class="bi bi-arrow-left"></i>
             </button>
 
-        <!-- Display -->
             <div class="mapper-display">
                 <span id="stepDisplay">0</span>
             </div>
@@ -82,8 +81,6 @@
     </div>
 
 </div>
-
-
 
 
 <style>
@@ -225,11 +222,14 @@
     let currentHeading = 0;
     let hasChanges = false;
 
-    /* -----------------------------
-        UI Updates
-    ----------------------------- */
 
     createDirectionArrow();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        restoreFromLocalStorage();
+    });
+
+    document.querySelector('#clearSession').addEventListener('click', clearMappingSession);
 
     // button highlight on click (temporary visual feedback)
     document.querySelectorAll('.btn-dark-base').forEach(btn => {
@@ -270,15 +270,15 @@
     }
 
     function updateDirectionArrow() {
-        if (!directionArrow) return;
         const last = path[path.length - 1];
+        if (!directionArrow || !path.length) return;
 
         const angleDeg = currentHeading * (180 / Math.PI);
 
         // update transform (position & rotation)
         directionArrow.setAttribute(
             'transform',
-            `translate(${last.x}, ${last.y}) rotate(${angleDeg - 90})`
+            `translate(${last.x * VISUAL_SCALE}, ${last.y * VISUAL_SCALE}) rotate(${angleDeg - 90})`
         );
 
         // --- scale visuals ---
@@ -313,45 +313,47 @@
     ----------------------------- */
 
     function drawPath() {
-
         pathLayer.innerHTML = '';
 
         for (let i = 1; i < path.length; i++) {
             const p1 = path[i - 1];
             const p2 = path[i];
 
+            // 🔥 Apply visual scale HERE (not in stored data)
+            const x1 = p1.x * VISUAL_SCALE;
+            const y1 = p1.y * VISUAL_SCALE;
+            const x2 = p2.x * VISUAL_SCALE;
+            const y2 = p2.y * VISUAL_SCALE;
+
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute('x1', p1.x);
-            line.setAttribute('y1', p1.y);
-            line.setAttribute('x2', p2.x);
-            line.setAttribute('y2', p2.y);
-            line.setAttribute('stroke-width', VISUAL_SCALE / 10);
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 10));
             line.setAttribute('stroke', '#51cf66');
 
-
-            // scale dash array
-            const dashLength = Math.max(1, VISUAL_SCALE / 5); // length of dash
-            const gapLength = Math.max(1, VISUAL_SCALE / 5);  // gap between dashes
+            const dashLength = Math.max(1, VISUAL_SCALE / 5);
+            const gapLength = Math.max(1, VISUAL_SCALE / 5);
             line.setAttribute('stroke-dasharray', `${dashLength} ${gapLength}`);
+
             pathLayer.appendChild(line);
 
             const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            dot.setAttribute('cx', p2.x);
-            dot.setAttribute('cy', p2.y);
-            dot.setAttribute('r', VISUAL_SCALE / 6);
+            dot.setAttribute('cx', x2);
+            dot.setAttribute('cy', y2);
+            dot.setAttribute('r', Math.max(2, VISUAL_SCALE / 6));
             dot.setAttribute('fill', '#51cf66');
-            
             pathLayer.appendChild(dot);
 
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute('x', (p1.x + p2.x) / 2);
-            text.setAttribute('y', (p1.y + p2.y)/2 - VISUAL_SCALE / 5);
+            text.setAttribute('x', (x1 + x2) / 2);
+            text.setAttribute('y', (y1 + y2) / 2 - VISUAL_SCALE / 5);
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('font-size', Math.max(8, VISUAL_SCALE / 2));
-            text.setAttribute('stroke', '#fa5252');
-            text.setAttribute('fill', '#fa5252'); 
+            text.setAttribute('fill', '#fa5252');
             text.textContent = p2.steps;
-            
+
             pathLayer.appendChild(text);
         }
 
@@ -362,21 +364,29 @@
         if (!path.length) return;
 
         const padding = 40;
-        let minX = path[0].x, maxX = path[0].x;
-        let minY = path[0].y, maxY = path[0].y;
+
+        let minX = path[0].x * VISUAL_SCALE;
+        let maxX = path[0].x * VISUAL_SCALE;
+        let minY = path[0].y * VISUAL_SCALE;
+        let maxY = path[0].y * VISUAL_SCALE;
 
         for (let p of path) {
-            minX = Math.min(minX, p.x);
-            maxX = Math.max(maxX, p.x);
-            minY = Math.min(minY, p.y);
-            maxY = Math.max(maxY, p.y);
+            const scaledX = p.x * VISUAL_SCALE;
+            const scaledY = p.y * VISUAL_SCALE;
+
+            minX = Math.min(minX, scaledX);
+            maxX = Math.max(maxX, scaledX);
+            minY = Math.min(minY, scaledY);
+            maxY = Math.max(maxY, scaledY);
         }
 
         const width = maxX - minX + padding * 2;
         const height = maxY - minY + padding * 2;
 
-        svg.setAttribute('viewBox', `${minX - padding} ${minY - padding} ${width} ${height}`);
-
+        svg.setAttribute(
+            'viewBox',
+            `${minX - padding} ${minY - padding} ${width} ${height}`
+        );
     }
 
     /* -----------------------------
@@ -393,27 +403,23 @@
     }
 
     function addLeg() {
+        console.log(VISUAL_SCALE);
         const steps = parseInt(stepsBuffer);
         if (!steps || steps <= 0) return;
 
         const last = path[path.length - 1];
-        const scaledDistance = steps * STEP_SCALE;
+        const logicalDistance = steps; // raw units
 
         // --- compute new leg coordinates ---
-        const newX = last.x + scaledDistance * Math.sin(currentHeading);
-        const newY = last.y - scaledDistance * Math.cos(currentHeading);
+        const newX = last.x + logicalDistance * Math.sin(currentHeading);
+        const newY = last.y - logicalDistance * Math.cos(currentHeading);
 
-        // --- push new leg first ---
-        path.push({ 
-            x: newX, 
-            y: newY, 
-            steps: steps
-        });
-        headings.push(currentHeading);
+        // --- build a temporary path including the new leg ---
+        const tempPath = [...path, { x: newX, y: newY, steps }];
 
         // --- compute bounds and VISUAL_SCALE using updated path ---
-        const allX = path.map(p => p.x);
-        const allY = path.map(p => p.y);
+        const allX = tempPath.map(p => p.x);
+        const allY = tempPath.map(p => p.y);
         const minX = Math.min(...allX);
         const maxX = Math.max(...allX);
         const minY = Math.min(...allY);
@@ -425,7 +431,15 @@
         const baseSize = 20;          
         const referenceSize = 200;    
         VISUAL_SCALE = Math.max(4, baseSize * Math.sqrt(width * height) / referenceSize);
-        console.log('VISUAL_SCALE:', VISUAL_SCALE);
+        console.log(VISUAL_SCALE);
+
+        // --- push new leg ---
+        path.push({ 
+            x: newX, 
+            y: newY, 
+            steps: steps
+        });
+        headings.push(currentHeading);
 
         // --- reset step buffer and update visuals ---
         stepsBuffer = '';
@@ -433,6 +447,7 @@
         updateDisplay();
         drawPath();
         enableSave();
+        saveToLocalStorage()
     }
 
     function undoLeg() {
@@ -460,8 +475,11 @@
             updateDirectionArrow();
             drawPath();
             enableSave();
+            saveToLocalStorage()
         }
     }
+
+
 
     function backspace() {
         stepsBuffer = stepsBuffer.slice(0, -1);
@@ -502,19 +520,79 @@
         }
     });
 
-    /* -----------------------------
-        Header Undo Button
-    ----------------------------- */
-
     if (undoBtn) {
         undoBtn.addEventListener('click', undoLeg);
     }
 
-    /* -----------------------------
-        Init
-    ----------------------------- */
+    function clearMappingSession() {
+        if (!confirm('Clear this mapping session? This cannot be undone.')) {
+            return;
+        }
 
-    updateDisplay();
+        localStorage.removeItem('storeMapping');
+
+        window.location.reload();
+    }
+
+    function saveToLocalStorage() {
+        const state = {
+            path: path,
+            headings: headings,
+            currentHeading: currentHeading,
+            visualScale: VISUAL_SCALE
+        };
+
+        try {
+            localStorage.setItem('storeMapping', JSON.stringify(state));
+        } catch (e) {
+            console.warn('Failed to save mapping to localStorage', e);
+        }
+    }
+
+    function restoreFromLocalStorage() {
+        const saved = localStorage.getItem('storeMapping');
+        if (!saved) return;
+
+        try {
+            const state = JSON.parse(saved);
+
+
+            // Set local state from saved data
+            path = state.path || [];
+            headings = state.headings || [];
+            currentHeading = state.currentHeading || 0;
+            VISUAL_SCALE = state.visualScale || 20;
+
+            drawPath();
+            updateDirectionArrow();
+
+        } catch (e) {
+            console.warn('Failed to restore mapping', e);
+        }
+    }
+
+    async function submitMapping() {
+        try {
+            const response = await fetch('/submit-mapping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getMappingState())
+            });
+
+            if (!response.ok) {
+                throw new Error('Submission failed');
+            }
+
+            // ✅ ONLY clear on success
+            localStorage.removeItem('storeMapping');
+
+            alert('Mapping submitted successfully');
+
+        } catch (err) {
+            console.error(err);
+            alert('Submission failed — your progress is still saved locally.');
+        }
+    }
 
 })();
 </script>
