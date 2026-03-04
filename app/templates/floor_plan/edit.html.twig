@@ -79,25 +79,64 @@ document.getElementById('snapDistance').addEventListener('change', e => {
 });
 
 // Draw existing nodes and populate array
-nodesData.forEach(n => {
-    const circle = drawNode(n.x, n.y);
-    n.element = circle;
-    nodes.push(n);
-});
+const visualScale = rawData.visualScale || 1;
+
+// 1️⃣ Convert step coordinates to final coordinates
+const scaledPath = nodesData.map(n => ({
+    x: n.x * visualScale,
+    y: n.y * visualScale
+}));
+
+if (scaledPath.length) {
+
+    // 2️⃣ Compute bounds
+    const xs = scaledPath.map(n => n.x);
+    const ys = scaledPath.map(n => n.y);
+
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxX = Math.max(...xs);
+    const maxY = Math.max(...ys);
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // 3️⃣ Normalize so top-left starts at (0,0)
+    const normalizedPath = scaledPath.map(n => ({
+        x: n.x - minX,
+        y: n.y - minY
+    }));
+
+    // 4️⃣ Set SVG once to final size (+ optional buffer)
+    svg.setAttribute(
+        'viewBox',
+        `0 0 ${width + EDGE_BUFFER * 2} ${height + EDGE_BUFFER * 2}`
+    );
+
+    // 5️⃣ Draw nodes shifted by buffer
+    normalizedPath.forEach(n => {
+        const x = n.x + EDGE_BUFFER;
+        const y = n.y + EDGE_BUFFER;
+
+        const circle = drawNode(x, y);
+        nodes.push({ x, y, element: circle });
+    });
+}
+
 updateNodeCount();
-resizeSVGToFitNodes(); // initial fit
+
 
 // --- Node creation ---
 function drawNode(x, y) {
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 
-    circle.setAttribute('cx', x * RENDER_SCALE);
-    circle.setAttribute('cy', y * RENDER_SCALE);
-
-    circle.setAttribute('r', 15); // fixed pixel-ish size
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', 5); // stable visual size
 
     circle.classList.add('node');
     svg.appendChild(circle);
+
     return circle;
 }
 
@@ -105,7 +144,6 @@ function createNode(x, y) {
     const circle = drawNode(x, y);
     nodes.push({ x, y, element: circle });
     updateNodeCount();
-    resizeSVGToFitNodes();
 }
 
 // --- Direction locking & snapping ---
@@ -172,7 +210,6 @@ document.getElementById('undo-node').addEventListener('click', () => {
     const last = nodes.pop();
     last.element.remove();
     updateNodeCount();
-    resizeSVGToFitNodes();
 });
 
 // --- Snapping function ---
@@ -189,31 +226,6 @@ function updateNodeCount() {
     saveBtn.disabled = nodes.length === 0;
 }
 
-// --- Resize SVG to fit nodes + edge buffer ---
-function resizeSVGToFitNodes() {
-    if (!nodes.length) return;
-
-    const xs = nodes.map(n => n.x);
-    const ys = nodes.map(n => n.y);
-
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-
-    const width = (maxX - minX) || 1;
-    const height = (maxY - minY) || 1;
-
-    const padding = Math.max(width, height) * 0.1;
-
-    svg.setAttribute(
-        'viewBox',
-        `${(minX - padding) * RENDER_SCALE}
-         ${(minY - padding) * RENDER_SCALE}
-         ${(width + padding * 2) * RENDER_SCALE}
-         ${(height + padding * 2) * RENDER_SCALE}`
-    );
-}
 
 // --- Form submission ---
 const form = document.getElementById('nodesForm');
