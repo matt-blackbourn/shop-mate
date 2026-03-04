@@ -22,9 +22,7 @@
 
             <!-- Right: Save -->
             <div class="header-right d-flex align-items-center">
-            <button type="button" class="btn-dark-base">
-                <i class="bi bi-arrow-counterclockwise"></i>
-            </button>
+           
             <button type="button" id="openSubmitModal" class="btn-dark-base border-green">
                 <i class="bi bi-check-lg"></i>
             </button>
@@ -67,6 +65,7 @@
             {% endfor %}
             <button class="btn-dark-base" data-number="0">0</button>
             <button class="btn-dark-base border-green">Enter</button>
+            <button type="button" class="btn-dark-base"><i class="bi bi-arrow-counterclockwise"></i></button>
 
         </div>
 
@@ -183,7 +182,7 @@
     display: flex;
     justify-content: center;
     text-align: center;
-    color: #51cf66; /* green numbers */
+    color: #52fafa;
 
     width: 100%;
     height: 100%;
@@ -207,9 +206,9 @@
 }
 
 /* Make Enter span two columns */
-.mapper-numpad .border-green {
+{# .mapper-numpad .border-green {
     grid-column: span 2;
-}
+} #}
 
 /* temporary highlight state */
 .btn-dark-base.clicked {

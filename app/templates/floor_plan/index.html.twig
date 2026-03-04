@@ -9,7 +9,6 @@
         <thead>
             <tr>
                 <th>Id</th>
-                <th>RawData</th>
                 <th>Suburb</th>
                 <th>DateCreated</th>
                 <th>Type</th>
@@ -17,16 +16,15 @@
             </tr>
         </thead>
         <tbody>
-        {% for floor_plan in floor_plans %}
+        {% for floorPlan in floorPlans %}
             <tr>
-                <td>{{ floor_plan.id }}</td>
-                <td>{{ floor_plan.rawData ? floor_plan.rawData|json_encode : '' }}</td>
-                <td>{{ floor_plan.suburb }}</td>
-                <td>{{ floor_plan.dateCreated ? floor_plan.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ floor_plan.type }}</td>
+                <td>{{ floorPlan.id }}</td>
+                <td>{{ floorPlan.suburb }}</td>
+                <td>{{ floorPlan.dateCreated ? floorPlan.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ floorPlan.type.value }}</td>
                 <td>
-                    <a href="{{ path('app_floor_plan_show', {'id': floor_plan.id}) }}">show</a>
-                    <a href="{{ path('app_floor_plan_edit', {'id': floor_plan.id}) }}">edit</a>
+                    <a href="{{ path('app_floor_plan_edit', {'id': floorPlan.id}) }}">edit</a>
+                    | <a href="{{ path('app_floorplan_nodes', {'id': floorPlan.id}) }}">nodes</a>
                 </td>
             </tr>
         {% else %}
@@ -37,5 +35,4 @@
         </tbody>
     </table>
 
-    <a href="{{ path('app_floor_plan_new') }}">Create new</a>
 {% endblock %}

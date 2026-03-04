@@ -23,7 +23,7 @@ final class FloorPlanController extends AbstractController
     public function index(FloorPlanRepository $floorPlanRepository): Response
     {
         return $this->render('floor_plan/index.html.twig', [
-            'floor_plans' => $floorPlanRepository->findAll(),
+            'floorPlans' => $floorPlanRepository->findAll(),
         ]);
     }
 
@@ -34,6 +34,14 @@ final class FloorPlanController extends AbstractController
 
         return $this->render('floor_plan/store_mapper.html.twig', [
             'form' => $form->createView(),
+        ]);
+    }
+
+    #[Route('/{id}/nodes', name: 'app_floorplan_nodes', methods: ['GET'])]
+    public function nodes(FloorPlan $floorPlan): Response
+    {
+        return $this->render('floor_plan/edit.html.twig', [
+            'floorPlan' => $floorPlan,
         ]);
     }
 

@@ -7,8 +7,8 @@
 
     <div class="d-flex align-items-center justify-content-between mb-2">
         <div class="d-flex align-items-center gap-3">
-            <h1 class="h4 mb-0">{{ floorPlan.name }}</h1>
-            <a href="{{ path('app_floorplan_index') }}" class="btn btn-outline-secondary btn-sm">
+            <h1 class="h4 mb-0">{{ floorPlan.type.value }} - {{ floorPlan.suburb }}</h1>
+            <a href="{{ path('app_floor_plan_index') }}" class="btn btn-outline-secondary btn-sm">
                 ← Back to list
             </a>
         </div>
@@ -49,13 +49,12 @@
     {% endfor %}
 </div>
 
-<div id="floorplan-wrapper" data-floorplan-id="{{ floorPlan.id }}"
-     data-raw-data="{{ floorPlan.rawData|json_encode|e('html_attr') }}">
-    <svg id="overlay" style="border:1px solid #ccc; width:100%; height:80vh;"></svg>
+<div id="floorplan-wrapper" data-floorplan-id="{{ floorPlan.id }}" data-raw-data="{{ floorPlan.rawData|json_encode|e('html_attr') }}">
+    <svg id="overlay" style="border:1px solid #ccc; width:100%; height:100vh;"></svg>
 </div>
 
 <style>
-    .node { fill: #0d6efd; stroke: white; stroke-width: 2; cursor: pointer; }
+    .node { fill: #0d6efd; stroke: #0d6efd; stroke-width: 2; cursor: pointer; }
 </style>
 
 <script>
@@ -64,6 +63,7 @@ const nodes = [];
 const nodeCountEl = document.getElementById('node-count');
 const saveBtn = document.getElementById('save-nodes');
 const EDGE_BUFFER = 50; // space around nodes for shelves/aisles
+const RENDER_SCALE = 30; // adjust until it feels right
 
 const wrapper = document.getElementById('floorplan-wrapper');
 const rawData = JSON.parse(wrapper.dataset.rawData || '{}');
@@ -90,9 +90,12 @@ resizeSVGToFitNodes(); // initial fit
 // --- Node creation ---
 function drawNode(x, y) {
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', x);
-    circle.setAttribute('cy', y);
-    circle.setAttribute('r', SNAP_DISTANCE/2);
+
+    circle.setAttribute('cx', x * RENDER_SCALE);
+    circle.setAttribute('cy', y * RENDER_SCALE);
+
+    circle.setAttribute('r', 15); // fixed pixel-ish size
+
     circle.classList.add('node');
     svg.appendChild(circle);
     return circle;
@@ -189,13 +192,27 @@ function updateNodeCount() {
 // --- Resize SVG to fit nodes + edge buffer ---
 function resizeSVGToFitNodes() {
     if (!nodes.length) return;
+
     const xs = nodes.map(n => n.x);
     const ys = nodes.map(n => n.y);
-    const minX = Math.min(...xs) - EDGE_BUFFER;
-    const minY = Math.min(...ys) - EDGE_BUFFER;
-    const maxX = Math.max(...xs) + EDGE_BUFFER;
-    const maxY = Math.max(...ys) + EDGE_BUFFER;
-    svg.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    const width = (maxX - minX) || 1;
+    const height = (maxY - minY) || 1;
+
+    const padding = Math.max(width, height) * 0.1;
+
+    svg.setAttribute(
+        'viewBox',
+        `${(minX - padding) * RENDER_SCALE}
+         ${(minY - padding) * RENDER_SCALE}
+         ${(width + padding * 2) * RENDER_SCALE}
+         ${(height + padding * 2) * RENDER_SCALE}`
+    );
 }
 
 // --- Form submission ---
@@ -206,3 +223,5 @@ form.addEventListener('submit', e => {
     nodesInput.value = JSON.stringify({ path: nodes });
 });
 </script>
+
+{% endblock %}
