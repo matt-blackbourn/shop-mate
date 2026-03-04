@@ -16,12 +16,11 @@
         <div class="d-flex align-items-center gap-2">
             <label for="snapDistance">Snap Distance:</label>
             <select id="snapDistance">
-                <option value="5">5 px</option>
-                <option value="10">10 px</option>
-                <option value="15">15 px</option>
-                <option value="20">20 px</option>
-                <option value="30" selected>30 px</option>
-                <option value="50">50 px</option>
+                <option value="0" selected>Off</option>
+                <option value="0.5">1 Step</option>
+                <option value="1">2 Steps</option>
+                <option value="1.5">3 Steps</option>
+                <option value="2">4 Steps</option>
             </select>
             <span id="node-count" class="badge bg-secondary">0 nodes</span>
 
@@ -73,15 +72,10 @@ const nodesData = rawData.path || []; // ✅ only the path array
 const sharedX = new Set();
 const sharedY = new Set();
 
-let SNAP_DISTANCE = 30;
-document.getElementById('snapDistance').addEventListener('change', e => {
-    SNAP_DISTANCE = parseInt(e.target.value, 10);
-});
 
 // Draw existing nodes and populate array
+let pathLine = null;
 const visualScale = rawData.visualScale || 1;
-
-// 1️⃣ Convert step coordinates to final coordinates
 const scaledPath = nodesData.map(n => ({
     x: n.x * visualScale,
     y: n.y * visualScale
@@ -89,7 +83,6 @@ const scaledPath = nodesData.map(n => ({
 
 if (scaledPath.length) {
 
-    // 2️⃣ Compute bounds
     const xs = scaledPath.map(n => n.x);
     const ys = scaledPath.map(n => n.y);
 
@@ -101,29 +94,65 @@ if (scaledPath.length) {
     const width = maxX - minX;
     const height = maxY - minY;
 
-    // 3️⃣ Normalize so top-left starts at (0,0)
     const normalizedPath = scaledPath.map(n => ({
-        x: n.x - minX,
-        y: n.y - minY
+        x: n.x - minX + EDGE_BUFFER,
+        y: n.y - minY + EDGE_BUFFER
     }));
 
-    // 4️⃣ Set SVG once to final size (+ optional buffer)
     svg.setAttribute(
         'viewBox',
         `0 0 ${width + EDGE_BUFFER * 2} ${height + EDGE_BUFFER * 2}`
     );
 
-    // 5️⃣ Draw nodes shifted by buffer
-    normalizedPath.forEach(n => {
-        const x = n.x + EDGE_BUFFER;
-        const y = n.y + EDGE_BUFFER;
+    // 🔥 draw path line first
+    pathLine = drawPathLine(normalizedPath);
 
-        const circle = drawNode(x, y);
-        nodes.push({ x, y, element: circle });
+    // 🔥 then draw nodes
+    normalizedPath.forEach(n => {
+        const circle = drawNode(n.x, n.y);
+        nodes.push({ x: n.x, y: n.y, element: circle });
+    });
+
+    // populate shared coordinates for snapping
+    normalizedPath.forEach(n => {
+        sharedX.add(n.x);
+        sharedY.add(n.y);
     });
 }
 
+let SNAP_DISTANCE = 1 * visualScale; // default = 1 steps
+document.getElementById('snapDistance').addEventListener('change', e => {
+    const steps = parseInt(e.target.value, 10);
+    SNAP_DISTANCE = steps * visualScale;
+});
+
+
 updateNodeCount();
+
+
+function drawPathLine(points) {
+    const polyline = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'polyline'
+    );
+
+    const pointString = points
+        .map(p => `${p.x},${p.y}`)
+        .join(' ');
+
+    polyline.setAttribute('points', pointString);
+    polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke', '#444');
+    polyline.setAttribute('stroke-width', '2');
+    polyline.setAttribute('pointer-events', 'none');
+
+    polyline.classList.add('path-line');
+
+    // Insert behind nodes
+    svg.insertBefore(polyline, svg.firstChild);
+
+    return polyline;
+}
 
 
 // --- Node creation ---
@@ -149,12 +178,12 @@ function createNode(x, y) {
 // --- Direction locking & snapping ---
 let lastNode = null;
 let directionLock = null;
-const LOCK_THRESHOLD = 6;
+const LOCK_THRESHOLD = 2 * visualScale;
 let ignoreNextSnapX = false;
 let ignoreNextSnapY = false;
 
 svg.addEventListener('click', e => {
-    if (e.target.tagName !== 'svg') return;
+    if (e.target !== svg) return;
 
     const pt = svg.createSVGPoint();
     pt.x = e.clientX; pt.y = e.clientY;
@@ -214,9 +243,39 @@ document.getElementById('undo-node').addEventListener('click', () => {
 
 // --- Snapping function ---
 function snapToSharedCoordinates(x, y) {
-    let sx = x, sy = y;
-    if (!ignoreNextSnapX) for (const px of sharedX) if (Math.abs(x - px) <= SNAP_DISTANCE) sx = px;
-    if (!ignoreNextSnapY) for (const py of sharedY) if (Math.abs(y - py) <= SNAP_DISTANCE) sy = py;
+    let sx = x;
+    let sy = y;
+
+    if (!ignoreNextSnapX) {
+        let closestX = null;
+        let minDx = SNAP_DISTANCE;
+
+        for (const px of sharedX) {
+            const dx = Math.abs(x - px);
+            if (dx <= minDx) {
+                minDx = dx;
+                closestX = px;
+            }
+        }
+
+        if (closestX !== null) sx = closestX;
+    }
+
+    if (!ignoreNextSnapY) {
+        let closestY = null;
+        let minDy = SNAP_DISTANCE;
+
+        for (const py of sharedY) {
+            const dy = Math.abs(y - py);
+            if (dy <= minDy) {
+                minDy = dy;
+                closestY = py;
+            }
+        }
+
+        if (closestY !== null) sy = closestY;
+    }
+
     return { x: sx, y: sy };
 }
 
