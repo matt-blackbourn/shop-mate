@@ -54,17 +54,10 @@
     <div class="mapper-footer">
 
         <div class="mapper-actions">
-            <button class="btn-dark-base border-yellow" data-direction="left">
-                <i class="bi bi-arrow-left"></i>
-            </button>
-
-            <div class="mapper-display">
-                <span id="stepDisplay">0</span>
-            </div>
-
-            <button class="btn-dark-base border-yellow" data-direction="right">
-                <i class="bi bi-arrow-right"></i>
-            </button>
+            {# <button class="btn-dark-base border-yellow" data-direction="left"><i class="bi bi-arrow-left"></i></button> #}
+            <button class="btn-dark-base border-red">⌫</button>
+            <div class="mapper-display"><span id="stepDisplay">0</span></div>
+            <button class="btn-dark-base border-yellow" data-direction="right"><i class="bi bi-arrow-90deg-right"></i></i></i></button>
         </div>
 
         <!-- Number Pad -->
@@ -72,7 +65,6 @@
             {% for n in [1,2,3,4,5,6,7,8,9] %}
                 <button class="btn-dark-base" data-number="{{ n }}">{{ n }}</button>
             {% endfor %}
-            <button class="btn-dark-base border-red">⌫</button>
             <button class="btn-dark-base" data-number="0">0</button>
             <button class="btn-dark-base border-green">Enter</button>
 
@@ -189,8 +181,9 @@
     font-weight: bold;
 
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
+    text-align: center;
+    color: #51cf66; /* green numbers */
 
     width: 100%;
     height: 100%;
@@ -211,6 +204,11 @@
     grid-template-rows: repeat(4, 1fr); /* force 4 even rows */
     gap: 6px;
     flex: 1;  
+}
+
+/* Make Enter span two columns */
+.mapper-numpad .border-green {
+    grid-column: span 2;
 }
 
 /* temporary highlight state */
@@ -272,7 +270,7 @@
         const line = document.createElementNS(SVG_NS, 'line');
         line.setAttribute('x1', 0);
         line.setAttribute('y1', 0);
-        line.setAttribute('x2', 25); // initial length, will be scaled
+        line.setAttribute('x2', 20); // initial length, will be scaled
         line.setAttribute('y2', 0);
         line.setAttribute('stroke', '#fab005');
         line.setAttribute('stroke-width', VISUAL_SCALE / 10);
@@ -311,13 +309,13 @@
         const tip = directionArrow.querySelector('.arrow-tip');
 
         // Line length can be proportional to VISUAL_SCALE
-        const lineLength = 10 * VISUAL_SCALE / 10; 
+        const lineLength = 20 * VISUAL_SCALE / 10; 
         line.setAttribute('x2', lineLength);
         line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 5));
 
         // Tip size & position scaled
-        const tipWidth = 6 * VISUAL_SCALE / 10;
-        const tipHeight = 3 * VISUAL_SCALE / 10;
+        const tipWidth = 8 * VISUAL_SCALE / 10;
+        const tipHeight = 4 * VISUAL_SCALE / 10;
         tip.setAttribute('d', `M0 ${-tipHeight} L${tipWidth} 0 L0 ${tipHeight} Z`);
         tip.setAttribute('transform', `translate(${lineLength},0)`);
     }
