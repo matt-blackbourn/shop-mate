@@ -205,6 +205,7 @@ function drawShopBorder(x, y, width, height) {
 function updateShopBorder() {
     if (!nodes.length) return;
 
+    // Compute bounds of nodes
     const xs = nodes.map(n => n.x);
     const ys = nodes.map(n => n.y);
 
@@ -213,12 +214,23 @@ function updateShopBorder() {
     const minNodeY = Math.min(...ys);
     const maxNodeY = Math.max(...ys);
 
+    // --- Shop border (for saving the supermarket later) ---
     const rectX = minNodeX - SHOP_EDGE_BUFFER;
     const rectY = minNodeY - SHOP_EDGE_BUFFER;
     const rectWidth = (maxNodeX - minNodeX) + SHOP_EDGE_BUFFER * 2;
     const rectHeight = (maxNodeY - minNodeY) + SHOP_EDGE_BUFFER * 2;
 
     drawShopBorder(rectX, rectY, rectWidth, rectHeight);
+
+    // --- Update SVG viewBox to fit everything including guides ---
+    const vbMinX = minNodeX - EDITING_EDGE_BUFFER;
+    const vbMinY = minNodeY - EDITING_EDGE_BUFFER;
+    const vbWidth = (maxNodeX - minNodeX) + EDITING_EDGE_BUFFER * 2;
+    const vbHeight = (maxNodeY - minNodeY) + EDITING_EDGE_BUFFER * 2;
+
+    svg.setAttribute('viewBox', `${vbMinX} ${vbMinY} ${vbWidth} ${vbHeight}`)
+
+    rebuildAllGuides()
 }
 
 function drawGuidesForNode(x, y) {
