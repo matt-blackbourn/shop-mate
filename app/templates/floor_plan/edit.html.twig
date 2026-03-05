@@ -75,6 +75,13 @@
         stroke-width: 2;
         cursor: pointer; 
     }
+    
+    .guide-line,
+    .guide-label,
+    .path-line {
+        pointer-events: none;
+    }
+    
 </style>
 
 <script>
@@ -346,56 +353,28 @@ function createNode(x, y) {
 
 // --- Direction locking & snapping ---
 let lastNode = null;
-let directionLock = null;
 const LOCK_THRESHOLD = 2 * visualScale;
 let ignoreNextSnapX = false;
 let ignoreNextSnapY = false;
 
 svg.addEventListener('click', e => {
-    if (e.target !== svg) return;
 
     const pt = svg.createSVGPoint();
-    pt.x = e.clientX; pt.y = e.clientY;
-    let { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+    pt.x = e.clientX;
+    pt.y = e.clientY;
 
-    if (lastNode) {
-        if (directionLock === 'horizontal') y = lastNode.y;
-        if (directionLock === 'vertical') x = lastNode.x;
-    }
+    const svgPoint = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+    let x = svgPoint.x;
+    let y = svgPoint.y;
 
     ({ x, y } = snapToSharedCoordinates(x, y));
+
     createNode(x, y);
 
-    if (e.shiftKey) { sharedX.add(x); sharedY.add(y); }
-
-    directionLock = null;
-    ignoreNextSnapX = false;
-    ignoreNextSnapY = false;
     lastNode = nodes[nodes.length - 1];
 });
 
-svg.addEventListener('mousemove', e => {
-    if (!lastNode) return;
-
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX; pt.y = e.clientY;
-    let { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
-
-    const dx = Math.abs(x - lastNode.x), dy = Math.abs(y - lastNode.y);
-    if (!directionLock && (dx > LOCK_THRESHOLD || dy > LOCK_THRESHOLD)) {
-        directionLock = dx > dy ? 'horizontal' : 'vertical';
-    }
-
-    if (directionLock === 'horizontal') y = lastNode.y;
-    if (directionLock === 'vertical') x = lastNode.x;
-
-    if (directionLock !== 'vertical') {
-        for (const sy of sharedY) if (Math.abs(y - sy) <= SNAP_DISTANCE) y = sy;
-    }
-    if (directionLock !== 'horizontal') {
-        for (const sx of sharedX) if (Math.abs(x - sx) <= SNAP_DISTANCE) x = sx;
-    }
-});
 
 document.addEventListener('keydown', e => {
     if (e.key.toLowerCase() === 'x') ignoreNextSnapX = true;
@@ -421,15 +400,23 @@ function undoNode(){
 
 // --- Snapping function ---
 function snapToSharedCoordinates(x, y) {
+    console.log(SNAP_DISTANCE, sharedX, sharedY);
+    if (SNAP_DISTANCE == 0) {
+        return { x, y }; // snapping disabled
+    }
+
     let sx = x;
     let sy = y;
+
+    const xs = [...sharedX];
+    const ys = [...sharedY];
 
     let closestX = null;
     let minDx = SNAP_DISTANCE;
 
-    for (const px of sharedX) {
+    for (const px of xs) {
         const dx = Math.abs(x - px);
-        if (dx <= minDx) {
+        if (dx < minDx) {
             minDx = dx;
             closestX = px;
         }
@@ -440,9 +427,9 @@ function snapToSharedCoordinates(x, y) {
     let closestY = null;
     let minDy = SNAP_DISTANCE;
 
-    for (const py of sharedY) {
+    for (const py of ys) {
         const dy = Math.abs(y - py);
-        if (dy <= minDy) {
+        if (dy < minDy) {
             minDy = dy;
             closestY = py;
         }
