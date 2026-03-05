@@ -23,10 +23,10 @@
                 <option value="4">4 Steps</option>
             </select>
             <span id="node-count" class="badge bg-secondary">0 nodes</span>
-
+{# 
             <button id="undo-node" type="button" class="btn btn-outline-secondary btn-sm">
                 Undo last node
-            </button>
+            </button> #}
 
             <div id="node-editor">
                 <label>X: <input type="number" id="edit-x"></label>
@@ -94,7 +94,7 @@ const RENDER_SCALE = 30; // adjust until it feels right
 
 const wrapper = document.getElementById('floorplan-wrapper');
 const rawData = JSON.parse(wrapper.dataset.rawData || '{}');
-const nodesData = rawData.path || []; // ✅ only the path array
+const nodesData = rawData.path || []; // ✅ only take the path array out of the raw data
 
 // Shared coordinates for snapping
 const sharedX = new Set();
@@ -102,10 +102,7 @@ const sharedY = new Set();
 
 let selectedNode = null;
 
-const guideLayer = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'g'
-);
+const guideLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 guideLayer.setAttribute('id', 'guide-layer');
 svg.appendChild(guideLayer);
 svg.insertBefore(guideLayer, svg.firstChild);
@@ -165,16 +162,7 @@ document.getElementById('snapDistance').addEventListener('change', e => {
     SNAP_DISTANCE = steps * visualScale;
 });
 
-document.getElementById('delete-node').addEventListener('click', () => {
-    if (!selectedNode) return;
 
-    selectedNode.element.remove();
-    const index = nodes.indexOf(selectedNode);
-    if (index !== -1) nodes.splice(index, 1);
-
-    selectedNode = null;
-    updateNodeCount();
-});
 
 updateNodeCount();
 
@@ -281,6 +269,7 @@ function drawNode(x, y) {
     svg.appendChild(circle);
 
     circle.addEventListener('click', e => {
+        e.stopPropagation(); // 🔴 prevents SVG click handler
         selectedNode = nodes.find(n => n.element === circle);
         showInNodeEditor(selectedNode);
         selectNode(circle);
@@ -302,8 +291,8 @@ function selectNode(circle) {
     circle.classList.add('node-selected');
 
     // populate coordinate inputs
-    document.getElementById('nodeX').value = Math.round(node.x);
-    document.getElementById('nodeY').value = Math.round(node.y);
+    document.getElementById('edit-x').value = Math.round(node.x);
+    document.getElementById('edit-y').value = Math.round(node.y);
 }
 
 const editor = document.getElementById('node-editor');
@@ -382,6 +371,7 @@ document.addEventListener('keydown', e => {
 });
 
 // --- Undo ---
+/**
 document.getElementById('undo-node').addEventListener('click', undoNode);
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -397,10 +387,38 @@ function undoNode(){
     rebuildAllGuides();
     updateNodeCount();
 }
+*/
+
+// DELETE NODE
+function deleteSelectedNode() {
+    if (!selectedNode) return;
+
+    sharedX.delete(selectedNode.x);
+    sharedY.delete(selectedNode.y);
+
+    selectedNode.element.remove();
+
+    const index = nodes.indexOf(selectedNode);
+    if (index !== -1) nodes.splice(index, 1);
+
+    selectedNode = null;
+
+    inputX.value = '';
+    inputY.value = '';
+
+    rebuildAllGuides();
+    updateNodeCount();
+}
+document.getElementById('delete-node').addEventListener('click', deleteSelectedNode);
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        deleteSelectedNode();
+    }
+});
 
 // --- Snapping function ---
 function snapToSharedCoordinates(x, y) {
-    console.log(SNAP_DISTANCE, sharedX, sharedY);
     if (SNAP_DISTANCE == 0) {
         return { x, y }; // snapping disabled
     }
