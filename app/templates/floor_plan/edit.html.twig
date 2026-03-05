@@ -89,6 +89,7 @@ const svg = document.getElementById('overlay');
 const nodes = [];
 const nodeCountEl = document.getElementById('node-count');
 const saveBtn = document.getElementById('save-nodes');
+
 const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
 const RENDER_SCALE = 30; // adjust until it feels right
 const SHOP_EDGE_BUFFER = 30; // distance from outermost nodes to the shop border
@@ -189,7 +190,6 @@ function drawShopBorder(x, y, width, height) {
         shopBorder.setAttribute('fill', 'none');
         shopBorder.setAttribute('stroke', 'blue');
         shopBorder.setAttribute('stroke-width', 2);
-        //shopBorder.setAttribute('stroke-dasharray', '4 2'); // optional style
         svg.appendChild(shopBorder);
     }
 
@@ -313,6 +313,7 @@ function drawPathLine(points) {
     polyline.setAttribute('fill', 'none');
     polyline.setAttribute('stroke', '#ff4444');
     polyline.setAttribute('stroke-width', '2');
+    //polyline.setAttribute('stroke-dasharray', '4 2'); // optional style
     polyline.setAttribute('pointer-events', 'none');
 
     polyline.classList.add('path-line');
@@ -335,7 +336,7 @@ function drawNode(x, y) {
     svg.appendChild(circle);
 
     circle.addEventListener('click', e => {
-        e.stopPropagation(); // 🔴 prevents SVG click handler
+        e.stopPropagation(); // prevents SVG click handler
         selectedNode = nodes.find(n => n.element === circle);
         showInNodeEditor(selectedNode);
         selectNode(circle);
@@ -529,6 +530,7 @@ function snapToSharedCoordinates(x, y) {
     return { x: sx, y: sy };
 }
 
+
 // --- Node count update ---
 function updateNodeCount() {
     nodeCountEl.textContent = `${nodes.length} nodes`;
@@ -537,47 +539,39 @@ function updateNodeCount() {
 
 
 // --- Form submission ---
-const form = document.getElementById('nodesForm');
-const nodesInput = document.getElementById('nodesInput');
-
-form.addEventListener('submit', e => {
-    nodesInput.value = JSON.stringify({ path: nodes });
-});
-
-/**
-need this when submitting to recale the nodes to fit the shop border, not the svg border
-form.addEventListener('submit', e => {
+saveBtn.addEventListener('click', e => {
     e.preventDefault();
+    if (!nodes.length) {
+        alert('Please add at least one node before saving.');
+        return;
+    }
 
-    if (!nodes.length) return;
-
-    // Compute min bounds (for inner shop box)
-    const xs = nodes.map(n => n.x);
-    const ys = nodes.map(n => n.y);
+    // Compute raw bounds from nodes (remove visual buffer)
+    const xs = nodes.map(n => n.x - EDITING_EDGE_BUFFER);
+    const ys = nodes.map(n => n.y - EDITING_EDGE_BUFFER);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
     const maxY = Math.max(...ys);
 
-    const shopWidth = maxX - minX + SHOP_EDGE_BUFFER * 2;
-    const shopHeight = maxY - minY + SHOP_EDGE_BUFFER * 2;
+    const shopWidth = Math.round(maxX - minX + SHOP_EDGE_BUFFER * 2);
+    const shopHeight = Math.round(maxY - minY + SHOP_EDGE_BUFFER * 2);
 
-    // Scale nodes so they fit inside the inner box
     const scaledNodes = nodes.map(n => ({
-        x: n.x - minX, // relative to top-left of inner box
-        y: n.y - minY, // relative to top-left of inner box
-        steps: n.steps ?? 0 // preserve steps if present
+        x: Math.round((n.x - EDITING_EDGE_BUFFER) - minX + SHOP_EDGE_BUFFER),
+        y: Math.round((n.y - EDITING_EDGE_BUFFER) - minY + SHOP_EDGE_BUFFER),
     }));
 
     nodesInput.value = JSON.stringify({
         path: scaledNodes,
-        width: shopWidth - SHOP_EDGE_BUFFER * 2,
-        height: shopHeight - SHOP_EDGE_BUFFER * 2
+        width: shopWidth,
+        height: shopHeight
     });
 
-    form.submit();
+    console.log('Shop size:', shopWidth, shopHeight);
+    console.log('Scaled nodes:', scaledNodes);
 });
-*/
+
 </script>
 
 {% endblock %}
