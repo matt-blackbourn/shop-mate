@@ -89,8 +89,9 @@ const svg = document.getElementById('overlay');
 const nodes = [];
 const nodeCountEl = document.getElementById('node-count');
 const saveBtn = document.getElementById('save-nodes');
-const EDGE_BUFFER = 50; // space around nodes for shelves/aisles
+const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
 const RENDER_SCALE = 30; // adjust until it feels right
+const SHOP_EDGE_BUFFER = 30; // distance from outermost nodes to the shop border
 
 const wrapper = document.getElementById('floorplan-wrapper');
 const rawData = JSON.parse(wrapper.dataset.rawData || '{}');
@@ -101,11 +102,16 @@ const sharedX = new Set();
 const sharedY = new Set();
 
 let selectedNode = null;
+let shopBorder = null; // store the rect element globally
 
+// --- Create guide layer ---
 const guideLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 guideLayer.setAttribute('id', 'guide-layer');
 svg.appendChild(guideLayer);
-svg.insertBefore(guideLayer, svg.firstChild);
+
+const pathLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+pathLayer.setAttribute('id', 'path-layer');
+svg.appendChild(pathLayer);
 
 
 // Draw existing nodes and populate array
@@ -118,6 +124,7 @@ const scaledPath = nodesData.map(n => ({
 
 if (scaledPath.length) {
 
+    // Compute raw bounds
     const xs = scaledPath.map(n => n.x);
     const ys = scaledPath.map(n => n.y);
 
@@ -129,31 +136,39 @@ if (scaledPath.length) {
     const width = maxX - minX;
     const height = maxY - minY;
 
+    // Normalize to include editing buffer
     const normalizedPath = scaledPath.map(n => ({
-        x: n.x - minX + EDGE_BUFFER,
-        y: n.y - minY + EDGE_BUFFER
+        x: n.x - minX + EDITING_EDGE_BUFFER,
+        y: n.y - minY + EDITING_EDGE_BUFFER
     }));
 
+    // Set SVG viewBox
     svg.setAttribute(
         'viewBox',
-        `0 0 ${width + EDGE_BUFFER * 2} ${height + EDGE_BUFFER * 2}`
+        `0 0 ${width + EDITING_EDGE_BUFFER * 2} ${height + EDITING_EDGE_BUFFER * 2}`
     );
 
-    // 🔥 draw path line first
-    pathLine = drawPathLine(normalizedPath);
 
     // 🔥 then draw nodes
     normalizedPath.forEach(n => {
         const circle = drawNode(n.x, n.y);
         nodes.push({ x: n.x, y: n.y, element: circle });
         drawGuidesForNode(n.x, n.y);
-    });
-
-    // populate shared coordinates for snapping
-    normalizedPath.forEach(n => {
         sharedX.add(n.x);
         sharedY.add(n.y);
     });
+
+    pathLine = drawPathLine(normalizedPath);
+
+    // Compute shop rectangle based on normalized coordinates
+    const normXs = normalizedPath.map(n => n.x);
+    const normYs = normalizedPath.map(n => n.y);
+    const minNodeX = Math.min(...normXs);
+    const maxNodeX = Math.max(...normXs);
+    const minNodeY = Math.min(...normYs);
+    const maxNodeY = Math.max(...normYs);
+
+    updateShopBorder()
 }
 
 let SNAP_DISTANCE = 1 * visualScale; // default = 1 steps
@@ -165,6 +180,46 @@ document.getElementById('snapDistance').addEventListener('change', e => {
 
 
 updateNodeCount();
+
+
+
+function drawShopBorder(x, y, width, height) {
+    if (!shopBorder) {
+        shopBorder = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        shopBorder.setAttribute('fill', 'none');
+        shopBorder.setAttribute('stroke', 'blue');
+        shopBorder.setAttribute('stroke-width', 2);
+        //shopBorder.setAttribute('stroke-dasharray', '4 2'); // optional style
+        svg.appendChild(shopBorder);
+    }
+
+    shopBorder.setAttribute('x', x);
+    shopBorder.setAttribute('y', y);
+    shopBorder.setAttribute('width', width);
+    shopBorder.setAttribute('height', height);
+
+    return shopBorder;
+}
+
+// --- call this whenever nodes change ---
+function updateShopBorder() {
+    if (!nodes.length) return;
+
+    const xs = nodes.map(n => n.x);
+    const ys = nodes.map(n => n.y);
+
+    const minNodeX = Math.min(...xs);
+    const maxNodeX = Math.max(...xs);
+    const minNodeY = Math.min(...ys);
+    const maxNodeY = Math.max(...ys);
+
+    const rectX = minNodeX - SHOP_EDGE_BUFFER;
+    const rectY = minNodeY - SHOP_EDGE_BUFFER;
+    const rectWidth = (maxNodeX - minNodeX) + SHOP_EDGE_BUFFER * 2;
+    const rectHeight = (maxNodeY - minNodeY) + SHOP_EDGE_BUFFER * 2;
+
+    drawShopBorder(rectX, rectY, rectWidth, rectHeight);
+}
 
 function drawGuidesForNode(x, y) {
 
@@ -250,8 +305,7 @@ function drawPathLine(points) {
 
     polyline.classList.add('path-line');
 
-    // Insert behind nodes
-    svg.insertBefore(polyline, svg.firstChild);
+    pathLayer.appendChild(polyline);
 
     return polyline;
 }
@@ -263,7 +317,7 @@ function drawNode(x, y) {
 
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
-    circle.setAttribute('r', 5); // stable visual size
+    circle.setAttribute('r', 3); // stable visual size
 
     circle.classList.add('node');
     svg.appendChild(circle);
@@ -327,6 +381,7 @@ function updateSelectedNode() {
     sharedY.add(newY);
 
     rebuildAllGuides();
+    updateShopBorder(); 
 }
 
 inputX.addEventListener('input', updateSelectedNode);
@@ -337,6 +392,7 @@ function createNode(x, y) {
     nodes.push({ x, y, element: circle });
     drawGuidesForNode(x, y);
     updateNodeCount();
+    updateShopBorder(); 
 }
 
 
@@ -373,10 +429,12 @@ document.addEventListener('keydown', e => {
 // --- Undo ---
 /**
 document.getElementById('undo-node').addEventListener('click', undoNode);
+*/
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undoNode();
+        updateShopBorder(); 
     }
 });
 
@@ -386,8 +444,8 @@ function undoNode(){
     last.element.remove();
     rebuildAllGuides();
     updateNodeCount();
+    updateShopBorder(); 
 }
-*/
 
 // DELETE NODE
 function deleteSelectedNode() {
@@ -408,6 +466,7 @@ function deleteSelectedNode() {
 
     rebuildAllGuides();
     updateNodeCount();
+    updateShopBorder(); 
 }
 document.getElementById('delete-node').addEventListener('click', deleteSelectedNode);
 document.addEventListener('keydown', e => {
@@ -472,6 +531,41 @@ const nodesInput = document.getElementById('nodesInput');
 form.addEventListener('submit', e => {
     nodesInput.value = JSON.stringify({ path: nodes });
 });
+
+/**
+need this when submitting to recale the nodes to fit the shop border, not the svg border
+form.addEventListener('submit', e => {
+    e.preventDefault();
+
+    if (!nodes.length) return;
+
+    // Compute min bounds (for inner shop box)
+    const xs = nodes.map(n => n.x);
+    const ys = nodes.map(n => n.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxX = Math.max(...xs);
+    const maxY = Math.max(...ys);
+
+    const shopWidth = maxX - minX + SHOP_EDGE_BUFFER * 2;
+    const shopHeight = maxY - minY + SHOP_EDGE_BUFFER * 2;
+
+    // Scale nodes so they fit inside the inner box
+    const scaledNodes = nodes.map(n => ({
+        x: n.x - minX, // relative to top-left of inner box
+        y: n.y - minY, // relative to top-left of inner box
+        steps: n.steps ?? 0 // preserve steps if present
+    }));
+
+    nodesInput.value = JSON.stringify({
+        path: scaledNodes,
+        width: shopWidth - SHOP_EDGE_BUFFER * 2,
+        height: shopHeight - SHOP_EDGE_BUFFER * 2
+    });
+
+    form.submit();
+});
+*/
 </script>
 
 {% endblock %}
