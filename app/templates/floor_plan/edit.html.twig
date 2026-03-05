@@ -403,12 +403,21 @@ document.addEventListener('keydown', e => {
 });
 
 // --- Undo ---
-document.getElementById('undo-node').addEventListener('click', () => {
+document.getElementById('undo-node').addEventListener('click', undoNode);
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undoNode();
+    }
+});
+
+function undoNode(){
     if (!nodes.length) return;
     const last = nodes.pop();
     last.element.remove();
+    rebuildAllGuides();
     updateNodeCount();
-});
+}
 
 // --- Snapping function ---
 function snapToSharedCoordinates(x, y) {
