@@ -16,16 +16,25 @@
         <div class="d-flex align-items-center gap-2">
             <label for="snapDistance">Snap Distance:</label>
             <select id="snapDistance">
-                <option value="0" selected>Off</option>
-                <option value="0.5">1 Step</option>
-                <option value="1">2 Steps</option>
-                <option value="1.5">3 Steps</option>
-                <option value="2">4 Steps</option>
+                <option value="0">Off</option>
+                <option value="1" selected>1 Step</option>
+                <option value="2">2 Steps</option>
+                <option value="3">3 Steps</option>
+                <option value="4">4 Steps</option>
             </select>
             <span id="node-count" class="badge bg-secondary">0 nodes</span>
 
             <button id="undo-node" type="button" class="btn btn-outline-secondary btn-sm">
                 Undo last node
+            </button>
+
+            <div id="node-editor">
+                <label>X: <input type="number" id="edit-x"></label>
+                <label>Y: <input type="number" id="edit-y"></label>
+            </div>
+
+            <button id="delete-node" type="button" class="btn btn-outline-secondary btn-sm">
+                Delete node
             </button>
 
             <form method="POST" action="{{ path('app_floorplan_to_supermarket_save', {'id': floorPlan.id}) }}"
@@ -53,7 +62,19 @@
 </div>
 
 <style>
-    .node { fill: #0d6efd; stroke: #0d6efd; stroke-width: 2; cursor: pointer; }
+    .node { 
+        fill: #0d6efd; 
+        stroke: #0d6efd; 
+        stroke-width: 2; 
+        cursor: pointer; 
+    }
+
+    .node-selected {
+        fill: #ff4444;
+        stroke: #ff4444;
+        stroke-width: 2;
+        cursor: pointer; 
+    }
 </style>
 
 <script>
@@ -71,6 +92,16 @@ const nodesData = rawData.path || []; // ✅ only the path array
 // Shared coordinates for snapping
 const sharedX = new Set();
 const sharedY = new Set();
+
+let selectedNode = null;
+
+const guideLayer = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'g'
+);
+guideLayer.setAttribute('id', 'guide-layer');
+svg.appendChild(guideLayer);
+svg.insertBefore(guideLayer, svg.firstChild);
 
 
 // Draw existing nodes and populate array
@@ -111,6 +142,7 @@ if (scaledPath.length) {
     normalizedPath.forEach(n => {
         const circle = drawNode(n.x, n.y);
         nodes.push({ x: n.x, y: n.y, element: circle });
+        drawGuidesForNode(n.x, n.y);
     });
 
     // populate shared coordinates for snapping
@@ -126,8 +158,83 @@ document.getElementById('snapDistance').addEventListener('change', e => {
     SNAP_DISTANCE = steps * visualScale;
 });
 
+document.getElementById('delete-node').addEventListener('click', () => {
+    if (!selectedNode) return;
+
+    selectedNode.element.remove();
+    const index = nodes.indexOf(selectedNode);
+    if (index !== -1) nodes.splice(index, 1);
+
+    selectedNode = null;
+    updateNodeCount();
+});
 
 updateNodeCount();
+
+function drawGuidesForNode(x, y) {
+
+    const viewBox = svg.viewBox.baseVal;
+
+    // --- Vertical line ---
+    const vLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    vLine.setAttribute('x1', x);
+    vLine.setAttribute('x2', x);
+    vLine.setAttribute('y1', viewBox.y);
+    vLine.setAttribute('y2', viewBox.y + viewBox.height);
+
+    // --- Horizontal line ---
+    const hLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    hLine.setAttribute('y1', y);
+    hLine.setAttribute('y2', y);
+    hLine.setAttribute('x1', viewBox.x);
+    hLine.setAttribute('x2', viewBox.x + viewBox.width);
+
+    [vLine, hLine].forEach(line => {
+        line.setAttribute('stroke', '#00ff00');
+        line.setAttribute('stroke-width', '0.5');
+        line.setAttribute('opacity', '0.25');
+        line.setAttribute('pointer-events', 'none');
+        guideLayer.appendChild(line);
+    });
+
+    // --- X label (top of vertical line) ---
+    // --- X label (top of vertical line) ---
+    const labelY = viewBox.y + 25; // move down from top edge
+
+    const xLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+
+    xLabel.setAttribute('x', x - 2); // slight offset from line
+    xLabel.setAttribute('y', labelY);
+
+    xLabel.textContent = Math.round(x);
+
+    // rotate around the label anchor
+    xLabel.setAttribute(
+        'transform',
+        `rotate(-90 ${x - 2} ${labelY})`
+    );
+
+    // --- Y label (left of horizontal line) ---
+    const yLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    yLabel.setAttribute('x', viewBox.x + 2);
+    yLabel.setAttribute('y', y - 2);
+    yLabel.textContent = Math.round(y);
+
+    [xLabel, yLabel].forEach(label => {
+        label.setAttribute('fill', '#00ff00');
+        label.setAttribute('font-size', '8');
+        label.setAttribute('opacity', '0.6');
+        label.setAttribute('pointer-events', 'none');
+        label.setAttribute('font-family', 'monospace');
+        guideLayer.appendChild(label);
+    });
+}
+
+
+function rebuildAllGuides() {
+    guideLayer.innerHTML = '';
+    nodes.forEach(n => drawGuidesForNode(n.x, n.y));
+}
 
 
 function drawPathLine(points) {
@@ -142,7 +249,7 @@ function drawPathLine(points) {
 
     polyline.setAttribute('points', pointString);
     polyline.setAttribute('fill', 'none');
-    polyline.setAttribute('stroke', '#444');
+    polyline.setAttribute('stroke', '#ff4444');
     polyline.setAttribute('stroke-width', '2');
     polyline.setAttribute('pointer-events', 'none');
 
@@ -166,14 +273,76 @@ function drawNode(x, y) {
     circle.classList.add('node');
     svg.appendChild(circle);
 
+    circle.addEventListener('click', e => {
+        selectedNode = nodes.find(n => n.element === circle);
+        showInNodeEditor(selectedNode);
+        selectNode(circle);
+    });
+
     return circle;
 }
+
+function selectNode(circle) {
+
+    // remove previous highlight
+    nodes.forEach(n => n.element.classList.remove('node-selected'));
+
+    const node = nodes.find(n => n.element === circle);
+    if (!node) return;
+
+    selectedNode = node;
+
+    circle.classList.add('node-selected');
+
+    // populate coordinate inputs
+    document.getElementById('nodeX').value = Math.round(node.x);
+    document.getElementById('nodeY').value = Math.round(node.y);
+}
+
+const editor = document.getElementById('node-editor');
+const inputX = document.getElementById('edit-x');
+const inputY = document.getElementById('edit-y');
+
+function showInNodeEditor(node) {
+    inputX.value = Math.round(node.x);
+    inputY.value = Math.round(node.y);
+}
+
+function updateSelectedNode() {
+    if (!selectedNode) return;
+
+    const newX = parseFloat(inputX.value);
+    const newY = parseFloat(inputY.value);
+
+    // Remove old shared coords
+    sharedX.delete(selectedNode.x);
+    sharedY.delete(selectedNode.y);
+
+    // Update data
+    selectedNode.x = newX;
+    selectedNode.y = newY;
+
+    // Update SVG
+    selectedNode.element.setAttribute('cx', newX);
+    selectedNode.element.setAttribute('cy', newY);
+
+    // Re-add shared coords
+    sharedX.add(newX);
+    sharedY.add(newY);
+
+    rebuildAllGuides();
+}
+
+inputX.addEventListener('input', updateSelectedNode);
+inputY.addEventListener('input', updateSelectedNode);
 
 function createNode(x, y) {
     const circle = drawNode(x, y);
     nodes.push({ x, y, element: circle });
+    drawGuidesForNode(x, y);
     updateNodeCount();
 }
+
 
 // --- Direction locking & snapping ---
 let lastNode = null;
@@ -246,35 +415,31 @@ function snapToSharedCoordinates(x, y) {
     let sx = x;
     let sy = y;
 
-    if (!ignoreNextSnapX) {
-        let closestX = null;
-        let minDx = SNAP_DISTANCE;
+    let closestX = null;
+    let minDx = SNAP_DISTANCE;
 
-        for (const px of sharedX) {
-            const dx = Math.abs(x - px);
-            if (dx <= minDx) {
-                minDx = dx;
-                closestX = px;
-            }
+    for (const px of sharedX) {
+        const dx = Math.abs(x - px);
+        if (dx <= minDx) {
+            minDx = dx;
+            closestX = px;
         }
-
-        if (closestX !== null) sx = closestX;
     }
 
-    if (!ignoreNextSnapY) {
-        let closestY = null;
-        let minDy = SNAP_DISTANCE;
+    if (closestX !== null) sx = closestX;
 
-        for (const py of sharedY) {
-            const dy = Math.abs(y - py);
-            if (dy <= minDy) {
-                minDy = dy;
-                closestY = py;
-            }
+    let closestY = null;
+    let minDy = SNAP_DISTANCE;
+
+    for (const py of sharedY) {
+        const dy = Math.abs(y - py);
+        if (dy <= minDy) {
+            minDy = dy;
+            closestY = py;
         }
-
-        if (closestY !== null) sy = closestY;
     }
+
+    if (closestY !== null) sy = closestY;
 
     return { x: sx, y: sy };
 }
