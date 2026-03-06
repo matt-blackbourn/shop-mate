@@ -43,17 +43,18 @@
                     </button>
                 </form>
             </div>
+              {# Flash messages #}
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endfor %}
         </div>
 
-        {# Flash messages #}
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="alert alert-{{ label }} alert-dismissible fade show mt-2 mb-0" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endfor %}
+      
 
     </div>
 
@@ -111,7 +112,7 @@
     }
 
     .aisle {
-        stroke: white; 
+        filter: drop-shadow(0 0 3px white);
     }
 
 </style>
@@ -119,6 +120,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const wrapper = document.getElementById('supermarket-wrapper');
     const svg = document.getElementById('overlay');
+    const phaseSelector = document.getElementById('phaseSelector');
     const nodesData = JSON.parse(wrapper.dataset.nodes);
     const edgeData = JSON.parse(wrapper.dataset.edges);
     const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
@@ -263,11 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function createEdge(a, b) {
         if (edgeExists(a, b)) return;
 
-        if (!phaseSelector.value) {
-            alert('Select a phase before creating edges');
-            return;
-        }
-
         const edge = {
             id: null,
             from: a.id,
@@ -360,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form.submit(); // this triggers a full page request and follows backend redirect
     });
 
-    const phaseSelector = document.getElementById('phaseSelector');
+
     phaseSelector.addEventListener('change', () => {
         const newPhase = phaseSelector.value;
         if (!newPhase) return;
@@ -381,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     line.dataset.phase = newPhase;
                     line.setAttribute('stroke', colorMap[newPhase]);
                 }
+
             }
         });
 

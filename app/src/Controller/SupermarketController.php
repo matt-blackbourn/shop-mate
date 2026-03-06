@@ -387,7 +387,7 @@ class SupermarketController extends AbstractController
         foreach ($shelves as $item) {
             $shelf = isset($item['id']) ? $shelfRepository->find($item['id']) : new Shelf();
             
-            if($item['deleted']){
+            if(isset($item['deleted']) && $item['deleted']){
                 $em->remove($shelf);
                 continue;
             }
@@ -410,7 +410,7 @@ class SupermarketController extends AbstractController
     }
 
     
-    #[Route('/{id}/draw/edges', name: 'app_supermarket_draw_edges_overlay', methods: ['GET'])]
+    #[Route('/{id}/draw/edges/overlay', name: 'app_supermarket_draw_edges_overlay', methods: ['GET'])]
     public function edgesOverlay(
         Request $request, 
         Supermarket $supermarket, 

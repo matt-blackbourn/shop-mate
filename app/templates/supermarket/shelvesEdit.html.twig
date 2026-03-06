@@ -28,25 +28,38 @@
 
 
 <!-- SVG editor -->
-<svg id="shelfEditor"
-    viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}"
-    class="w-100 border"
-    preserveAspectRatio="xMinYMin meet"
-    style="height: 600px; background: #f8f9fa;"
-    data-shelves="{{ shelves|json_encode|e('html_attr') }}"
-    >
-</svg>
+<div id="supermarket-wrapper" >
+    <svg id="shelfEditor"
+        viewBox="0 0 {{ viewBox.width }} {{ viewBox.height }}"
+        class="w-100 border"
+        preserveAspectRatio="xMinYMin meet"
+        data-shelves="{{ shelves|json_encode|e('html_attr') }}"
+        >
+    </svg>
+</div>
 
 <style>
+   #supermarket-wrapper {
+        position: relative;
+        width: 100vw;
+        height: calc(100vh - 140px); /* leave room for header */
+        overflow: hidden;
+    }
+
+    #shelfEditor {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
 .shelf {
-    fill: #e9ecef;
-    stroke: #495057;
+    fill:rgb(22, 147, 37);
+    stroke:rgb(15, 118, 27);
     stroke-width: 2;
     cursor: pointer;
 }
 .shelf.full-select {
     stroke:rgb(157, 5, 5);
-    stroke-width: 6;
+    stroke-width: 2;
 }
 .shelf.selected {
     stroke-dasharray: 4;
@@ -72,6 +85,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 let activeShelfId = null;
 let resizeState = null;
 
+const SNAP_DISTANCE = 2;
 const svg = document.getElementById('shelfEditor');
 const shelves = JSON.parse(svg.dataset.shelves);
 
@@ -182,10 +196,10 @@ svg.addEventListener('click', (e) => {
     const newShelf = {
         id: null,
         clientId: crypto.randomUUID(),
-        x: svgP.x - 25, // small default size centered on click
-        y: svgP.y - 10,
-        width: 50,
-        height: 50,
+        x: svgP.x - 15, // small default size centered on click
+        y: svgP.y - 5,
+        width: 25,
+        height: 25,
         fullSelect: false,
     };
 
@@ -200,7 +214,7 @@ svg.addEventListener('click', (e) => {
 
 
 // --- Edge handles ---
-const HANDLE_THICKNESS = 10;
+const HANDLE_THICKNESS = 5;
 
 function addEdgeHandles(group, shelf) {
     const edges = [
@@ -251,18 +265,18 @@ function onResizeMove(e) {
 
     switch(resizeState.edge) {
         case 'e':
-            shelf.width = Math.max(10, start.width + dx);
+            shelf.width = Math.max(5, start.width + dx);
             break;
         case 'w':
             shelf.x = start.x + dx;
-            shelf.width = Math.max(10, start.width - dx);
+            shelf.width = Math.max(5, start.width - dx);
             break;
         case 's':
-            shelf.height = Math.max(10, start.height + dy);
+            shelf.height = Math.max(5, start.height + dy);
             break;
         case 'n':
             shelf.y = start.y + dy;
-            shelf.height = Math.max(10, start.height - dy);
+            shelf.height = Math.max(5, start.height - dy);
             break;
     }
 
@@ -277,7 +291,7 @@ function endResize() {
 }
 
 // --- Snapping ---
-const SNAP_DISTANCE = 8;
+
 
 function snapShelf(shelf) {
     shelves.forEach(other => {

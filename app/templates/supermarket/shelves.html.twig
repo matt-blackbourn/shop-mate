@@ -59,7 +59,7 @@
 
 .edge {
   stroke: #0d6efd;
-  stroke-width: 4;
+  stroke-width: 1;
 }
 
 .shelf {
@@ -381,12 +381,12 @@ function autoGenerateShelves() {
   shelvesLayer.innerHTML = '';
   shelves = [];
 
-  const aisleWidth = 80;
-  const shelfDepth = 30;
+  const aisleWidth = 20;
+  const shelfDepth = 8;
   const offset = aisleWidth / 2 + shelfDepth / 2;
   const MIN_LENGTH = 0;
-  const TOLERANCE = 5;
-  const END_CLEARANCE = 40; // half aisle width is a good start
+  const TOLERANCE = 3;
+  const END_CLEARANCE = 15; // half aisle width is a good start
 
   edgesData.forEach(edge => {
     const dx = edge.x2 - edge.x1;
