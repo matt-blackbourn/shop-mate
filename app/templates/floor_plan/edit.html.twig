@@ -7,31 +7,21 @@
 
     <div class="d-flex align-items-center justify-content-between mb-2">
         <div class="d-flex align-items-center gap-3">
-            <h1 class="h4 mb-0">{{ floorPlan.type.value }} - {{ floorPlan.suburb }}</h1>
+            <h1 class="h4 mb-0">{{ floorPlan.type.value }} - {{ floorPlan.suburb }} by {{ floorPlan.user.email }}</h1>
             <a href="{{ path('app_floor_plan_index') }}" class="btn btn-outline-secondary btn-sm">
                 ← Back to list
             </a>
         </div>
 
         <div class="d-flex align-items-center gap-2">
-            <label for="snapDistance">Snap Distance:</label>
-            <select id="snapDistance">
-                <option value="0">Off</option>
-                <option value="1" selected>1 Step</option>
-                <option value="2">2 Steps</option>
-                <option value="3">3 Steps</option>
-                <option value="4">4 Steps</option>
-            </select>
-            <span id="node-count" class="badge bg-secondary">0 nodes</span>
-{# 
-            <button id="undo-node" type="button" class="btn btn-outline-secondary btn-sm">
-                Undo last node
-            </button> #}
+           
 
             <div id="node-editor">
                 <label>X: <input type="number" id="edit-x"></label>
                 <label>Y: <input type="number" id="edit-y"></label>
             </div>
+
+             <span id="node-count" class="badge bg-secondary">0 nodes</span>
 
             <button id="delete-node" type="button" class="btn btn-outline-secondary btn-sm">
                 Delete node
@@ -86,45 +76,52 @@
 
 <script>
 const svg = document.getElementById('overlay');
-const nodes = [];
 const nodeCountEl = document.getElementById('node-count');
 const saveBtn = document.getElementById('save-nodes');
+const editor = document.getElementById('node-editor');
+const inputX = document.getElementById('edit-x');
+const inputY = document.getElementById('edit-y');
 
-const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
 const RENDER_SCALE = 30; // adjust until it feels right
+const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
 const SHOP_EDGE_BUFFER = 30; // distance from outermost nodes to the shop border
 
 const wrapper = document.getElementById('floorplan-wrapper');
 const rawData = JSON.parse(wrapper.dataset.rawData || '{}');
 const nodesData = rawData.path || []; // ✅ only take the path array out of the raw data
+const visualScale = rawData.visualScale || 1;
+let SNAP_DISTANCE = 1 * visualScale; // default = 1 steps
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const nodes = [];
 
 // Shared coordinates for snapping
 const sharedX = new Set();
 const sharedY = new Set();
 
+let lastNode = null;
 let selectedNode = null;
 let shopBorder = null; // store the rect element globally
+let pathLine = null;
 
 // --- Create guide layer ---
-const guideLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+const guideLayer = document.createElementNS(SVG_NS, 'g');
 guideLayer.setAttribute('id', 'guide-layer');
 svg.appendChild(guideLayer);
 
-const pathLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+const pathLayer = document.createElementNS(SVG_NS, 'g');
 pathLayer.setAttribute('id', 'path-layer');
 svg.appendChild(pathLayer);
 
+inputX.addEventListener('input', updateSelectedNode);
+inputY.addEventListener('input', updateSelectedNode);
 
 // Draw existing nodes and populate array
-let pathLine = null;
-const visualScale = rawData.visualScale || 1;
 const scaledPath = nodesData.map(n => ({
     x: n.x * visualScale,
     y: n.y * visualScale
 }));
 
 if (scaledPath.length) {
-
     // Compute raw bounds
     const xs = scaledPath.map(n => n.x);
     const ys = scaledPath.map(n => n.y);
@@ -150,7 +147,7 @@ if (scaledPath.length) {
     );
 
 
-    // 🔥 then draw nodes
+    // draw nodes
     normalizedPath.forEach(n => {
         const circle = drawNode(n.x, n.y);
         nodes.push({ x: n.x, y: n.y, element: circle });
@@ -172,21 +169,11 @@ if (scaledPath.length) {
     updateShopBorder()
 }
 
-let SNAP_DISTANCE = 1 * visualScale; // default = 1 steps
-document.getElementById('snapDistance').addEventListener('change', e => {
-    const steps = parseInt(e.target.value, 10);
-    SNAP_DISTANCE = steps * visualScale;
-});
-
-
-
 updateNodeCount();
-
-
 
 function drawShopBorder(x, y, width, height) {
     if (!shopBorder) {
-        shopBorder = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        shopBorder = document.createElementNS(SVG_NS, 'rect');
         shopBorder.setAttribute('fill', 'none');
         shopBorder.setAttribute('stroke', 'blue');
         shopBorder.setAttribute('stroke-width', 2);
@@ -234,18 +221,17 @@ function updateShopBorder() {
 }
 
 function drawGuidesForNode(x, y) {
-
     const viewBox = svg.viewBox.baseVal;
 
     // --- Vertical line ---
-    const vLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    const vLine = document.createElementNS(SVG_NS,'line');
     vLine.setAttribute('x1', x);
     vLine.setAttribute('x2', x);
     vLine.setAttribute('y1', viewBox.y);
     vLine.setAttribute('y2', viewBox.y + viewBox.height);
 
     // --- Horizontal line ---
-    const hLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    const hLine = document.createElementNS(SVG_NS,'line');
     hLine.setAttribute('y1', y);
     hLine.setAttribute('y2', y);
     hLine.setAttribute('x1', viewBox.x);
@@ -259,11 +245,8 @@ function drawGuidesForNode(x, y) {
         guideLayer.appendChild(line);
     });
 
-    // --- X label (top of vertical line) ---
-    // --- X label (top of vertical line) ---
     const labelY = viewBox.y + 25; // move down from top edge
-
-    const xLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    const xLabel = document.createElementNS(SVG_NS,'text');
 
     xLabel.setAttribute('x', x - 2); // slight offset from line
     xLabel.setAttribute('y', labelY);
@@ -277,7 +260,7 @@ function drawGuidesForNode(x, y) {
     );
 
     // --- Y label (left of horizontal line) ---
-    const yLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    const yLabel = document.createElementNS(SVG_NS,'text');
     yLabel.setAttribute('x', viewBox.x + 2);
     yLabel.setAttribute('y', y - 2);
     yLabel.textContent = Math.round(y);
@@ -301,7 +284,7 @@ function rebuildAllGuides() {
 
 function drawPathLine(points) {
     const polyline = document.createElementNS(
-        'http://www.w3.org/2000/svg',
+        SVG_NS,
         'polyline'
     );
 
@@ -313,11 +296,8 @@ function drawPathLine(points) {
     polyline.setAttribute('fill', 'none');
     polyline.setAttribute('stroke', '#ff4444');
     polyline.setAttribute('stroke-width', '2');
-    //polyline.setAttribute('stroke-dasharray', '4 2'); // optional style
     polyline.setAttribute('pointer-events', 'none');
-
     polyline.classList.add('path-line');
-
     pathLayer.appendChild(polyline);
 
     return polyline;
@@ -326,7 +306,7 @@ function drawPathLine(points) {
 
 // --- Node creation ---
 function drawNode(x, y) {
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const circle = document.createElementNS(SVG_NS, 'circle');
 
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
@@ -346,7 +326,6 @@ function drawNode(x, y) {
 }
 
 function selectNode(circle) {
-
     // remove previous highlight
     nodes.forEach(n => n.element.classList.remove('node-selected'));
 
@@ -354,7 +333,6 @@ function selectNode(circle) {
     if (!node) return;
 
     selectedNode = node;
-
     circle.classList.add('node-selected');
 
     // populate coordinate inputs
@@ -362,9 +340,6 @@ function selectNode(circle) {
     document.getElementById('edit-y').value = Math.round(node.y);
 }
 
-const editor = document.getElementById('node-editor');
-const inputX = document.getElementById('edit-x');
-const inputY = document.getElementById('edit-y');
 
 function showInNodeEditor(node) {
     inputX.value = Math.round(node.x);
@@ -397,9 +372,6 @@ function updateSelectedNode() {
     updateShopBorder(); 
 }
 
-inputX.addEventListener('input', updateSelectedNode);
-inputY.addEventListener('input', updateSelectedNode);
-
 function createNode(x, y) {
     const circle = drawNode(x, y);
     nodes.push({ x, y, element: circle });
@@ -410,11 +382,6 @@ function createNode(x, y) {
 
 
 // --- Direction locking & snapping ---
-let lastNode = null;
-const LOCK_THRESHOLD = 2 * visualScale;
-let ignoreNextSnapX = false;
-let ignoreNextSnapY = false;
-
 svg.addEventListener('click', e => {
 
     const pt = svg.createSVGPoint();
@@ -434,15 +401,8 @@ svg.addEventListener('click', e => {
 });
 
 
-document.addEventListener('keydown', e => {
-    if (e.key.toLowerCase() === 'x') ignoreNextSnapX = true;
-    if (e.key.toLowerCase() === 'y') ignoreNextSnapY = true;
-});
 
 // --- Undo ---
-/**
-document.getElementById('undo-node').addEventListener('click', undoNode);
-*/
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
@@ -489,12 +449,7 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// --- Snapping function ---
 function snapToSharedCoordinates(x, y) {
-    if (SNAP_DISTANCE == 0) {
-        return { x, y }; // snapping disabled
-    }
-
     let sx = x;
     let sy = y;
 
@@ -568,8 +523,8 @@ saveBtn.addEventListener('click', e => {
         height: shopHeight
     });
 
-    console.log('Shop size:', shopWidth, shopHeight);
-    console.log('Scaled nodes:', scaledNodes);
+    console.log(shopWidth, shopHeight);
+    console.log(scaledNodes);
 });
 
 </script>
