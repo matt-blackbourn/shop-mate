@@ -20,7 +20,7 @@
                 {% if supermarket.id == lastUsedSupermarketId %} checked {% endif %}
               >
               <label class="form-check-label" for="supermarket-{{ supermarket.id }}">
-                {{ supermarket.name }}
+                {{ supermarket.type.value }} - {{ supermarket.suburb }}
               </label>
             </div>
           {% endfor %}

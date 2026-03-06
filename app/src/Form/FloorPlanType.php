@@ -37,7 +37,7 @@ class FloorPlanType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-             // no data_class because we’ll merge into payload manually
+            // no data_class because we’ll merge into payload manually
         ]);
     }
 }

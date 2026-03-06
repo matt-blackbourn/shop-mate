@@ -121,6 +121,8 @@ const scaledPath = nodesData.map(n => ({
     y: n.y * visualScale
 }));
 
+let normalizedPath;
+
 if (scaledPath.length) {
     // Compute raw bounds
     const xs = scaledPath.map(n => n.x);
@@ -135,7 +137,7 @@ if (scaledPath.length) {
     const height = maxY - minY;
 
     // Normalize to include editing buffer
-    const normalizedPath = scaledPath.map(n => ({
+    normalizedPath = scaledPath.map(n => ({
         x: n.x - minX + EDITING_EDGE_BUFFER,
         y: n.y - minY + EDITING_EDGE_BUFFER
     }));
@@ -506,27 +508,36 @@ form.addEventListener('submit', e => {
     // Compute raw bounds from nodes (remove visual buffer)
     const xs = nodes.map(n => n.x - EDITING_EDGE_BUFFER);
     const ys = nodes.map(n => n.y - EDITING_EDGE_BUFFER);
+
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
     const maxY = Math.max(...ys);
 
     const floorplanId = nodesInput.dataset.floorplanId;
+
     const shopWidth = Math.round(maxX - minX + SHOP_EDGE_BUFFER * 2);
     const shopHeight = Math.round(maxY - minY + SHOP_EDGE_BUFFER * 2);
 
+    // Transform nodes
     const scaledNodes = nodes.map(n => ({
         x: Math.round((n.x - EDITING_EDGE_BUFFER) - minX + SHOP_EDGE_BUFFER),
         y: Math.round((n.y - EDITING_EDGE_BUFFER) - minY + SHOP_EDGE_BUFFER),
     }));
 
+    // 🔵 Transform the original walked path
+    const scaledPath = normalizedPath.map(p => ({
+        x: Math.round((p.x - EDITING_EDGE_BUFFER) - minX + SHOP_EDGE_BUFFER),
+        y: Math.round((p.y - EDITING_EDGE_BUFFER) - minY + SHOP_EDGE_BUFFER),
+    }));
+
     nodesInput.value = JSON.stringify({
         floorplanId: parseInt(floorplanId),
         nodes: scaledNodes,
+        walkingPath: scaledPath,
         width: shopWidth,
         height: shopHeight
     });
-
 });
 
 </script>

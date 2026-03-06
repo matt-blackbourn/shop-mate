@@ -17,11 +17,12 @@
         {% for supermarket in supermarkets %}
             <tr>
                 <td>{{ supermarket.id }}</td>
-                <td>{{ supermarket.name }}</td>
+                <td>{{ supermarket.type.value }} - {{ supermarket.suburb }}</td>
                 <td>
                     {# <a href="{{ path('admin_assign_food_edges', {'id': supermarket.id}) }}">assign food</a> #}
                     {# <a href="{{ path('app_supermarket_edit', {'id': supermarket.id}) }}">edit</a> #}
                     {# <a href="{{ path('app_supermarket_draw_nodes', {'id': supermarket.id}) }}">nodes</a> #}
+                    {# <a href="{{ path('app_supermarket_draw_edges_overlay', {'id': supermarket.id}) }}">Edges - image overlay</a> #}
                     <a href="{{ path('app_supermarket_draw_edges', {'id': supermarket.id}) }}">Edges</a>
                     | <a href="{{ path('app_supermarket_draw_shelves', {'id': supermarket.id}) }}">Generate Shelves</a>
                     | <a href="{{ path('app_supermarket_edit_shelves', {'id': supermarket.id}) }}">Edit shelves</a>

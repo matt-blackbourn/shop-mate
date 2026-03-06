@@ -200,6 +200,7 @@ class SupermarketController extends AbstractController
         ]);
     }
 
+
     #[Route('/{id}/draw/edges', name: 'app_supermarket_draw_edges', methods: ['GET'])]
     public function edges(
         Request $request, 
@@ -405,6 +406,21 @@ class SupermarketController extends AbstractController
 
         return $this->redirectToRoute('app_supermarket_edit_shelves', [
             'id' => $supermarket->getId(),
+        ]);
+    }
+
+    
+    #[Route('/{id}/draw/edges', name: 'app_supermarket_draw_edges_overlay', methods: ['GET'])]
+    public function edgesOverlay(
+        Request $request, 
+        Supermarket $supermarket, 
+        MapBuilder $mapBuilder,
+    ): Response
+    {
+        return $this->render('supermarket/edges-overlay.html.twig', [
+            'supermarket' => $supermarket,
+            'nodes' => $mapBuilder->getAllNodes($supermarket),
+            'edges' => $mapBuilder->getAllEdges($supermarket),
         ]);
     }
 

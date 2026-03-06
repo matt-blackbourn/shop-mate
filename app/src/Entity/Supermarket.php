@@ -16,9 +16,6 @@ class Supermarket
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $name = null;
-
     /**
      * @var Collection<int, Edge>
      */
@@ -79,6 +76,9 @@ class Supermarket
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $suburb = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?array $walkingPath = null;
+
     public function __construct()
     {
         $this->edges = new ArrayCollection();
@@ -92,18 +92,6 @@ class Supermarket
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name): static
-    {
-        $this->name = $name;
-
-        return $this;
     }
 
 
@@ -379,6 +367,18 @@ class Supermarket
     public function setSuburb(?string $suburb): static
     {
         $this->suburb = $suburb;
+
+        return $this;
+    }
+
+    public function getWalkingPath(): ?array
+    {
+        return $this->walkingPath;
+    }
+
+    public function setWalkingPath(?array $walkingPath): static
+    {
+        $this->walkingPath = $walkingPath;
 
         return $this;
     }

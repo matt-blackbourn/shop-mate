@@ -94,8 +94,8 @@ final class FloorPlanController extends AbstractController
         $supermarket->setType($floorPlan->getType());
         $supermarket->setSuburb($floorPlan->getSuburb());
         $supermarket->setFloorPlan($floorPlan);
-        $supermarket->setName('test1');
         $supermarket->setDateCreated(new \DateTimeImmutable());
+        $supermarket->setWalkingPath($data['walkingPath'] ?? []);
         $em->persist($supermarket);
     
         $seen = [];

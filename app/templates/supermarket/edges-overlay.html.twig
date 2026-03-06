@@ -22,6 +22,14 @@
                     Undo last edge
                 </button>
 
+                <label for="strokeWidth">Stroke Width:</label>
+                <select id="strokeWidth">
+                    <option value="10">10 px</option>
+                    <option value="15"  selected>15 px</option>
+                    <option value="20">20 px</option>
+                    <option value="35">30 px</option>
+                </select>
+
                 {# Phase selector for selected edges #}
                 <select id="phaseSelector" class="form-select form-select-sm">
                     <option value="1">Entrance Phase</option>
@@ -62,12 +70,21 @@
         data-supermarket-id="{{ supermarket.id }}"  
         data-nodes="{{ nodes|json_encode|e('html_attr') }}"
         data-edges="{{ edges|json_encode|e('html_attr') }}"
-        data-walking-path='{{ supermarket.walkingPath|json_encode }}'
     >
+        <img
+            id="supermarket-img"
+            src="{{ asset('uploads/supermarkets/' ~ supermarket.imagePath) }}"
+            width="{{ supermarket.width }}"
+            height="{{ supermarket.height }}"
+            alt="Floor plan"
+        >
+        {# top left = 0,0 #}
         <svg
             id="overlay"
+            width="{{ supermarket.width }}"
+            height="{{ supermarket.height }}"
             viewBox="0 0 {{ supermarket.width }} {{ supermarket.height }}"
-            preserveAspectRatio="xMidYMid meet"
+            preserveAspectRatio="none"
         >
         </svg>
     </div>
@@ -75,15 +92,12 @@
 <style>
     #supermarket-wrapper {
         position: relative;
-        width: 100vw;
-        height: calc(100vh - 140px); /* leave room for header */
-        overflow: hidden;
+        display: inline-block;
     }
-
     #overlay {
-        width: 100%;
-        height: 100%;
-        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
     }
     .node {
         fill: #0d6efd;
@@ -111,7 +125,7 @@
     }
 
     .aisle {
-        stroke: white; 
+        stroke: black; 
     }
 
 </style>
@@ -122,19 +136,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodesData = JSON.parse(wrapper.dataset.nodes);
     const edgeData = JSON.parse(wrapper.dataset.edges);
     const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
-    const walkingPath = JSON.parse(wrapper.dataset.walkingPath || '[]');
-    const SVG_NS = 'http://www.w3.org/2000/svg';
 
     const nodes = {};   // id -> { id, x, y, element }
     const edges = [];
-    const STROKE_WIDTH = 10; // default
 
     let selectedNode = null;
 
-    const pathLayer = document.createElementNS(SVG_NS, 'g');
-    pathLayer.setAttribute('id', 'path-layer');
-    svg.appendChild(pathLayer);
-
+    // Configurable stroke width (pixels)
+    let STROKE_WIDTH = 15; // default
+    const snapSelect = document.getElementById('strokeWidth');
+    snapSelect.addEventListener('change', (e) => {
+        STROKE_WIDTH = parseInt(e.target.value, 10);
+    });
 
     /* -----------------------------
      * Load & draw nodes
@@ -143,14 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', n.x);
         circle.setAttribute('cy', n.y);
-        circle.setAttribute('r', 5);
+        circle.setAttribute('r', STROKE_WIDTH);
         circle.classList.add('node');
 
         svg.appendChild(circle);
 
         nodes[n.id] = { ...n, element: circle };
-
-        drawPathLine(walkingPath);
     });
 
     edgeData.forEach(e => {
@@ -167,29 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (edges.length === 0) return;
         const last = edges.pop();
         last.element.remove();
-    }
-
-    // COPIED FROM FLOORPLAN EDIT
-    function drawPathLine(walkingPath) {
-        const polyline = document.createElementNS(
-            SVG_NS,
-            'polyline'
-        );
-
-        const pointString = walkingPath
-            .map(p => `${p.x},${p.y}`)
-            .join(' ');
-
-        polyline.setAttribute('points', pointString);
-        polyline.setAttribute('fill', 'none');
-        polyline.setAttribute('stroke', '#ff4444');
-        polyline.setAttribute('stroke-width', '1');
-        polyline.setAttribute('pointer-events', 'none');
-        polyline.setAttribute('stroke-dasharray', '2 4');
-        polyline.classList.add('path-line');
-        pathLayer.appendChild(polyline);
-
-        return polyline;
     }
 
     function drawEdge(edge) {
