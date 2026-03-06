@@ -80,43 +80,40 @@ final class FloorPlanController extends AbstractController
     public function saveFloorPlanAsSupermarket(
         Request $request,
         FloorPlan $floorPlan,
-        SupermarketRepository $supermarketRepository,
-        NodeRepository $nodeRepository,
+        FloorPlanRepository $floorPlanRepository,
         EntityManagerInterface $em
     ): Response {
-        $nodesJson = $request->request->get('nodes', '[]');
-        $nodes = json_decode($nodesJson, true);
-    
-        if (empty($nodes)) {
-            $this->addFlash('warning', 'No nodes to save.');
-            return $this->redirectToRoute('app_floorplan_index');
-        }
-    
-        // 1️⃣ Create the new Supermarket
+        $data = json_decode($request->request->get('nodes'), true);
+
+        $floorplanId = $data['floorplanId'];
+        $floorPlanRepository->find($floorplanId);
+
         $supermarket = new Supermarket();
-        $supermarket->setName($floorPlan->getType()->value . ' - ' . $floorPlan->getSuburb());
+        $supermarket->setWidth($data['width']);
+        $supermarket->setHeight($data['height']);
+        $supermarket->setType($floorPlan->getType());
+        $supermarket->setSuburb($floorPlan->getSuburb());
+        $supermarket->setFloorPlan($floorPlan);
+        $supermarket->setName('test1');
+        $supermarket->setDateCreated(new \DateTimeImmutable());
+        $em->persist($supermarket);
     
-        // 2️⃣ Compute bounding box + edge buffer
-        $EDGE_BUFFER = 50;
-        $xs = array_column($nodes, 'x');
-        $ys = array_column($nodes, 'y');
+        $seen = [];
+        foreach ($data['nodes'] as $nodeData) {
+            $key = $nodeData['x'].'-'.$nodeData['y'];
     
-        $minX = min($xs) - $EDGE_BUFFER;
-        $minY = min($ys) - $EDGE_BUFFER;
-        $maxX = max($xs) + $EDGE_BUFFER;
-        $maxY = max($ys) + $EDGE_BUFFER;
+            // skip duplicates
+            if (isset($seen[$key])) {
+                continue;
+            }
     
-        $supermarket->setWidth($maxX - $minX);
-        $supermarket->setHeight($maxY - $minY);
+            $seen[$key] = true;
     
-        $supermarketRepository->save($supermarket, true);
-    
-        // 3️⃣ Create Node entities for each node
-        foreach ($nodes as $n) {
             $node = new Node();
+            $node->setXValue($nodeData['x']);
+            $node->setYValue($nodeData['y']);
             $node->setSupermarket($supermarket);
-            $node->setXValue($n['x']);
-            $node->setYValue($n['y']);
+    
             $em->persist($node);
         }
     

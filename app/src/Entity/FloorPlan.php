@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Enum\SupermarketType;
 use App\Repository\FloorPlanRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FloorPlanRepository::class)]
@@ -28,6 +30,17 @@ class FloorPlan
 
     #[ORM\Column(enumType: SupermarketType::class)]
     private ?SupermarketType $type = null;
+
+    /**
+     * @var Collection<int, Supermarket>
+     */
+    #[ORM\OneToMany(targetEntity: Supermarket::class, mappedBy: 'floorPlan')]
+    private Collection $supermarkets;
+
+    public function __construct()
+    {
+        $this->supermarkets = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -90,6 +103,36 @@ class FloorPlan
     public function setType(SupermarketType $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Supermarket>
+     */
+    public function getSupermarkets(): Collection
+    {
+        return $this->supermarkets;
+    }
+
+    public function addSupermarket(Supermarket $supermarket): static
+    {
+        if (!$this->supermarkets->contains($supermarket)) {
+            $this->supermarkets->add($supermarket);
+            $supermarket->setFloorPlan($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSupermarket(Supermarket $supermarket): static
+    {
+        if ($this->supermarkets->removeElement($supermarket)) {
+            // set the owning side to null (unless already changed)
+            if ($supermarket->getFloorPlan() === $this) {
+                $supermarket->setFloorPlan(null);
+            }
+        }
 
         return $this;
     }

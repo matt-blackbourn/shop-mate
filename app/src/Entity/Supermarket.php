@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\SupermarketType;
 use App\Repository\SupermarketRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -65,6 +66,18 @@ class Supermarket
      */
     #[ORM\OneToMany(targetEntity: ShoppingSession::class, mappedBy: 'supermarket')]
     private Collection $shoppingSessions;
+
+    #[ORM\ManyToOne(inversedBy: 'supermarkets')]
+    private ?FloorPlan $floorPlan = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $dateCreated = null;
+
+    #[ORM\Column(nullable: true, enumType: SupermarketType::class)]
+    private ?SupermarketType $type = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $suburb = null;
 
     public function __construct()
     {
@@ -318,6 +331,54 @@ class Supermarket
                 $shoppingSession->setSupermarket(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getFloorPlan(): ?FloorPlan
+    {
+        return $this->floorPlan;
+    }
+
+    public function setFloorPlan(?FloorPlan $floorPlan): static
+    {
+        $this->floorPlan = $floorPlan;
+
+        return $this;
+    }
+
+    public function getDateCreated(): ?\DateTimeImmutable
+    {
+        return $this->dateCreated;
+    }
+
+    public function setDateCreated(?\DateTimeImmutable $dateCreated): static
+    {
+        $this->dateCreated = $dateCreated;
+
+        return $this;
+    }
+
+    public function getType(): ?SupermarketType
+    {
+        return $this->type;
+    }
+
+    public function setType(?SupermarketType $type): static
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    public function getSuburb(): ?string
+    {
+        return $this->suburb;
+    }
+
+    public function setSuburb(?string $suburb): static
+    {
+        $this->suburb = $suburb;
 
         return $this;
     }
