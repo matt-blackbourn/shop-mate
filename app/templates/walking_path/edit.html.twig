@@ -7,8 +7,8 @@
 
     <div class="d-flex align-items-center justify-content-between mb-2">
         <div class="d-flex align-items-center gap-3">
-            <h1 class="h4 mb-0">{{ floorPlan.type.value }} - {{ floorPlan.suburb }} by {{ floorPlan.user.email }}</h1>
-            <a href="{{ path('app_floor_plan_index') }}" class="btn btn-outline-secondary btn-sm">
+            <h1 class="h4 mb-0">{{ walkingPath.type.value }} - {{ walkingPath.suburb }} by {{ walkingPath.user.email }}</h1>
+            <a href="{{ path('app_walking_path_index') }}" class="btn btn-outline-secondary btn-sm">
                 ← Back to list
             </a>
         </div>
@@ -27,9 +27,9 @@
                 Delete node
             </button>
 
-            <form method="POST" action="{{ path('app_floorplan_to_supermarket_save', {'id': floorPlan.id}) }}"
+            <form method="POST" action="{{ path('app_walking_path_to_supermarket_save', {'id': walkingPath.id}) }}"
                   id="nodesForm" class="d-flex align-items-center gap-2">
-                <input type="hidden" name="nodes" id="nodesInput" data-floorplan-id="{{ floorPlan.id }}">
+                <input type="hidden" name="nodes" id="nodesInput" data-walking-path-id="{{ walkingPath.id }}">
                 <button id="save-nodes" type="submit" class="btn btn-primary btn-sm">
                     💾 Save as Supermarket
                 </button>
@@ -47,7 +47,7 @@
     {% endfor %}
 </div>
 
-<div id="floorplan-wrapper" data-floorplan-id="{{ floorPlan.id }}" data-raw-data="{{ floorPlan.rawData|json_encode|e('html_attr') }}">
+<div id="walking-path-wrapper" data-raw-data="{{ walkingPath.rawData|json_encode|e('html_attr') }}">
     <svg id="overlay" style="border:1px solid #ccc; width:100%; height:100vh;"></svg>
 </div>
 
@@ -86,7 +86,7 @@ const RENDER_SCALE = 30; // adjust until it feels right
 const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
 const SHOP_EDGE_BUFFER = 30; // distance from outermost nodes to the shop border
 
-const wrapper = document.getElementById('floorplan-wrapper');
+const wrapper = document.getElementById('walking-path-wrapper');
 const rawData = JSON.parse(wrapper.dataset.rawData || '{}');
 const nodesData = rawData.path || []; // ✅ only take the path array out of the raw data
 const visualScale = rawData.visualScale || 1;
@@ -514,7 +514,7 @@ form.addEventListener('submit', e => {
     const maxX = Math.max(...xs);
     const maxY = Math.max(...ys);
 
-    const floorplanId = nodesInput.dataset.floorplanId;
+    const walkingPathId = nodesInput.dataset.walkingPathId;
 
     const shopWidth = Math.round(maxX - minX + SHOP_EDGE_BUFFER * 2);
     const shopHeight = Math.round(maxY - minY + SHOP_EDGE_BUFFER * 2);
@@ -532,7 +532,7 @@ form.addEventListener('submit', e => {
     }));
 
     nodesInput.value = JSON.stringify({
-        floorplanId: parseInt(floorplanId),
+        walkingPathId: parseInt(walkingPathId),
         nodes: scaledNodes,
         walkingPath: scaledPath,
         width: shopWidth,

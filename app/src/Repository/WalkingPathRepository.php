@@ -2,22 +2,22 @@
 
 namespace App\Repository;
 
-use App\Entity\FloorPlan;
+use App\Entity\WalkingPath;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<FloorPlan>
+ * @extends ServiceEntityRepository<WalkingPath>
  */
-class FloorPlanRepository extends ServiceEntityRepository
+class WalkingPathRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, FloorPlan::class);
+        parent::__construct($registry, WalkingPath::class);
     }
 
     //    /**
-    //     * @return FloorPlan[] Returns an array of FloorPlan objects
+    //     * @return WalkingPath[] Returns an array of WalkingPath objects
     //     */
     //    public function findByExampleField($value): array
     //    {
@@ -31,7 +31,7 @@ class FloorPlanRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?FloorPlan
+    //    public function findOneBySomeField($value): ?WalkingPath
     //    {
     //        return $this->createQueryBuilder('f')
     //            ->andWhere('f.exampleField = :val')

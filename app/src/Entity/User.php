@@ -55,17 +55,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?Supermarket $lastUsedSupermarket = null;
 
     /**
-     * @var Collection<int, FloorPlan>
+     * @var Collection<int, WalkingPath>
      */
-    #[ORM\OneToMany(targetEntity: FloorPlan::class, mappedBy: 'user')]
-    private Collection $floorPlans;
+    #[ORM\OneToMany(targetEntity: WalkingPath::class, mappedBy: 'user')]
+    private Collection $walkingPaths;
 
     public function __construct()
     {
         $this->productPlacements = new ArrayCollection();
         $this->shoppingLists = new ArrayCollection();
         $this->foodItems = new ArrayCollection();
-        $this->floorPlans = new ArrayCollection();
+        $this->walkingPaths = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -252,29 +252,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, FloorPlan>
+     * @return Collection<int, WalkingPath>
      */
-    public function getFloorPlans(): Collection
+    public function getWalkingPaths(): Collection
     {
-        return $this->floorPlans;
+        return $this->walkingPaths;
     }
 
-    public function addFloorPlan(FloorPlan $floorPlan): static
+    public function addWalkingPath(WalkingPath $walkingPath): static
     {
-        if (!$this->floorPlans->contains($floorPlan)) {
-            $this->floorPlans->add($floorPlan);
-            $floorPlan->setUser($this);
+        if (!$this->walkingPaths->contains($walkingPath)) {
+            $this->walkingPaths->add($walkingPath);
+            $walkingPath->setUser($this);
         }
 
         return $this;
     }
 
-    public function removeFloorPlan(FloorPlan $floorPlan): static
+    public function removeWalkingPath(WalkingPath $walkingPath): static
     {
-        if ($this->floorPlans->removeElement($floorPlan)) {
+        if ($this->walkingPaths->removeElement($walkingPath)) {
             // set the owning side to null (unless already changed)
-            if ($floorPlan->getUser() === $this) {
-                $floorPlan->setUser(null);
+            if ($walkingPath->getUser() === $this) {
+                $walkingPath->setUser(null);
             }
         }
 

@@ -63,7 +63,7 @@
         data-supermarket-id="{{ supermarket.id }}"  
         data-nodes="{{ nodes|json_encode|e('html_attr') }}"
         data-edges="{{ edges|json_encode|e('html_attr') }}"
-        data-walking-path='{{ supermarket.walkingPath|json_encode }}'
+        data-walking-path='{{ supermarket.scaledPathData|json_encode }}'
     >
         <svg
             id="overlay"
@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodesData = JSON.parse(wrapper.dataset.nodes);
     const edgeData = JSON.parse(wrapper.dataset.edges);
     const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
+    console.log(wrapper.dataset.walkingPath)
     const walkingPath = JSON.parse(wrapper.dataset.walkingPath || '[]');
     const SVG_NS = 'http://www.w3.org/2000/svg';
 

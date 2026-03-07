@@ -3,13 +3,13 @@
 namespace App\Entity;
 
 use App\Enum\SupermarketType;
-use App\Repository\FloorPlanRepository;
+use App\Repository\WalkingPathRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: FloorPlanRepository::class)]
-class FloorPlan
+#[ORM\Entity(repositoryClass: WalkingPathRepository::class)]
+class WalkingPath
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -25,7 +25,7 @@ class FloorPlan
     #[ORM\Column]
     private ?\DateTimeImmutable $dateCreated = null;
 
-    #[ORM\ManyToOne(inversedBy: 'floorPlans')]
+    #[ORM\ManyToOne(inversedBy: 'walkingPaths')]
     private ?User $user = null;
 
     #[ORM\Column(enumType: SupermarketType::class)]
@@ -34,7 +34,7 @@ class FloorPlan
     /**
      * @var Collection<int, Supermarket>
      */
-    #[ORM\OneToMany(targetEntity: Supermarket::class, mappedBy: 'floorPlan')]
+    #[ORM\OneToMany(targetEntity: Supermarket::class, mappedBy: 'walkingPath')]
     private Collection $supermarkets;
 
     public function __construct()
@@ -119,7 +119,7 @@ class FloorPlan
     {
         if (!$this->supermarkets->contains($supermarket)) {
             $this->supermarkets->add($supermarket);
-            $supermarket->setFloorPlan($this);
+            $supermarket->setWalkingPath($this);
         }
 
         return $this;
@@ -129,8 +129,8 @@ class FloorPlan
     {
         if ($this->supermarkets->removeElement($supermarket)) {
             // set the owning side to null (unless already changed)
-            if ($supermarket->getFloorPlan() === $this) {
-                $supermarket->setFloorPlan(null);
+            if ($supermarket->getWalkingPath() === $this) {
+                $supermarket->setWalkingPath(null);
             }
         }
 

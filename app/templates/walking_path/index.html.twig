@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}WalkingPath index{% endblock %}
+
+{% block body %}
+    <h1>WalkingPath index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Suburb</th>
+                <th>DateCreated</th>
+                <th>Type</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for walkingPath in walkingPaths %}
+            <tr>
+                <td>{{ walkingPath.id }}</td>
+                <td>{{ walkingPath.suburb }}</td>
+                <td>{{ walkingPath.dateCreated ? walkingPath.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ walkingPath.type.value }}</td>
+                <td>
+                    <a href="{{ path('app_walking_path_edit', {'id': walkingPath.id}) }}">edit</a>
+                    | <a href="{{ path('app_walking_path_nodes', {'id': walkingPath.id}) }}">nodes</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

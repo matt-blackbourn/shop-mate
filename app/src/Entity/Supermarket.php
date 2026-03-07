@@ -65,7 +65,7 @@ class Supermarket
     private Collection $shoppingSessions;
 
     #[ORM\ManyToOne(inversedBy: 'supermarkets')]
-    private ?FloorPlan $floorPlan = null;
+    private ?WalkingPath $walkingPath = null;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dateCreated = null;
@@ -76,8 +76,11 @@ class Supermarket
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $suburb = null;
 
+    #[ORM\Column]
+    private ?bool $active = false;
+
     #[ORM\Column(nullable: true)]
-    private ?array $walkingPath = null;
+    private ?array $scaledPathData = null;
 
     public function __construct()
     {
@@ -323,14 +326,14 @@ class Supermarket
         return $this;
     }
 
-    public function getFloorPlan(): ?FloorPlan
+    public function getWalkingPath(): ?WalkingPath
     {
-        return $this->floorPlan;
+        return $this->walkingPath;
     }
 
-    public function setFloorPlan(?FloorPlan $floorPlan): static
+    public function setWalkingPath(?WalkingPath $walkingPath): static
     {
-        $this->floorPlan = $floorPlan;
+        $this->walkingPath = $walkingPath;
 
         return $this;
     }
@@ -371,14 +374,27 @@ class Supermarket
         return $this;
     }
 
-    public function getWalkingPath(): ?array
+
+    public function isActive(): ?bool
     {
-        return $this->walkingPath;
+        return $this->active;
     }
 
-    public function setWalkingPath(?array $walkingPath): static
+    public function setActive(bool $active): static
     {
-        $this->walkingPath = $walkingPath;
+        $this->active = $active;
+
+        return $this;
+    }
+
+    public function getScaledPathData(): ?array
+    {
+        return $this->scaledPathData;
+    }
+
+    public function setScaledPathData(?array $scaledPathData): static
+    {
+        $this->scaledPathData = $scaledPathData;
 
         return $this;
     }

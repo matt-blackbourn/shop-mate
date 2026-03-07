@@ -93,7 +93,7 @@ final class ShoppingListController extends AbstractController
         return $this->render('shopping_list/edit.html.twig', [
             'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),
-            'supermarkets' => $supermarketRepository->findAll(),
+            'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets(),
             'lastUsedSupermarketId' => $this->getUser()->getLastUsedSupermarket()?->getId(),
         ]);
     }

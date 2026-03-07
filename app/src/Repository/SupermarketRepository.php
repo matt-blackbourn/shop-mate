@@ -16,28 +16,25 @@ class SupermarketRepository extends ServiceEntityRepository
         parent::__construct($registry, Supermarket::class);
     }
 
-    //    /**
-    //     * @return Supermarket[] Returns an array of Supermarket objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('s.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findActiveMappedSupermarkets(): array
+    {
+        $qb = $this->createQueryBuilder('s');
 
-    //    public function findOneBySomeField($value): ?Supermarket
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        return $qb
+            ->where('s.active = true')
+            ->andWhere('s.entranceNode IS NOT NULL')
+
+            ->andWhere($qb->expr()->exists(
+                'SELECT 1 FROM App\Entity\Edge e WHERE e.supermarket = s'
+            ))
+            ->andWhere($qb->expr()->exists(
+                'SELECT 1 FROM App\Entity\Node n WHERE n.supermarket = s'
+            ))
+            ->andWhere($qb->expr()->exists(
+                'SELECT 1 FROM App\Entity\Shelf sh WHERE sh.supermarket = s'
+            ))
+
+            ->getQuery()
+            ->getResult();
+    }
 }
