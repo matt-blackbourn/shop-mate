@@ -117,6 +117,28 @@
 
 </style>
 <script>
+// find edges with a node in the middle of them. (delete these if found)
+{# SELECT 
+    e.id AS edge_id,
+    n.id AS node_on_edge
+FROM edge e
+JOIN node a ON a.id = e.start_id
+JOIN node b ON b.id = e.end_id
+JOIN node n 
+    ON n.supermarket_id = e.supermarket_id
+    AND n.id NOT IN (e.start_id, e.end_id)
+WHERE e.supermarket_id = :supermarketId
+
+AND ABS(
+    (b.x_value - a.x_value) * (n.y_value - a.y_value) -
+    (b.y_value - a.y_value) * (n.x_value - a.x_value)
+) < 0.01
+
+AND n.x_value BETWEEN LEAST(a.x_value, b.x_value) AND GREATEST(a.x_value, b.x_value)
+AND n.y_value BETWEEN LEAST(a.y_value, b.y_value) AND GREATEST(a.y_value, b.y_value)
+
+ORDER BY e.id; #}
+
 document.addEventListener('DOMContentLoaded', () => {
     const wrapper = document.getElementById('supermarket-wrapper');
     const svg = document.getElementById('overlay');
@@ -157,7 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     edgeData.forEach(e => {
         e.selected = false; // <-- add selected state
-        drawEdge(e);
+        const line = drawEdge(e);
+        e.element = line;
         edges.push(e); // Prefill edges array so these are resubmitted with any changes
     });
 
@@ -265,7 +288,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function createEdge(a, b) {
-        if (edgeExists(a, b)) return;
+        if (edgeExists(a, b)){
+            alert('Edge exists already.');
+
+            return;
+
+        } 
+        const blockingNode = Object.values(nodes).find(n =>
+            n.id !== a.id &&
+            n.id !== b.id &&
+            nodeOnSegment(a, b, n)
+        );
+
+        if (blockingNode) {
+            alert('An intermediate node exists on this edge. Connect through that node instead.');
+            return;
+        }
 
         const edge = {
             id: null,
@@ -321,6 +359,28 @@ document.addEventListener('DOMContentLoaded', () => {
             (e.from === a.id && e.to === b.id) ||
             (e.from === b.id && e.to === a.id)
         );
+    }
+
+    function nodeOnSegment(a, b, n, tolerance = 1) {
+        const cross =
+            (b.x - a.x) * (n.y - a.y) -
+            (b.y - a.y) * (n.x - a.x);
+
+        if (Math.abs(cross) > tolerance) return false;
+
+        const dot =
+            (n.x - a.x) * (b.x - a.x) +
+            (n.y - a.y) * (b.y - a.y);
+
+        if (dot < 0) return false;
+
+        const lenSq =
+            (b.x - a.x) ** 2 +
+            (b.y - a.y) ** 2;
+
+        if (dot > lenSq) return false;
+
+        return true;
     }
 
     const aisleSaveButton = document.getElementById('save-aisle');
