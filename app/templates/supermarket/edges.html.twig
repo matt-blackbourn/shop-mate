@@ -124,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodesData = JSON.parse(wrapper.dataset.nodes);
     const edgeData = JSON.parse(wrapper.dataset.edges);
     const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
-    console.log(wrapper.dataset.walkingPath)
     const walkingPath = JSON.parse(wrapper.dataset.walkingPath || '[]');
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -161,6 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
         drawEdge(e);
         edges.push(e); // Prefill edges array so these are resubmitted with any changes
     });
+
+    console.log(edges)
 
     document.getElementById('undo-edge').addEventListener('click', () => {
         undoLastEdge();
