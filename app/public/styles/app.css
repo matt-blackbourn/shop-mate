@@ -311,4 +311,11 @@ a:hover {
     border-color: #fa5252;
 }
 
+.shelf {
+    fill: #40272e;
+    stroke: #a96f79;
+    stroke-width: 1;
+    cursor: pointer;
+}
+
 

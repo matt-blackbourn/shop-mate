@@ -34,6 +34,8 @@
         class="w-100 border"
         preserveAspectRatio="xMinYMin meet"
         data-shelves="{{ shelves|json_encode|e('html_attr') }}"
+        data-edges="{{ edges|json_encode|e('html_attr') }}"
+        data-nodes="{{ nodes|json_encode|e('html_attr') }}"
         >
     </svg>
 </div>
@@ -51,14 +53,9 @@
         height: 100%;
         display: block;
     }
-.shelf {
-    fill:rgb(22, 147, 37);
-    stroke:rgb(15, 118, 27);
-    stroke-width: 2;
-    cursor: pointer;
-}
+
 .shelf.full-select {
-    stroke:rgb(157, 5, 5);
+    stroke:#c78590;
     stroke-width: 2;
 }
 .shelf.selected {
@@ -78,6 +75,12 @@
 .toolbar button.active {
   background: #ffd54f;
 }
+
+.path{
+    stroke:#64748b;        /* slate-500 */
+    stroke-width: 2;
+    stroke-dasharray: 8 3;
+}
 </style>
 
 <script>
@@ -88,25 +91,31 @@ let resizeState = null;
 const SNAP_DISTANCE = 2;
 const svg = document.getElementById('shelfEditor');
 const shelves = JSON.parse(svg.dataset.shelves);
-
-document.getElementById('shelfForm').addEventListener('submit', e => {
-
-    // sanitize shelves before submit - remove clientId and include deleted flag
-    const payload = shelves.map(shelf => ({
-        id: shelf.id ?? null,      // only real DB ids
-        x: shelf.x,
-        y: shelf.y,
-        width: shelf.width,
-        height: shelf.height,
-        deleted: !!shelf.deleted,
-        fullSelect: !!shelf.fullSelect,
-    }));
-
-    document.getElementById('shelfInput').value = JSON.stringify(payload);
-});
+const edgesData = JSON.parse(svg.dataset.edges);
+const nodesData = JSON.parse(svg.dataset.nodes);
 
 // --- Initial render ---
 renderShelves();
+
+// Draw edges - need nodes map for this
+const nodes = {};
+nodesData.forEach(n => {
+    nodes[n.id] = n;
+});
+edgesData.forEach(e => {
+    const from = nodes[e.from];
+    const to   = nodes[e.to];
+
+    // invisible edges - only visible with styles added
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.classList.add('path');
+
+    svg.appendChild(line);
+});
 
 // --- Rendering ---
 function renderShelves() {
@@ -306,6 +315,22 @@ function snapShelf(shelf) {
         if (Math.abs(shelf.y - (other.y + other.height)) < SNAP_DISTANCE) shelf.y = other.y + other.height;
     });
 }
+
+document.getElementById('shelfForm').addEventListener('submit', e => {
+
+    // sanitize shelves before submit - remove clientId and include deleted flag
+    const payload = shelves.map(shelf => ({
+        id: shelf.id ?? null,      // only real DB ids
+        x: shelf.x,
+        y: shelf.y,
+        width: shelf.width,
+        height: shelf.height,
+        deleted: !!shelf.deleted,
+        fullSelect: !!shelf.fullSelect,
+    }));
+
+    document.getElementById('shelfInput').value = JSON.stringify(payload);
+});
 
 
 </script>
