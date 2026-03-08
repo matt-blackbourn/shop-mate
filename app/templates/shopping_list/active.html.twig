@@ -274,9 +274,7 @@
     font-size: .8rem;
 }
 
-.no-placement{
-    border: 1px solid #fa5252;
-}
+
 #pick-item-map, #skip-item-map {
     font-size: 1rem;
 }
@@ -585,6 +583,10 @@
     fill: #f59e0b80
 }
 
+#path-map {
+    transition: transform 0.75s ease;
+}
+
 
 /* ----------------------
    Animations
@@ -614,6 +616,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
 const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 const shelfElsOther = []; // keep refs + geometry
+let mapRotation = 0;
 
 /*
  we loop over edges data a lot of times in this code, it probably needs optimising
@@ -722,6 +725,7 @@ updateMapView();
 highlightItemOnMap();
 
 
+
 function updateMapView() {
     const segment = routeState.segments[routeState.currentSegment];
     if(!segment) {
@@ -733,6 +737,46 @@ function updateMapView() {
             aisleSide: null,
         };
     } else {
+
+        // update this so that if the edge has the entrance node in it, it points the direction of the entry edge
+        // also when horizontal, make sure it is on the screen
+        // set a timeout so that path changes, and then map rotates 
+
+        const nodeA = nodes[segment.pathNodes[segment.pathNodes.length - 2]]; //  second last node in path
+        const nodeB = nodes[segment.pathNodes[segment.pathNodes.length - 1]]; //  second last node in path
+
+        // Compute the desired orientation from the edge
+        const ax = nodeA.x;
+        const bx = nodeB.x;
+        const ay = nodeA.y;
+        const by = nodeB.y;
+
+        const dx = bx - ax;
+        const dy = by - ay;
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+        // make edge face upward
+        let targetRotation = -90 - angle;
+
+        //Normalize the target to 0–360
+        targetRotation = (targetRotation + 360) % 360;
+
+        //Rotate the shortest direction
+        let delta = targetRotation - mapRotation;
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+        mapRotation += delta;
+
+        // Apply rotation to the map        
+        const pathSvg = document.getElementById("path-map");
+        pathSvg.style.transform = `rotate(${mapRotation}deg)`;
+        pathSvg.style.transformOrigin = "center center";
+
+            
+        
+
+
+
         const card = document.querySelector(`.shopping-card[data-id="${segment.itemId}"]`);
         routeState.currentItem = {
             itemId: card.dataset.id,
@@ -764,26 +808,29 @@ function updateMapView() {
     // update place item button on map view
     const placeBtn = document.getElementById('place-item-map');
     // Remove old status classes first
-    placeBtn.classList.remove('pick', 'skip', 'no-placement');
+    placeBtn.classList.remove('border-green', 'border-yellow', 'border-red');
 
-    const status = placementStatuses[segment.itemId]; // 'system', 'confirmed', 'provisional', 'group', 'none'
-    switch (status) {
-        case 'system':
-            placeBtn.classList.add('pick');
-            break;
-        case 'confirmed':
-            placeBtn.classList.add('pick');
-            break;
-        case 'provisional':
-            placeBtn.classList.add('skip');
-            break;
-        case 'group':
-            placeBtn.classList.add('skip');
-            break;
-        case 'none':
-        default:
-            placeBtn.classList.add('no-placement');
-            break;
+    if(segment){
+        const status = placementStatuses[segment.itemId]; // 'system', 'confirmed', 'provisional', 'group', 'none'
+        switch (status) {
+            case 'system':
+                placeBtn.classList.add('border-green');
+                break;
+            case 'confirmed':
+                placeBtn.classList.add('border-green');
+                break;
+            case 'provisional':
+                placeBtn.classList.add('border-yellow');
+                break;
+            case 'group':
+                placeBtn.classList.add('border-yellow');
+                break;
+            case 'none':
+            default:
+                placeBtn.classList.add('border-red');
+                break;
+        }
+        
     }
 
     // ---- MAKE BUTTON OPEN PLACEMENT MODAL ----
@@ -1461,6 +1508,8 @@ function skipItemById(itemId) {
 
 function removeCardFromList(itemId){
     const card = document.querySelector(`.shopping-card[data-id="${itemId}"]`);
+    if(!card) return;
+
     card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
     card.style.transform = 'translateX(-120%)';
     card.style.opacity = '0';

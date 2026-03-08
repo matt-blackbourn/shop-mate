@@ -139,6 +139,24 @@ AND n.y_value BETWEEN LEAST(a.y_value, b.y_value) AND GREATEST(a.y_value, b.y_va
 
 ORDER BY e.id; #}
 
+
+// Find duplicate edges
+{# SELECT *
+FROM edge e
+JOIN (
+    SELECT 
+        LEAST(start_id, end_id) AS node_a,
+        GREATEST(start_id, end_id) AS node_b
+    FROM edge
+    WHERE supermarket_id = :supermarketId
+    GROUP BY node_a, node_b
+    HAVING COUNT(*) > 1
+) d
+ON LEAST(e.start_id, e.end_id) = d.node_a
+AND GREATEST(e.start_id, e.end_id) = d.node_b
+WHERE e.supermarket_id = :supermarketId
+ORDER BY node_a, node_b, e.id; #}
+
 document.addEventListener('DOMContentLoaded', () => {
     const wrapper = document.getElementById('supermarket-wrapper');
     const svg = document.getElementById('overlay');
@@ -183,8 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.element = line;
         edges.push(e); // Prefill edges array so these are resubmitted with any changes
     });
-
-    console.log(edges)
 
     document.getElementById('undo-edge').addEventListener('click', () => {
         undoLastEdge();
@@ -253,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         line.addEventListener('click', () => {
             edge.selected = !edge.selected;                     // update JS state
             line.classList.toggle('selected', edge.selected);   // visual highlight
-            console.log(edge)
+            console.log('Edge:', edge)
         });
 
         // Insert behind nodes
@@ -271,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nearest = findNearestNode(x, y);
         if (!nearest) return;
 
-        console.log('Nearest node:', nearest);
+        console.log('Node:', nearest);
 
         if (!selectedNode) {
             selectNode(nearest);
