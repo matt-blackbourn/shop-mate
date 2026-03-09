@@ -27,6 +27,14 @@ class WalkingPathType extends AbstractType
                 'label' => 'Supermarket Type',
                 'required' => true,
             ])
+            // ->add('status', EnumType::class, [
+            //     'class' => Status::class,
+            //     // Optional: Customize labels, use the choice_label option
+            //     'choice_label' => fn (Status $choice) => $choice->name,
+            //     // Optional: Render as radio buttons or checkboxes
+            //     // 'expanded' => true,
+            //     // 'multiple' => false,
+            // ]);
             ->add('suburb', TextType::class, [
                 'label' => 'Suburb',
                 'required' => true,
