@@ -216,6 +216,10 @@
     color: #000;               /* optional text color change */
 }
 
+.mapper-svg {
+    transition: transform 1s ease;
+}
+
 
 
 </style>
@@ -238,12 +242,13 @@
     let VISUAL_SCALE = 20;
 
     let directionArrow; // persistent arrow group
+    let mapRotation = 0;
     let stepsBuffer = '';
     let path = [{ x: 0, y: 0, steps: 0 }];
     let headings = [0];
     let currentHeading = 0;
     let hasChanges = false;
-
+    let rotateTimer = null;
 
     createDirectionArrow();
 
@@ -326,6 +331,70 @@
     function enableSave() {
         hasChanges = true;
         if (saveBtn) saveBtn.disabled = false;
+    }
+
+    function rotateMap(){
+        clearTimeout(rotateTimer);
+
+        rotateTimer = setTimeout(() => {
+            const last = path[path.length - 1];
+            const headingDeg = currentHeading * 180 / Math.PI;
+
+            // rotate map so arrow points up
+            let targetRotation = -headingDeg;
+
+            //Normalize the target to 0–360
+            targetRotation = (targetRotation + 360) % 360;
+
+            //Rotate the shortest direction
+            let delta = targetRotation - mapRotation;
+            if (delta > 180) delta -= 360;
+            if (delta < -180) delta += 360;
+            mapRotation += delta;
+
+            // Apply rotation to the map        
+            svg.style.transform = `rotate(${mapRotation}deg)`;
+            svg.style.transformOrigin = "center center";
+
+            updateViewBox(); // always fit full path
+
+        }, 500)
+    }
+
+
+    function getRotatedPathBounds(rotationDeg) {
+
+        const rad = rotationDeg * Math.PI / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+
+        for (const p of path) {
+
+            const x = p.x * VISUAL_SCALE;
+            const y = p.y * VISUAL_SCALE;
+
+            const rx = x * cos - y * sin;
+            const ry = x * sin + y * cos;
+
+            minX = Math.min(minX, rx);
+            maxX = Math.max(maxX, rx);
+            minY = Math.min(minY, ry);
+            maxY = Math.max(maxY, ry);
+        }
+
+        return {
+            minX,
+            maxX,
+            minY,
+            maxY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
     }
 
 
@@ -417,6 +486,8 @@
         currentHeading = (currentHeading + Math.PI * 2) % (Math.PI * 2);
 
         updateDirectionArrow(); // rotate instantly
+
+        rotateMap()
     }
 
     function addLeg() {
