@@ -8,7 +8,7 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Id</th>
+                <th>Converted</th>
                 <th>Suburb</th>
                 <th>DateCreated</th>
                 <th>Type</th>
@@ -18,7 +18,7 @@
         <tbody>
         {% for walkingPath in walkingPaths %}
             <tr>
-                <td>{{ walkingPath.id }}</td>
+                <td>{% if walkingPath.converted %}Yes{% else %}No{% endif %}</td>
                 <td>{{ walkingPath.suburb }}</td>
                 <td>{{ walkingPath.dateCreated ? walkingPath.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
                 <td>{{ walkingPath.type.value }}</td>

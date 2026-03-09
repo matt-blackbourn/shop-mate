@@ -514,8 +514,6 @@ form.addEventListener('submit', e => {
     const maxX = Math.max(...xs);
     const maxY = Math.max(...ys);
 
-    const walkingPathId = nodesInput.dataset.walkingPathId;
-
     const shopWidth = Math.round(maxX - minX + SHOP_EDGE_BUFFER * 2);
     const shopHeight = Math.round(maxY - minY + SHOP_EDGE_BUFFER * 2);
 
@@ -532,7 +530,6 @@ form.addEventListener('submit', e => {
     }));
 
     nodesInput.value = JSON.stringify({
-        walkingPathId: parseInt(walkingPathId),
         nodes: scaledNodes,
         walkingPath: scaledPath,
         width: shopWidth,

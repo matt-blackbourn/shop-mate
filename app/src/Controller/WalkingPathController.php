@@ -78,13 +78,9 @@ final class WalkingPathController extends AbstractController
     public function saveWalkingPathAsSupermarket(
         Request $request,
         WalkingPath $walkingPath,
-        WalkingPathRepository $walkingPathRepository,
         EntityManagerInterface $em
     ): Response {
         $data = json_decode($request->request->get('nodes'), true);
-
-        $walkingPathId = $data['walkingPathId'];
-        $walkingPathRepository->find($walkingPathId);
 
         $supermarket = new Supermarket();
         $supermarket->setWidth($data['width']);
@@ -114,7 +110,8 @@ final class WalkingPathController extends AbstractController
     
             $em->persist($node);
         }
-    
+
+        $walkingPath->setConverted(true);
         $em->flush();
     
         $this->addFlash('success', 'Floor plan saved as a supermarket with nodes successfully!');

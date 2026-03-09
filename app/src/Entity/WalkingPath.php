@@ -37,6 +37,9 @@ class WalkingPath
     #[ORM\OneToMany(targetEntity: Supermarket::class, mappedBy: 'walkingPath')]
     private Collection $supermarkets;
 
+    #[ORM\Column]
+    private ?bool $converted = false;
+
     public function __construct()
     {
         $this->supermarkets = new ArrayCollection();
@@ -133,6 +136,18 @@ class WalkingPath
                 $supermarket->setWalkingPath(null);
             }
         }
+
+        return $this;
+    }
+
+    public function isConverted(): ?bool
+    {
+        return $this->converted;
+    }
+
+    public function setConverted(bool $converted): static
+    {
+        $this->converted = $converted;
 
         return $this;
     }
