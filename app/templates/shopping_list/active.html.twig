@@ -13,6 +13,7 @@
     data-segments="{{ segments|json_encode|e('html_attr') }}"
     data-entrance-node-id="{{ supermarket.entranceNode.id }}"
     data-supermarket-id="{{ supermarket.id }}" 
+    data-landscape="{{ supermarket.landscape ? 1 : 0 }}"
 >
 
     <div class="sticky-header">
@@ -619,6 +620,8 @@ const shelfElsOther = []; // keep refs + geometry
 let mapRotation = 0;
 const pathSvg = document.getElementById("path-map");
 
+
+
 // store original viewBox in SVG units
 if (!pathSvg.dataset.originalViewBox) {
     const vb = pathSvg.viewBox.baseVal;
@@ -729,11 +732,14 @@ drawShelves(shelvesData, document.getElementById('path-map'))
 
 updateMapView();
 
+// If map is landscape, rotate it so that it is in portrait orientation when initially displayed
+if(document.getElementById('shoppingListContainer').dataset.landscape == true) {
+    rotateMap();
+}
+
 // 4. 🔥 Render initial route
 highlightItemOnMap();
 
-  // update this so that if the edge has the entrance node in it, it points the direction of the entry edge
-    // set a timeout so that path changes, and then map rotates 
 function rotateMap(){
     setTimeout(() => {
 

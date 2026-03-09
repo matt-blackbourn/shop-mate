@@ -82,6 +82,9 @@ class Supermarket
     #[ORM\Column(nullable: true)]
     private ?array $scaledPathData = null;
 
+    #[ORM\Column]
+    private ?bool $landscape = false;
+
     public function __construct()
     {
         $this->edges = new ArrayCollection();
@@ -395,6 +398,18 @@ class Supermarket
     public function setScaledPathData(?array $scaledPathData): static
     {
         $this->scaledPathData = $scaledPathData;
+
+        return $this;
+    }
+
+    public function isLandscape(): ?bool
+    {
+        return $this->landscape;
+    }
+
+    public function setLandscape(bool $landscape): static
+    {
+        $this->landscape = $landscape;
 
         return $this;
     }
