@@ -6,7 +6,6 @@
 
 <div class="list-page">
 
-    {{ form_start(form) }}
 
     <!-- HEADER -->
     <div class="page-header">
@@ -67,6 +66,8 @@
 
     <!-- BODY -->
     <div class="page-body flex-grow-1 overflow-auto px-2 pt-2">
+        {{ form_start(form) }}
+
 
         <div
             id="listItems"
@@ -127,6 +128,7 @@
             {% endfor %}
             {% do form.listItems.setRendered %}
         </div>
+        {{ form_end(form) }}
 
     </div>
 
@@ -150,7 +152,6 @@
         </div>
     </div>
 
-    {{ form_end(form) }}
 
 </div>
 
@@ -160,6 +161,8 @@
 
 
 <style>
+
+
 
 #save-list {
     background-color: #f59e0b;
@@ -318,11 +321,17 @@
     color: #e9ecef;
 }
 
-/* BODY scroll area */
+.list-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 .page-body {
     flex: 1;
     overflow-y: auto;
 }
+
 
 /* FOOTER */
 .page-footer {
@@ -331,7 +340,8 @@
     position: sticky;
     bottom: 0;
     z-index: 1030;
-    height: 5rem;   
+    height: 5rem; 
+    flex-shrink: 0;  
 }
 
 
