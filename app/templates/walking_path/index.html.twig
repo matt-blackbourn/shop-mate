@@ -23,8 +23,8 @@
                 <td>{{ walkingPath.dateCreated ? walkingPath.dateCreated|date('Y-m-d H:i:s') : '' }}</td>
                 <td>{{ walkingPath.type.value }}</td>
                 <td>
-                    <a href="{{ path('app_walking_path_edit', {'id': walkingPath.id}) }}">edit</a>
-                    | <a href="{{ path('app_walking_path_nodes', {'id': walkingPath.id}) }}">nodes</a>
+                    <a href="{{ path('app_walking_path_nodes', {'id': walkingPath.id}) }}">convert to map</a>
+                    | <a href="{{ path('app_walking_path_edit', {'id': walkingPath.id}) }}">edit</a>
                 </td>
             </tr>
         {% else %}

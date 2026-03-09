@@ -318,4 +318,10 @@ a:hover {
     cursor: pointer;
 }
 
+.path{
+    stroke:#64748b;        /* slate-500 */
+    stroke-width: 2;
+    stroke-dasharray: 8 3;
+}
+
 

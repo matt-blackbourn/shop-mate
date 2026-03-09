@@ -48,52 +48,10 @@
   border-bottom: 1px solid #ccc;
 }
 
-.toolbar button.active {
-  background: #ffd54f;
-}
-
 #shelf-editor {
-  background: #fafafa;
   cursor: crosshair;
 }
 
-.edge {
-  stroke: #0d6efd;
-  stroke-width: 1;
-}
-
-.shelf {
-  fill: #e0e0e0;
-  stroke: #999;
-  cursor: move;
-}
-
-.shelf.selected {
-  stroke: #ff9800;
-  stroke-width: 2;
-}
-
-.shelf.draft {
-  fill: rgba(200,200,200,0.4);
-  stroke-dasharray: 4;
-}
-
-.save-flash {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #198754;
-  color: white;
-  padding: 10px 14px;
-  border-radius: 6px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s ease;
-}
-
-.save-flash.show {
-  opacity: 1;
-}
 
 </style>
 <script>
@@ -151,7 +109,7 @@ edgesData.forEach(e => {
     line.setAttribute('y1', from.y);
     line.setAttribute('x2', to.x);
     line.setAttribute('y2', to.y);
-    line.classList.add('edge');
+    line.classList.add('path');
 
     edgesLayer.appendChild(line);
 });
@@ -238,6 +196,18 @@ svg.addEventListener('mouseup', () => {
   createShelfGroup(groupRect);
 });
 
+function uuid() {
+    if (crypto.randomUUID) {
+        return uuid();
+    }
+
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
 function createShelfGroup(selectionRect) {
   const groupedShelves = shelves.filter(shelf =>
     rectIntersects(selectionRect, shelf)
@@ -254,7 +224,7 @@ function createShelfGroup(selectionRect) {
   const y2 = Math.max(...groupedShelves.map(s => s.y + s.height));
 
   const group = {
-    id: crypto.randomUUID(),
+    id: uuid(),
     shelves: groupedShelves.map(s => s.id),
     x: x1,
     y: y1,
@@ -415,7 +385,7 @@ function autoGenerateShelves() {
 
         shelves.push(
             {
-            id: crypto.randomUUID(),
+            id: uuid(),
             x: startX,
             y: y - offset - shelfDepth / 2,
             width,
@@ -423,7 +393,7 @@ function autoGenerateShelves() {
             edgeId: edge.id
             },
             {
-            id: crypto.randomUUID(),
+            id: uuid(),
             x: startX,
             y: y + offset - shelfDepth / 2,
             width,
@@ -455,7 +425,7 @@ function autoGenerateShelves() {
 
         shelves.push(
             {
-            id: crypto.randomUUID(),
+            id: uuid(),
             x: x - offset - shelfDepth / 2,
             y: startY,
             width: shelfDepth,
@@ -463,7 +433,7 @@ function autoGenerateShelves() {
             edgeId: edge.id
             },
             {
-            id: crypto.randomUUID(),
+            id: uuid(),
             x: x + offset - shelfDepth / 2,
             y: startY,
             width: shelfDepth,
@@ -483,17 +453,17 @@ function autoGenerateShelves() {
 
 
 function drawShelf(shelf) {
-  const rect = document.createElementNS(SVG_NS, 'rect');
+    const rect = document.createElementNS(SVG_NS, 'rect');
 
-  rect.setAttribute('x', shelf.x);
-  rect.setAttribute('y', shelf.y);
-  rect.setAttribute('width', shelf.width);
-  rect.setAttribute('height', shelf.height);
-  rect.dataset.id = shelf.id;
+    rect.setAttribute('x', shelf.x);
+    rect.setAttribute('y', shelf.y);
+    rect.setAttribute('width', shelf.width);
+    rect.setAttribute('height', shelf.height);
+    rect.dataset.id = shelf.id;
     rect.dataset.edgeId = shelf.edgeId ?? '';
-  rect.classList.add('shelf', 'auto');
+    rect.classList.add('shelf', 'auto');
 
-  shelvesLayer.appendChild(rect);
+    shelvesLayer.appendChild(rect);
 }
 
 
