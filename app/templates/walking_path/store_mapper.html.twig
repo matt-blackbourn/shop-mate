@@ -445,7 +445,9 @@
     function updateViewBox() {
         if (!path.length) return;
 
-        const padding = 40;
+        const basePadding = 40;
+        const arrowLength = (20 * VISUAL_SCALE / 10) + (8 * VISUAL_SCALE / 10);
+        const padding = basePadding + arrowLength;
 
         let minX = path[0].x * VISUAL_SCALE;
         let maxX = path[0].x * VISUAL_SCALE;

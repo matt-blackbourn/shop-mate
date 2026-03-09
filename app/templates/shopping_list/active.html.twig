@@ -740,43 +740,14 @@ if(document.getElementById('shoppingListContainer').dataset.landscape == true) {
 // 4. 🔥 Render initial route
 highlightItemOnMap();
 
+
+
 function rotateMap(){
     setTimeout(() => {
-
-        const segment = routeState.segments[routeState.currentSegment];
-        if(!segment){
-            return
+        const mapRotation = findRotationForNextItem();
+        if(mapRotation === null){
+            return;
         }
-
-        const nodeA = nodes[segment.pathNodes[segment.pathNodes.length - 2]]; //  second last node in path
-        const nodeB = nodes[segment.pathNodes[segment.pathNodes.length - 1]]; //  second last node in path
-
-        // Skip map rotation/movement if no path nodes (same-edge placements)
-        if(!nodeA || !nodeB){
-            return
-        }
-
-        // Compute the desired orientation from the edge
-        const ax = nodeA.x;
-        const bx = nodeB.x;
-        const ay = nodeA.y;
-        const by = nodeB.y;
-
-        const dx = bx - ax;
-        const dy = by - ay;
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-        // make edge face upward
-        let targetRotation = -90 - angle;
-
-        //Normalize the target to 0–360
-        targetRotation = (targetRotation + 360) % 360;
-
-        //Rotate the shortest direction
-        let delta = targetRotation - mapRotation;
-        if (delta > 180) delta -= 360;
-        if (delta < -180) delta += 360;
-        mapRotation += delta;
 
         // Apply rotation to the map        
         pathSvg.style.transform = `rotate(${mapRotation}deg)`;
@@ -792,6 +763,9 @@ function rotateMap(){
         const isLandscape = mapRotation === 90 || mapRotation === -90;
         if (isLandscape) {
             // shift viewBox so the final node is roughly centred
+            const segment = routeState.segments[routeState.currentSegment];
+            const nodeA = nodes[segment.pathNodes[segment.pathNodes.length - 2]]; //  second last node in path
+            const nodeB = nodes[segment.pathNodes[segment.pathNodes.length - 1]]; //  second last node in path
             const centerX = nodeB.x;
             const centerY = nodeB.y;
 
@@ -811,6 +785,45 @@ function rotateMap(){
             animateViewBox(pathSvg, start, end, 600); // 600ms animation
         }
     }, 500)
+}
+
+function findRotationForNextItem(){
+    const segment = routeState.segments[routeState.currentSegment];
+    if(!segment){
+        return null
+    }
+
+    const nodeA = nodes[segment.pathNodes[segment.pathNodes.length - 2]]; //  second last node in path
+    const nodeB = nodes[segment.pathNodes[segment.pathNodes.length - 1]]; //  second last node in path
+
+    // Skip map rotation/movement if no path nodes (same-edge placements)
+    if(!nodeA || !nodeB){
+        return null
+    }
+
+    // Compute the desired orientation from the edge
+    const ax = nodeA.x;
+    const bx = nodeB.x;
+    const ay = nodeA.y;
+    const by = nodeB.y;
+
+    const dx = bx - ax;
+    const dy = by - ay;
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    // make edge face upward
+    let targetRotation = -90 - angle;
+
+    //Normalize the target to 0–360
+    targetRotation = (targetRotation + 360) % 360;
+
+    //Rotate the shortest direction
+    let delta = targetRotation - mapRotation;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    mapRotation += delta;
+
+    return mapRotation;
 }
 
 function updateMapView() {
@@ -995,8 +1008,6 @@ function highlightShelfPortion(shelf, edge) {
     const halfHeight = shelf.height / 2;
     const halfWidth  = shelf.width / 2;
 
-    const fullSelect = isWallShelf(shelf, edge) || shelf.fullSelect;
-
     // 🔹 Edge runs left-right (above or below shelf)
     if (edgeIsHorizontal) {
         const x1 = Math.max(shelfMinX, Math.min(edge.x1, edge.x2));
@@ -1009,9 +1020,9 @@ function highlightShelfPortion(shelf, edge) {
         drawShelfHighlight(
             shelf,
             x1,
-            fullSelect ? shelfMinY : (edgeIsAbove ? shelfMinY : shelfMinY + halfHeight),
+            shelf.fullSelect ? shelfMinY : (edgeIsAbove ? shelfMinY : shelfMinY + halfHeight),
             x2 - x1,
-            fullSelect ? shelf.height : halfHeight
+            shelf.fullSelect ? shelf.height : halfHeight
         );
     }
 
@@ -1026,9 +1037,9 @@ function highlightShelfPortion(shelf, edge) {
 
         drawShelfHighlight(
             shelf,
-            fullSelect ? shelfMinX : (edgeIsLeft ? shelfMinX : shelfMinX + halfWidth),
+            shelf.fullSelect ? shelfMinX : (edgeIsLeft ? shelfMinX : shelfMinX + halfWidth),
             y1,
-            fullSelect ? shelf.width : halfWidth,
+            shelf.fullSelect ? shelf.width : halfWidth,
             y2 - y1
         );
     }
@@ -1246,66 +1257,6 @@ function drawEntranceArrow(node) {
 }
 
 
-function isWallShelf(shelf, edge) {
-    const edgeIsHorizontal = edge.y1 === edge.y2;
-    const edgeIsVertical   = edge.x1 === edge.x2;
-
-    const shelfMinX = shelf.x;
-    const shelfMaxX = shelf.x + shelf.width;
-    const shelfMinY = shelf.y;
-    const shelfMaxY = shelf.y + shelf.height;
-
-    const otherEdges = edgesData.filter(e => e !== edge);
-
-    for (const e of otherEdges) {
-
-        const eIsHorizontal = e.y1 === e.y2;
-        const eIsVertical   = e.x1 === e.x2;
-
-        // Must be parallel
-        if (edgeIsHorizontal && !eIsHorizontal) continue;
-        if (edgeIsVertical   && !eIsVertical)   continue;
-
-        if (edgeIsHorizontal) {
-            // Must overlap shelf in X
-            const overlapsX =
-                Math.min(shelfMaxX, Math.max(e.x1, e.x2)) >
-                Math.max(shelfMinX, Math.min(e.x1, e.x2));
-
-            if (!overlapsX) continue;
-
-            // Must be on opposite side of shelf
-            const edgeIsAbove = edge.y1 < shelfMinY;
-            const eIsAbove    = e.y1 < shelfMinY;
-
-            if (edgeIsAbove !== eIsAbove) {
-                return false; // aisle shelf
-            }
-        }
-
-        if (edgeIsVertical) {
-            // Must overlap shelf in Y
-            const overlapsY =
-                Math.min(shelfMaxY, Math.max(e.y1, e.y2)) >
-                Math.max(shelfMinY, Math.min(e.y1, e.y2));
-
-            if (!overlapsY) continue;
-
-            // Must be on opposite side
-            const edgeIsLeft = edge.x1 < shelfMinX;
-            const eIsLeft    = e.x1 < shelfMinX;
-
-            if (edgeIsLeft !== eIsLeft) {
-                return false; // aisle shelf
-            }
-        }
-    }
-
-    return true; // no opposite parallel edge → wall shelf
-}
-
-
-
 function linesIntersect(l1, l2) {
     // Horizontal
     if (l2.y1 === l2.y2) {
@@ -1334,6 +1285,12 @@ document.getElementById('mapButton').addEventListener('click', e => {
     const modalEl = document.getElementById('pathModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
+
+    if(findRotationForNextItem() === 180){
+        setTimeout(() => {
+           rotateMap();
+        }, 500)
+    }
 });
 
 
