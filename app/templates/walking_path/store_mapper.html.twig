@@ -74,10 +74,10 @@
 </div>
 
 {# Modal form for submission #}
-<div class="modal fade" id="floorplanModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="walkingPathModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="floorplanForm">
+            <form id="walkingPathForm">
                 <div class="modal-header">
                     <h5 class="modal-title">Submit Floor Plan</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -343,13 +343,9 @@
             // rotate map so arrow points up
             let targetRotation = -headingDeg;
 
-            //Normalize the target to 0–360
-            targetRotation = (targetRotation + 360) % 360;
-
-            //Rotate the shortest direction
+            // compute shortest rotation
             let delta = targetRotation - mapRotation;
-            if (delta > 180) delta -= 360;
-            if (delta < -180) delta += 360;
+            delta = ((delta + 180) % 360) - 180;
             mapRotation += delta;
 
             // Apply rotation to the map        
@@ -535,7 +531,6 @@
         drawPath();
         enableSave();
         saveToLocalStorage()
-        console.log(localStorage.getItem('storeMapping'))
     }
 
     function undoLeg() {
@@ -663,7 +658,7 @@
 
     // --- FORM SUBMISSION ---
 
-    const modalEl = document.getElementById('floorplanModal');
+    const modalEl = document.getElementById('walkingPathModal');
     const submitButton = document.getElementById('openSubmitModal');
 
     // Open the modal when clicking the save button
@@ -673,7 +668,7 @@
     });
 
     // Handle modal form submission
-    document.getElementById('floorplanForm').addEventListener('submit', async (e) => {
+    document.getElementById('walkingPathForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const formData = new FormData(e.target);
@@ -685,7 +680,7 @@
         };
 
         try {
-            const response = await fetch('/floorplan/save', { // ✅ new POST route
+            const response = await fetch('/walkingpath/save', { // ✅ new POST route
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
