@@ -116,6 +116,10 @@
 
 
 <style>
+#phaseDescription {
+    white-space: pre-line;
+}
+
 .mapper-page {
     height: 100dvh;   /* important for mobile */
     background: #1c212b;
@@ -380,13 +384,13 @@
 
         if (phase === PHASE_PERIMETER) {
             title = "Map the perimeter";
-            description = "The first step in the mapping process is to walk a path around the inside perimeter of the store, to map the overall shape of the building. Start at the entrance of the shelving area (not the external door) and follow the wall shelving all the way around until you are back near the entrance. Tap NEXT when you are finished.";
+            description = "The first step in the mapping process is to map the path around the inside perimeter of the store. \n\nStart at the entrance of the shelving area (not the external door), count your steps and use the number pad to enter your count at each waypoint. Use the yellow turning button to turn the arrow, and the undo button if you make a mistake. Follow the wall shelving all the way around until you are back near the entrance. \n\nTap NEXT when you are finished.";
             pathClass = 'perimeter-path';
         }
 
         if (phase === PHASE_AISLES) {
             title = "Map the aisles";
-            description = "Nice work! The next step is to walk all the aisles, island shelving and stand alone-freezers in a zig-zag pattern. The map pointer has been moved back to the entrance as your new start position. Disregard any 'specials' shelving which change products often - we dont need to know where those are.";
+            description = "The next step is to map all the island shelving, stand alone-freezers and main aisles, moving up and down them like a snake. \n\nThis can take a bit longer as there will be lots of turns and shorter waypoints around these shelves. You should end up walking over some of the same path as you walked in step 1. \n\nThe direction arrow has been moved back to the entrance as your new start position. You dont need to walk around any 'specials' shelving which changes products often - these are often located at or near the entrance and can be ignored.";
             pathClass = 'aisle-path';
         }
 
