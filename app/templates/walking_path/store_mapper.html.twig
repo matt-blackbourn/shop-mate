@@ -19,22 +19,19 @@
             <div class="header-center flex-grow-1 text-center fw-semibold">
                   <div class="mapping-steps">
                     <span id="stepPerimeter">Perimeter</span> →
-                    <span id="stepAisles">Aisles</span> →
-                    <span id="stepFinish">Finish</span>
+                    <span id="stepAisles">Aisles</span>
                 </div>
             </div>
 
             <!-- Right: Save -->
             <div class="header-right d-flex align-items-center">
-
-              
             
                 <button type="button" id="phaseButton" class="btn-dark-base border-green">
                     NEXT
                 </button>
-                <button type="button" id="openSubmitModal" class="btn-dark-base border-green">
+                {# <button type="button" id="phaseButton" class="btn-dark-base border-green">
                     <i class="bi bi-check-lg"></i>
-                </button>
+                </button> #}
             </div>
         </div>
     </div>
@@ -111,11 +108,9 @@
             <div class="modal-body text-center p-4">
 
                 <h5 id="phaseTitle"></h5>
-                <p id="phaseDescription" class="small text-muted"></p>
+                <p id="phaseDescription" class="small"></p>
 
-                <button class="btn btn-primary w-100 mt-3" data-bs-dismiss="modal">
-                    Got it
-                </button>
+                <button class="btn btn-primary w-100 mt-3" data-bs-dismiss="modal">Got it</button>
 
             </div>
         </div>
@@ -212,8 +207,14 @@
     height: 100%;
 }
 
-.perimeter-path { stroke: #ff6b6b; }
-.aisle-path { stroke: #4dabf7; }
+.perimeter-path { 
+    stroke: #51cf66; 
+    fill: #51cf66; 
+}
+.aisle-path { 
+    stroke: #fab005; 
+    fill: #fab005; 
+}
 
 .mapper-actions {
     display: grid;
@@ -232,10 +233,6 @@
     flex: 1;  
 }
 
-/* Make Enter span two columns */
-{# .mapper-numpad .border-green {
-    grid-column: span 2;
-} #}
 
 /* temporary highlight state */
 .btn-dark-base.clicked {
@@ -278,7 +275,7 @@
     let directionArrow; // persistent arrow group
     let mapRotation = 0;
     let stepsBuffer = '';
-    let path = [{ x: 0, y: 0, steps: 0 }];
+    let path = [{ x: 0, y: 0, steps: 0, phase: PHASE_PERIMETER }]; // start at origin with 0 steps
     let headings = [0];
     let currentHeading = 0;
     let hasChanges = false;
@@ -301,35 +298,6 @@
         });
     });
 
-    document.getElementById("phaseButton").addEventListener("click", () => {
-        if (currentPhase === PHASE_PERIMETER) {
-            currentPhase = PHASE_AISLES;
-            //resetPathToStart(); // your existing logic
-            showPhaseModal(currentPhase);
-            updatePrimaryButton();
-            return;
-        }
-
-        if (currentPhase === PHASE_AISLES) {
-            currentPhase = PHASE_FINAL;
-            showFinalForm(); // your submission modal
-        }
-
-    });
-
-    function updatePrimaryButton() {
-
-        const btn = document.getElementById("phaseButton");
-
-        if (currentPhase === PHASE_PERIMETER) {
-            btn.textContent = "Map Aisles";
-        }
-
-        if (currentPhase === PHASE_AISLES) {
-            btn.style.display = 'none'; // hide button in final phase
-        }
-    }
-
     function createDirectionArrow() {
         directionArrow = document.createElementNS(SVG_NS, 'g');
         directionArrow.classList.add('direction-arrow');
@@ -340,15 +308,16 @@
         line.setAttribute('y1', 0);
         line.setAttribute('x2', 20); // initial length, will be scaled
         line.setAttribute('y2', 0);
-        line.setAttribute('stroke', '#fab005');
+        
         line.setAttribute('stroke-width', VISUAL_SCALE / 10);
         line.classList.add('arrow-line');
+        line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
 
         // Arrow tip
         const tip = document.createElementNS(SVG_NS, 'path');
         tip.setAttribute('d', `M0 -4 L8 0 L0 4 Z`); // initial tip
-        tip.setAttribute('fill', '#fab005');
         tip.classList.add('arrow-tip');
+        tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
         tip.setAttribute('transform', `translate(25,0)`);
 
         directionArrow.appendChild(line);
@@ -380,13 +349,41 @@
         const lineLength = 20 * VISUAL_SCALE / 10; 
         line.setAttribute('x2', lineLength);
         line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 5));
+        line.classList.remove('perimeter-path', 'aisle-path');
+        line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+
 
         // Tip size & position scaled
         const tipWidth = 8 * VISUAL_SCALE / 10;
         const tipHeight = 4 * VISUAL_SCALE / 10;
         tip.setAttribute('d', `M0 ${-tipHeight} L${tipWidth} 0 L0 ${tipHeight} Z`);
         tip.setAttribute('transform', `translate(${lineLength},0)`);
+        tip.classList.remove('perimeter-path', 'aisle-path');
+        tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+
     }
+
+
+    // Open the modal when clicking the save button
+    const phaseButton = document.getElementById('phaseButton');
+    phaseButton.addEventListener('click', () => {
+        if (currentPhase === PHASE_PERIMETER) {
+            currentPhase = PHASE_AISLES;
+            updatePrimaryButton();
+            showPhaseModal(currentPhase); 
+            updateDirectionArrow()
+            //resetPathToStart(); 
+            return;
+        }
+
+        if (currentPhase === PHASE_AISLES) {
+            currentPhase = PHASE_FINAL;
+            // NOW open the final form modal
+            const modal = new bootstrap.Modal(document.getElementById('walkingPathModal'));
+            modal.show();
+            return;
+        }
+    });
 
     function showPhaseModal(phase) {
         let title = "";
@@ -394,19 +391,18 @@
 
         if (phase === PHASE_PERIMETER) {
             title = "Map the store perimeter";
-            description = "Walk around the outside edge of the store and mark the boundary. Follow the walls until you return to the starting point.";
+            description = "Map the path around the inside edge of the store. Follow the wall shelving until you return to the starting point, then click NEXT.";
             pathClass = 'perimeter-path';
         }
 
         if (phase === PHASE_AISLES) {
             title = "Map the aisles";
-            description = "Start again from the entrance and walk each aisle. Trace the paths customers can walk through.";
+            description = "Great work! The next step is to walk all the aisles in a zig-zag pattern, from the start. Include any permanent freezers or island shelving, but disregard any specials shelving which change product often - we wont be mapping those.";
             pathClass = 'aisle-path';
         }
 
         if (phase === PHASE_FINAL) {
-            title = "Final details";
-            description = "Fill in the final store details before submitting your map.";
+            return // we show the final submission form instead of this modal
         }
 
         document.getElementById("phaseTitle").textContent = title;
@@ -414,6 +410,60 @@
 
         const modal = new bootstrap.Modal(document.getElementById("phaseModal"));
         modal.show();
+    }
+
+    // Handle modal form submission
+    document.getElementById('walkingPathForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const payload = {
+            supermarketType: document.querySelector('#walking_path_supermarketType').value,
+            suburb: document.querySelector('#walking_path_suburb').value,
+            rawData: JSON.parse(localStorage.getItem('storeMapping') || '{}'),
+        };
+
+        console.log(payload)
+        return
+
+        try {
+            const response = await fetch('/walkingpath/save', { // ✅ new POST route
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                const message = errorData?.error || 'Submission failed';
+                throw new Error(message);
+            }
+
+            // Only clear localStorage on success
+            localStorage.removeItem('storeMapping');
+
+            alert('Path data submitted successfully!');
+            window.location.href = '/';
+
+        } catch (err) {
+
+            console.error('Submission error message:', err.message);
+            alert('Submission failed — your progress is still saved offline.');
+        }
+    });
+
+
+
+    
+    function updatePrimaryButton() {
+        const btn = document.getElementById("phaseButton");
+
+        if (currentPhase === PHASE_PERIMETER) {
+            btn.textContent = "NEXT";
+        }
+
+        if (currentPhase === PHASE_AISLES) {
+            btn.textContent = "FINISH";
+        }
     }
 
     function updateDisplay() {
@@ -505,7 +555,7 @@
             line.setAttribute('x2', x2);
             line.setAttribute('y2', y2);
             line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 10));
-            line.setAttribute('class', pathClass);
+            line.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
 
             const dashLength = Math.max(1, VISUAL_SCALE / 5);
             const gapLength = Math.max(1, VISUAL_SCALE / 5);
@@ -517,7 +567,7 @@
             dot.setAttribute('cx', x2);
             dot.setAttribute('cy', y2);
             dot.setAttribute('r', Math.max(2, VISUAL_SCALE / 6));
-            dot.setAttribute('fill', '#51cf66');
+            dot.setAttribute('fill', '#fa5252');
             pathLayer.appendChild(dot);
 
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -525,7 +575,7 @@
             text.setAttribute('y', (y1 + y2) / 2 - VISUAL_SCALE / 5);
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('font-size', Math.max(8, VISUAL_SCALE / 2));
-            text.setAttribute('fill', '#fa5252');
+            text.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
             text.textContent = p2.steps;
 
             pathLayer.appendChild(text);
@@ -613,7 +663,8 @@
         path.push({ 
             x: newX, 
             y: newY, 
-            steps: steps
+            steps: steps,
+            phase: currentPhase,
         });
         headings.push(currentHeading);
 
@@ -716,7 +767,8 @@
             path: path,
             headings: headings,
             currentHeading: currentHeading,
-            visualScale: VISUAL_SCALE
+            visualScale: VISUAL_SCALE,
+            phase: currentPhase,
         };
     }
 
@@ -740,6 +792,7 @@
             headings = state.headings || [];
             currentHeading = state.currentHeading || 0;
             VISUAL_SCALE = state.visualScale || 20;
+            currentPhase = state.phase || PHASE_PERIMETER;
 
             drawPath();
             updateDirectionArrow();
@@ -752,52 +805,7 @@
 
     // --- FORM SUBMISSION ---
 
-    const modalEl = document.getElementById('walkingPathModal');
-    const submitButton = document.getElementById('openSubmitModal');
-
-    // Open the modal when clicking the save button
-    submitButton.addEventListener('click', () => {
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
-    });
-
-    // Handle modal form submission
-    document.getElementById('walkingPathForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-
-        const payload = {
-            supermarketType: document.querySelector('#walking_path_supermarketType').value,
-            suburb: document.querySelector('#walking_path_suburb').value,
-            rawData: JSON.parse(localStorage.getItem('storeMapping') || '{}'),
-        };
-
-        try {
-            const response = await fetch('/walkingpath/save', { // ✅ new POST route
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                const message = errorData?.error || 'Submission failed';
-                throw new Error(message);
-            }
-
-            // Only clear localStorage on success
-            localStorage.removeItem('storeMapping');
-
-            alert('Floor plan submitted successfully!');
-            window.location.href = '/';
-
-        } catch (err) {
-
-            console.error('Submission error message:', err.message);
-            alert('Submission failed — your progress is still saved offline.');
-        }
-    });
+ 
 })();
 </script>
 
