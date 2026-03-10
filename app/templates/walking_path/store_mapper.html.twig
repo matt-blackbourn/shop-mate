@@ -29,9 +29,6 @@
                 <button type="button" id="phaseButton" class="btn-dark-base border-green">
                     NEXT
                 </button>
-                {# <button type="button" id="phaseButton" class="btn-dark-base border-green">
-                    <i class="bi bi-check-lg"></i>
-                </button> #}
             </div>
         </div>
     </div>
@@ -58,9 +55,9 @@
     <div class="mapper-footer">
 
         <div class="mapper-actions">
-            <button class="btn-dark-base border-red">⌫</button>
             <div class="mapper-display"><span id="stepDisplay">0</span></div>
             <button class="btn-dark-base border-yellow" data-direction="right"><i class="bi bi-arrow-90deg-right"></i></i></i></button>
+            <button class="btn-dark-base border-green">Enter</button>
         </div>
 
         <!-- Number Pad -->
@@ -68,8 +65,8 @@
             {% for n in [1,2,3,4,5,6,7,8,9] %}
                 <button class="btn-dark-base" data-number="{{ n }}">{{ n }}</button>
             {% endfor %}
+            <button class="btn-dark-base">⌫</button>
             <button class="btn-dark-base" data-number="0">0</button>
-            <button class="btn-dark-base border-green">Enter</button>
             <button type="button" class="btn-dark-base"><i class="bi bi-arrow-counterclockwise"></i></button>
 
         </div>
@@ -201,19 +198,10 @@
     display: flex;
     justify-content: center;
     text-align: center;
-    color: #52fafa;
+    color: #51cf66;
 
     width: 100%;
     height: 100%;
-}
-
-.perimeter-path { 
-    stroke: #51cf66; 
-    fill: #51cf66; 
-}
-.aisle-path { 
-    stroke: #fab005; 
-    fill: #fab005; 
 }
 
 .mapper-actions {
@@ -372,7 +360,8 @@
             updatePrimaryButton();
             showPhaseModal(currentPhase); 
             updateDirectionArrow()
-            //resetPathToStart(); 
+            path.push({ x: 0, y: 0, steps: 0, phase: PHASE_AISLES }) // return to entrance for aisle mapping
+            drawPath()
             return;
         }
 
@@ -390,14 +379,14 @@
         let description = "";
 
         if (phase === PHASE_PERIMETER) {
-            title = "Map the store perimeter";
-            description = "Map the path around the inside edge of the store. Follow the wall shelving until you return to the starting point, then click NEXT.";
+            title = "Map the perimeter";
+            description = "The first step in the mapping process is to walk a path around the inside perimeter of the store, to map the overall shape of the building. Start at the entrance of the shelving area (not the external door) and follow the wall shelving all the way around until you are back near the entrance. Tap NEXT when you are finished.";
             pathClass = 'perimeter-path';
         }
 
         if (phase === PHASE_AISLES) {
             title = "Map the aisles";
-            description = "Great work! The next step is to walk all the aisles in a zig-zag pattern, from the start. Include any permanent freezers or island shelving, but disregard any specials shelving which change product often - we wont be mapping those.";
+            description = "Nice work! The next step is to walk all the aisles, island shelving and stand alone-freezers in a zig-zag pattern. The map pointer has been moved back to the entrance as your new start position. Disregard any 'specials' shelving which change products often - we dont need to know where those are.";
             pathClass = 'aisle-path';
         }
 
@@ -421,9 +410,6 @@
             suburb: document.querySelector('#walking_path_suburb').value,
             rawData: JSON.parse(localStorage.getItem('storeMapping') || '{}'),
         };
-
-        console.log(payload)
-        return
 
         try {
             const response = await fetch('/walkingpath/save', { // ✅ new POST route
@@ -668,6 +654,7 @@
         });
         headings.push(currentHeading);
 
+        console.log(path)
 
         // --- reset step buffer and update visuals ---
         stepsBuffer = '';

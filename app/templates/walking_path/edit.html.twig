@@ -53,8 +53,8 @@
 
 <style>
     .node { 
-        fill: #0d6efd; 
-        stroke: #0d6efd; 
+        fill: #51cf66; 
+        stroke: #51cf66; 
         stroke-width: 2; 
         cursor: pointer; 
     }
@@ -68,7 +68,8 @@
     
     .guide-line,
     .guide-label,
-    .path-line {
+    .perimeter-path,
+    .aisle-path {
         pointer-events: none;
     }
     
@@ -118,7 +119,8 @@ inputY.addEventListener('input', updateSelectedNode);
 // Draw existing nodes and populate array
 const scaledPath = nodesData.map(n => ({
     x: n.x * visualScale,
-    y: n.y * visualScale
+    y: n.y * visualScale,
+    phase: n.phase
 }));
 
 let normalizedPath;
@@ -139,7 +141,8 @@ if (scaledPath.length) {
     // Normalize to include editing buffer
     normalizedPath = scaledPath.map(n => ({
         x: n.x - minX + EDITING_EDGE_BUFFER,
-        y: n.y - minY + EDITING_EDGE_BUFFER
+        y: n.y - minY + EDITING_EDGE_BUFFER,
+        phase: n.phase
     }));
 
     // Set SVG viewBox
@@ -240,7 +243,7 @@ function drawGuidesForNode(x, y) {
     hLine.setAttribute('x2', viewBox.x + viewBox.width);
 
     [vLine, hLine].forEach(line => {
-        line.setAttribute('stroke', '#00ff00');
+        line.setAttribute('stroke', '#fa5252');
         line.setAttribute('stroke-width', '0.5');
         line.setAttribute('opacity', '0.25');
         line.setAttribute('pointer-events', 'none');
@@ -256,10 +259,7 @@ function drawGuidesForNode(x, y) {
     xLabel.textContent = Math.round(x);
 
     // rotate around the label anchor
-    xLabel.setAttribute(
-        'transform',
-        `rotate(-90 ${x - 2} ${labelY})`
-    );
+    xLabel.setAttribute( 'transform', `rotate(-90 ${x - 2} ${labelY})`);
 
     // --- Y label (left of horizontal line) ---
     const yLabel = document.createElementNS(SVG_NS,'text');
@@ -268,7 +268,7 @@ function drawGuidesForNode(x, y) {
     yLabel.textContent = Math.round(y);
 
     [xLabel, yLabel].forEach(label => {
-        label.setAttribute('fill', '#00ff00');
+        label.setAttribute('fill', '#fa5252');
         label.setAttribute('font-size', '8');
         label.setAttribute('opacity', '0.6');
         label.setAttribute('pointer-events', 'none');
@@ -284,25 +284,32 @@ function rebuildAllGuides() {
 }
 
 
-function drawPathLine(points) {
-    const polyline = document.createElementNS(
-        SVG_NS,
-        'polyline'
-    );
+function drawPathLine(normalisedPath) {
 
-    const pointString = points
-        .map(p => `${p.x},${p.y}`)
-        .join(' ');
+    for (let i = 1; i < normalisedPath.length; i++) {
 
-    polyline.setAttribute('points', pointString);
-    polyline.setAttribute('fill', 'none');
-    polyline.setAttribute('stroke', '#ff4444');
-    polyline.setAttribute('stroke-width', '2');
-    polyline.setAttribute('pointer-events', 'none');
-    polyline.classList.add('path-line');
-    pathLayer.appendChild(polyline);
+        const a = normalisedPath[i - 1];
+        const b = normalisedPath[i];
 
-    return polyline;
+        const line = document.createElementNS(SVG_NS, 'line');
+
+        line.setAttribute('x1', a.x);
+        line.setAttribute('y1', a.y);
+        line.setAttribute('x2', b.x);
+        line.setAttribute('y2', b.y);
+        line.setAttribute('stroke-dasharray', '8 3');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('pointer-events', 'none');
+
+        // apply phase class
+        if (b.phase === 1) {
+            line.classList.add('perimeter-path');
+        } else {
+            line.classList.add('aisle-path');
+        }
+
+        pathLayer.appendChild(line);
+    }
 }
 
 
@@ -312,7 +319,7 @@ function drawNode(x, y) {
 
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
-    circle.setAttribute('r', 3); // stable visual size
+    circle.setAttribute('r', 2); // stable visual size
 
     circle.classList.add('node');
     svg.appendChild(circle);
