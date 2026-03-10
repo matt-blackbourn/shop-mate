@@ -17,15 +17,24 @@
 
             <!-- Center: Title -->
             <div class="header-center flex-grow-1 text-center fw-semibold">
-                Store Mapper
+                  <div class="mapping-steps">
+                    <span id="stepPerimeter">Perimeter</span> →
+                    <span id="stepAisles">Aisles</span> →
+                    <span id="stepFinish">Finish</span>
+                </div>
             </div>
 
             <!-- Right: Save -->
             <div class="header-right d-flex align-items-center">
-           
-            <button type="button" id="openSubmitModal" class="btn-dark-base border-green">
-                <i class="bi bi-check-lg"></i>
-            </button>
+
+              
+            
+                <button type="button" id="phaseButton" class="btn-dark-base border-green">
+                    NEXT
+                </button>
+                <button type="button" id="openSubmitModal" class="btn-dark-base border-green">
+                    <i class="bi bi-check-lg"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -52,7 +61,6 @@
     <div class="mapper-footer">
 
         <div class="mapper-actions">
-            {# <button class="btn-dark-base border-yellow" data-direction="left"><i class="bi bi-arrow-left"></i></button> #}
             <button class="btn-dark-base border-red">⌫</button>
             <div class="mapper-display"><span id="stepDisplay">0</span></div>
             <button class="btn-dark-base border-yellow" data-direction="right"><i class="bi bi-arrow-90deg-right"></i></i></i></button>
@@ -97,6 +105,22 @@
     </div>
 </div>
 
+<div class="modal fade" id="phaseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+
+                <h5 id="phaseTitle"></h5>
+                <p id="phaseDescription" class="small text-muted"></p>
+
+                <button class="btn btn-primary w-100 mt-3" data-bs-dismiss="modal">
+                    Got it
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <style>
@@ -188,6 +212,9 @@
     height: 100%;
 }
 
+.perimeter-path { stroke: #ff6b6b; }
+.aisle-path { stroke: #4dabf7; }
+
 .mapper-actions {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -241,6 +268,13 @@
     const STEP_SCALE = 20; // pixels per step
     let VISUAL_SCALE = 20;
 
+    const PHASE_PERIMETER = 1;
+    const PHASE_AISLES = 2;
+    const PHASE_FINAL = 3;
+    let pathClass = 'perimeter-path';
+
+    let currentPhase = PHASE_PERIMETER;
+
     let directionArrow; // persistent arrow group
     let mapRotation = 0;
     let stepsBuffer = '';
@@ -254,6 +288,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         restoreFromLocalStorage();
+        showPhaseModal(currentPhase);
     });
 
     document.querySelector('#clearSession').addEventListener('click', clearMappingSession);
@@ -265,6 +300,35 @@
             setTimeout(() => btn.classList.remove('clicked'), 50);
         });
     });
+
+    document.getElementById("phaseButton").addEventListener("click", () => {
+        if (currentPhase === PHASE_PERIMETER) {
+            currentPhase = PHASE_AISLES;
+            //resetPathToStart(); // your existing logic
+            showPhaseModal(currentPhase);
+            updatePrimaryButton();
+            return;
+        }
+
+        if (currentPhase === PHASE_AISLES) {
+            currentPhase = PHASE_FINAL;
+            showFinalForm(); // your submission modal
+        }
+
+    });
+
+    function updatePrimaryButton() {
+
+        const btn = document.getElementById("phaseButton");
+
+        if (currentPhase === PHASE_PERIMETER) {
+            btn.textContent = "Map Aisles";
+        }
+
+        if (currentPhase === PHASE_AISLES) {
+            btn.style.display = 'none'; // hide button in final phase
+        }
+    }
 
     function createDirectionArrow() {
         directionArrow = document.createElementNS(SVG_NS, 'g');
@@ -322,6 +386,34 @@
         const tipHeight = 4 * VISUAL_SCALE / 10;
         tip.setAttribute('d', `M0 ${-tipHeight} L${tipWidth} 0 L0 ${tipHeight} Z`);
         tip.setAttribute('transform', `translate(${lineLength},0)`);
+    }
+
+    function showPhaseModal(phase) {
+        let title = "";
+        let description = "";
+
+        if (phase === PHASE_PERIMETER) {
+            title = "Map the store perimeter";
+            description = "Walk around the outside edge of the store and mark the boundary. Follow the walls until you return to the starting point.";
+            pathClass = 'perimeter-path';
+        }
+
+        if (phase === PHASE_AISLES) {
+            title = "Map the aisles";
+            description = "Start again from the entrance and walk each aisle. Trace the paths customers can walk through.";
+            pathClass = 'aisle-path';
+        }
+
+        if (phase === PHASE_FINAL) {
+            title = "Final details";
+            description = "Fill in the final store details before submitting your map.";
+        }
+
+        document.getElementById("phaseTitle").textContent = title;
+        document.getElementById("phaseDescription").textContent = description;
+
+        const modal = new bootstrap.Modal(document.getElementById("phaseModal"));
+        modal.show();
     }
 
     function updateDisplay() {
@@ -413,7 +505,7 @@
             line.setAttribute('x2', x2);
             line.setAttribute('y2', y2);
             line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 10));
-            line.setAttribute('stroke', '#51cf66');
+            line.setAttribute('class', pathClass);
 
             const dashLength = Math.max(1, VISUAL_SCALE / 5);
             const gapLength = Math.max(1, VISUAL_SCALE / 5);
