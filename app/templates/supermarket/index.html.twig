@@ -25,12 +25,12 @@
                     {% if supermarket.imagePath %}
                         <a href="{{ path('app_supermarket_draw_edges_overlay', {'id': supermarket.id}) }}">Edges - image overlay</a>
                     {% else %}
-                        <a href="{{ path('app_supermarket_draw_edges', {'id': supermarket.id}) }}">Edges</a>
+                        <a href="{{ path('app_supermarket_draw_edges', {'id': supermarket.id}) }}">Map</a>
                     {% endif %}
 
                     {% if supermarket.shelves|length == 0 %}| <a href="{{ path('app_supermarket_draw_shelves', {'id': supermarket.id}) }}">Generate Shelves</a>{% endif %}
 
-                    | <a href="{{ path('app_supermarket_edit_shelves', {'id': supermarket.id}) }}">Edit shelves</a>
+                    | <a href="{{ path('app_supermarket_edit_shelves', {'id': supermarket.id}) }}">Shelves</a>
                     | <a href="{{ path('app_supermarket_delete', {'id': supermarket.id}) }}"
                         class="text-danger"
                         onclick="return confirm('Delete this supermarket?\\n\\nAll nodes, edges, shelves, and mapped food items will be permanently removed.')">

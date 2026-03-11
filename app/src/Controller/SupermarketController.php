@@ -255,19 +255,47 @@ class SupermarketController extends AbstractController
         NodeRepository $nodeRepository, 
     ) {
         try{
-            $raw = $request->request->get('edges');
-            if (!$raw) {
-                $this->addFlash('error', 'No edges submitted');
+            $rawNodes = $request->request->get('nodes');
+            $rawEdges = $request->request->get('edges');
+            if (!$rawEdges || !$rawNodes) {
+                $this->addFlash('error', 'Missing data');
                 return $this->redirectToRoute('app_supermarket_draw_edges', ['id' => $supermarket->getId()]);
             }
         
-            $data = json_decode($raw, true);
-            if (!is_array($data)) {
-                $this->addFlash('error', 'Invalid edge data');
+            $nodesData = json_decode($rawNodes, true);
+            $edgeData = json_decode($rawEdges, true);
+            if (!is_array($edgeData) || !is_array($nodesData)) {
+                $this->addFlash('error', 'Invalid data');
                 return $this->redirectToRoute('app_supermarket_draw_edges', ['id' => $supermarket->getId()]);
             }
 
-            foreach ($data as $item) {
+            foreach ($nodesData as $item) {
+                if(isset($item['id'])) {
+                    $node = $nodeRepository->find($item['id']);
+                    if ($node && $node->getSupermarket() === $supermarket) {
+                        $node->setXValue($item['x']);
+                        $node->setYValue($item['y']);
+                    }
+                } else {
+                    $node = new Node();
+                    $node->setSupermarket($supermarket);
+                    $node->setXValue($item['x']);
+                    $node->setYValue($item['y']);
+
+                    $em->persist($node);
+                }
+            }
+
+            // remove deleted nodes
+            $existingNodes = $nodeRepository->findBy(['supermarket' => $supermarket]);
+            $submittedIds = array_column($nodesData, 'id');
+            foreach ($existingNodes as $node) {
+                if (!in_array($node->getId(), $submittedIds)) {
+                    $em->remove($node);
+                }
+            }
+
+            foreach ($edgeData as $item) {
                 if (!isset($item['from'], $item['to'])) {
                     continue;
                 }

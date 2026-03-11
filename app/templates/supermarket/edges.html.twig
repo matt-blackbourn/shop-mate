@@ -33,7 +33,7 @@
                 <form method="POST" action="/supermarket/{{ supermarket.id }}/edges/save"
                     id="edgesForm" class="d-flex align-items-center gap-2">
                     <input type="hidden" name="edges" id="edgesInput">
-
+                    <input type="hidden" name="nodes" id="nodesInput">
                     <button type="submit" class="btn-dark-base border-green"><i class="bi bi-check-lg"></i></button>
                 </form>
             </div>
@@ -49,7 +49,10 @@
                 <button id="remove-aisles" type="button">Remove Aisles</button>
             </li>
             <li class="desktop-only">
-                <a href="{{ path('app_supermarket_index') }}">← Back to list</a>
+                <a href="{{ path('app_supermarket_index') }}">Supermarkets</a>
+            </li>
+            <li class="desktop-only">
+                <a href="{{ path('app_home') }}">Shopping List</a>
             </li>
         </ul>
     </nav>
@@ -116,46 +119,6 @@
 
 </style>
 <script>
-// find edges with a node in the middle of them. (delete these if found)
-{# SELECT 
-    e.id AS edge_id,
-    n.id AS node_on_edge
-FROM edge e
-JOIN node a ON a.id = e.start_id
-JOIN node b ON b.id = e.end_id
-JOIN node n 
-    ON n.supermarket_id = e.supermarket_id
-    AND n.id NOT IN (e.start_id, e.end_id)
-WHERE e.supermarket_id = :supermarketId
-
-AND ABS(
-    (b.x_value - a.x_value) * (n.y_value - a.y_value) -
-    (b.y_value - a.y_value) * (n.x_value - a.x_value)
-) < 0.01
-
-AND n.x_value BETWEEN LEAST(a.x_value, b.x_value) AND GREATEST(a.x_value, b.x_value)
-AND n.y_value BETWEEN LEAST(a.y_value, b.y_value) AND GREATEST(a.y_value, b.y_value)
-
-ORDER BY e.id; #}
-
-
-// Find duplicate edges
-{# SELECT *
-FROM edge e
-JOIN (
-    SELECT 
-        LEAST(start_id, end_id) AS node_a,
-        GREATEST(start_id, end_id) AS node_b
-    FROM edge
-    WHERE supermarket_id = :supermarketId
-    GROUP BY node_a, node_b
-    HAVING COUNT(*) > 1
-) d
-ON LEAST(e.start_id, e.end_id) = d.node_a
-AND GREATEST(e.start_id, e.end_id) = d.node_b
-WHERE e.supermarket_id = :supermarketId
-ORDER BY node_a, node_b, e.id; #}
-
 
 const wrapper = document.getElementById('supermarket-wrapper');
 const svg = document.getElementById('overlay');
@@ -186,13 +149,43 @@ nodesData.forEach(n => {
     circle.setAttribute('cy', n.y);
     circle.setAttribute('r', 5);
     circle.classList.add('node');
+    svg.appendChild(circle);
+
+    nodes[n.id] = {
+        ...n,
+        element: circle,
+        uuid: uuid()
+    };
+});
+
+function createNode(x, y) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', 5);
+    circle.classList.add('node');
 
     svg.appendChild(circle);
 
-    nodes[n.id] = { ...n, element: circle };
+    const nodeUuid = crypto.randomUUID();
 
-    drawPathLine(walkingPath);
-});
+    const node = {
+        id: null,      // not in DB yet
+        uuid: nodeUuid,
+        x,
+        y,
+        element: circle
+    };
+
+    nodes[nodeUuid] = node; // key by UUID, not id
+}
+
+// optionally find node by either id or uuid
+function getNode(key) {
+    // key can be either id or uuid
+    return nodes[key] || Object.values(nodes).find(n => n.uuid === key);
+}
+
 
 edgeData.forEach(e => {
     e.selected = false; // <-- add selected state
@@ -200,6 +193,10 @@ edgeData.forEach(e => {
     e.element = line;
     edges.push(e); // Prefill edges array so these are resubmitted with any changes
 });
+
+drawPathLine(walkingPath);
+
+console.log(nodes, edges)
 
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -212,6 +209,16 @@ function undoLastEdge() {
     if (edges.length === 0) return;
     const last = edges.pop();
     last.element.remove();
+}
+
+
+
+function moveNode(dx, dy) {
+    selectedNode.x += dx;
+    selectedNode.y += dy;
+
+    selectedNode.element.setAttribute('cx', selectedNode.x);
+    selectedNode.element.setAttribute('cy', selectedNode.y);
 }
 
 // COPIED FROM FLOORPLAN EDIT
@@ -475,8 +482,11 @@ document.getElementById('edgesForm').addEventListener('submit', (event) => {
     }
 
     // Make sure we actually have edges
-    const payload = edges.map(({ element, ...data }) => data); // basically, pull out the element property
-    document.getElementById('edgesInput').value = JSON.stringify(payload);
+    const edgesPayload = edges.map(({ element, ...data }) => data); // basically, pull out the element property
+    const nodesPayload = Object.values(nodes).map(n => ({id: n.id, x: n.x, y: n.y}));
+
+    document.getElementById('edgesInput').value = JSON.stringify(edgesPayload);
+    document.getElementById('nodesInput').value = JSON.stringify(nodesPayload);
 
     // Optional: prevent empty submission
     if (edges.length === 0) {
@@ -485,8 +495,47 @@ document.getElementById('edgesForm').addEventListener('submit', (event) => {
     }
 });
 
+// find edges with a node in the middle of them. (delete these if found)
+{# SELECT 
+    e.id AS edge_id,
+    n.id AS node_on_edge
+FROM edge e
+JOIN node a ON a.id = e.start_id
+JOIN node b ON b.id = e.end_id
+JOIN node n 
+    ON n.supermarket_id = e.supermarket_id
+    AND n.id NOT IN (e.start_id, e.end_id)
+WHERE e.supermarket_id = :supermarketId
 
+AND ABS(
+    (b.x_value - a.x_value) * (n.y_value - a.y_value) -
+    (b.y_value - a.y_value) * (n.x_value - a.x_value)
+) < 0.01
+
+AND n.x_value BETWEEN LEAST(a.x_value, b.x_value) AND GREATEST(a.x_value, b.x_value)
+AND n.y_value BETWEEN LEAST(a.y_value, b.y_value) AND GREATEST(a.y_value, b.y_value)
+
+ORDER BY e.id; #}
+
+
+// Find duplicate edges
+{# SELECT *
+FROM edge e
+JOIN (
+    SELECT 
+        LEAST(start_id, end_id) AS node_a,
+        GREATEST(start_id, end_id) AS node_b
+    FROM edge
+    WHERE supermarket_id = :supermarketId
+    GROUP BY node_a, node_b
+    HAVING COUNT(*) > 1
+) d
+ON LEAST(e.start_id, e.end_id) = d.node_a
+AND GREATEST(e.start_id, e.end_id) = d.node_b
+WHERE e.supermarket_id = :supermarketId
+ORDER BY node_a, node_b, e.id; #}
    
 </script>
 
 {% endblock %}
+
