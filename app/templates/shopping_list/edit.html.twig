@@ -12,14 +12,13 @@
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
             <!-- Left -->
-            <div class="header-left d-flex align-items-center">
-                <button class="menu-button" aria-label="Open menu">☰</button>
-                
+            <div class="d-flex align-items-center">
+                <button id="menu-button" class="btn-dark-base" aria-label="Open menu"><i class="bi bi-list-ul"></i></button>
             </div>
 
             <!-- Center -->
-            <div class="header-center flex-grow-1 d-flex justify-content-center">
-                <select id="supermarketSelect">
+            <div class="flex-grow-1 d-flex justify-content-center">
+                <select id="supermarketSelect" class="w-100">
                     {% for supermarket in supermarkets %}
                         <option value="{{ supermarket.id }}">{{ supermarket.type.value }} - {{ supermarket.suburb }}</option>
                     {% endfor %}
@@ -27,7 +26,7 @@
             </div>
 
             <!-- Right -->
-            <div class="header-right d-flex align-items-center">
+            <div class="d-flex align-items-center">
                 <a href="" id="go-shopping-btn" class="btn-dark-base border-green">
                     <i class="bi bi-cart-fill"></i>
                 </a>
