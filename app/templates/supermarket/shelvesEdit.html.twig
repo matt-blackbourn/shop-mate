@@ -30,7 +30,7 @@
 <!-- SVG editor -->
 <div id="supermarket-wrapper" >
     <svg id="shelfEditor"
-        viewBox="0 0 {{ viewBox.width }} {{ viewBox.height }}"
+        viewBox="-50 -50 {{ viewBox.width + 100 }} {{ viewBox.height + 100 }}"
         class="w-100 border"
         preserveAspectRatio="xMinYMin meet"
         data-shelves="{{ shelves|json_encode|e('html_attr') }}"
@@ -80,7 +80,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 let activeShelfId = null;
 let resizeState = null;
 
-const SNAP_DISTANCE = 2;
+const SNAP_DISTANCE = 5;
 const svg = document.getElementById('shelfEditor');
 const shelves = JSON.parse(svg.dataset.shelves);
 const edgesData = JSON.parse(svg.dataset.edges);
@@ -154,7 +154,15 @@ function selectShelf(clientId) {
 }
 
 // toggle full select button listener
-document.getElementById('toggleFullSelectBtn').addEventListener('click', () => {
+document.getElementById('toggleFullSelectBtn').addEventListener('click', toggleFullSelect);
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFullSelect();
+    }
+});
+
+function toggleFullSelect() {
     if (!activeShelfId) return;
 
     const shelf = shelves.find(s => s.clientId === activeShelfId);
@@ -164,8 +172,8 @@ document.getElementById('toggleFullSelectBtn').addEventListener('click', () => {
 
     renderShelves();
     console.log('Toggled fullSelect for shelf', shelf.id, shelf.fullSelect);
-    console.log(shelves)
-});
+}
+
 
 // Delete button listener
 document.getElementById('deleteShelfBtn').addEventListener('click', () => {
@@ -205,8 +213,8 @@ svg.addEventListener('click', (e) => {
         clientId: uuid(),
         x: svgP.x - 15, // small default size centered on click
         y: svgP.y - 5,
-        width: 10,
-        height: 15,
+        width: 30,
+        height: 30,
         fullSelect: false,
     };
 
@@ -218,6 +226,7 @@ svg.addEventListener('click', (e) => {
 
     renderShelves();
 });
+
 
 
 // --- Edge handles ---

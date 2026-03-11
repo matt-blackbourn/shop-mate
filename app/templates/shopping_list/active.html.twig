@@ -540,12 +540,10 @@
 .node.entrance path {
     fill: #f59e0b; /* same as node */
 }
-.node.entrance .arrow-line {
+.arrow-line {
     stroke: #f59e0b;        /* amber-500 */
     opacity: 1;
-    stroke-width: 7;
     drop-shadow(0 0 8px rgba(245, 158, 11, 0.65))
-    stroke-dasharray: 40 20; 
 }
 
 /* Base route styling */
@@ -615,6 +613,7 @@ const otherPlacementEdgeEls = new Map(); // Keep references to all edges
 const pathEdgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
+//const AISLE_WIDTH = 20; // this is the same as the shelve generation width. 
 const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 const shelfElsOther = []; // keep refs + geometry
 let mapRotation = 0;
@@ -993,7 +992,6 @@ function highlightItemOnMap() {
     const shelves = shelvesNextToEdge(edge.id, shelfEls)
     const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, Number(routeState.currentItem.aisleSide)));
     highlightShelfPortion(correctShelf, edge);
-
 }
 
 function highlightShelfPortion(shelf, edge) {
@@ -1212,25 +1210,20 @@ function drawEntranceArrow(node) {
     g.classList.add('node', 'entrance');
     g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
 
-    // Halo
     const ring = document.createElementNS(SVG_NS, 'circle');
-    ring.setAttribute('r', 15);
-
-    // Base circle
     const circle = document.createElementNS(SVG_NS, 'circle');
-    circle.setAttribute('r', 10);
-
     g.appendChild(ring);
     g.appendChild(circle);
 
+    let arrowLength
     const firstEdge = edgesData.find(e => e.from === node.id);
     if (firstEdge) {
         const dx = firstEdge.x2 - firstEdge.x1; // horizontal distance
         const dy = firstEdge.y2 - firstEdge.y1; // vertical distance
         const angle = Math.atan2(dy, dx) * (180 / Math.PI); // rotation in degrees
 
-        const arrowLength = dx ? Math.abs(dx) : Math.abs(dy); // length of the line
-        const arrowTipWidth = arrowLength/5; // size of the tip
+        arrowLength = dx ? Math.abs(dx) : Math.abs(dy); // length of the line
+        const arrowTipWidth = arrowLength/2; // size of the tip
 
         // Arrow line starting at node center
         const line = document.createElementNS(SVG_NS, 'line');
@@ -1239,6 +1232,7 @@ function drawEntranceArrow(node) {
         line.setAttribute('x2', arrowLength);
         line.setAttribute('y2', 0);
         line.setAttribute('transform', `rotate(${angle})`);
+        line.setAttribute('stroke-width', arrowLength/7);
         line.classList.add('arrow-line');
         g.appendChild(line);
 
@@ -1251,6 +1245,9 @@ function drawEntranceArrow(node) {
         tip.setAttribute('transform', `rotate(${angle}) translate(${arrowLength},0)`);
         g.appendChild(tip);
     }
+
+    ring.setAttribute('r', arrowLength/5);
+    circle.setAttribute('r', arrowLength/6);
 
     // append to entrance layer
     layer.appendChild(g);

@@ -30,11 +30,9 @@
 
 <svg 
     id="shelf-editor" 
-    width="1200" 
-    height="800"
+    viewBox="-50 -50 {{ viewBox.width + 100 }} {{ viewBox.height + 100 }}"
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
-    data-map="{{ map|json_encode|e('html_attr') }}"
 >
   <g id="edges-layer"></g>
   <g id="shelves-layer"></g>
@@ -59,8 +57,14 @@ const svg = document.getElementById('shelf-editor');
 const edgesLayer = document.getElementById('edges-layer');
 const shelvesLayer = document.getElementById('shelves-layer');
 const autoGenerateBtn = document.getElementById('auto-generate');
-
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const AISLE_WIDTH = 35;
+const SHELF_DEPTH = 20;
+const OFFSET = AISLE_WIDTH / 2 + SHELF_DEPTH / 2; // how far from the center line of the aisle to place shelves
+const MIN_LENGTH_OF_EDGE = 0;  // set it higher to prevent short edges from generating shelves
+const TOLERANCE = 0; // Edges must be vertical or horizonal - this should show us non stright edges when generating shelves
+const END_CLEARANCE = AISLE_WIDTH / 2; // prevent shelves touching at intersections - half aisle width is a good start
 
 let mode = 'select'; // 'draw' | 'select'
 let shelves = [];
@@ -91,8 +95,6 @@ shelfForm.addEventListener('submit', (e) => {
 // set viewBox so SVG scales cleanly
 const edgesData = JSON.parse(svg.dataset.edges);
 const nodesData = JSON.parse(svg.dataset.nodes);
-const [mapWidth, mapHeight] = JSON.parse(svg.dataset.map);
-svg.setAttribute('viewBox', `0 0 ${mapWidth} ${mapHeight}`);
 
 const nodes = {};
 nodesData.forEach(n => {
@@ -267,48 +269,48 @@ function redrawShelfGroups() {
 document.getElementById('undoGroupsBtn').addEventListener('click', restoreUndoState);
 
 function getPerpendicularIntersections(edge, edgesData, TOLERANCE) {
-  const intersections = [];
+    const intersections = [];
 
-  const isHorizontal = Math.abs(edge.y2 - edge.y1) <= TOLERANCE;
-  const isVertical   = Math.abs(edge.x2 - edge.x1) <= TOLERANCE;
+    const isHorizontal = Math.abs(edge.y2 - edge.y1) <= TOLERANCE;
+    const isVertical   = Math.abs(edge.x2 - edge.x1) <= TOLERANCE;
 
-  edgesData.forEach(other => {
-    if (other === edge) return;
+    edgesData.forEach(other => {
+        if (other === edge) return;
 
-    const otherHorizontal = Math.abs(other.y2 - other.y1) <= TOLERANCE;
-    const otherVertical   = Math.abs(other.x2 - other.x1) <= TOLERANCE;
+        const otherHorizontal = Math.abs(other.y2 - other.y1) <= TOLERANCE;
+        const otherVertical   = Math.abs(other.x2 - other.x1) <= TOLERANCE;
 
-    // horizontal ↔ vertical only
-    if (isHorizontal && otherVertical) {
-      const y = edge.y1;
-      const x = other.x1;
+        // horizontal ↔ vertical only
+        if (isHorizontal && otherVertical) {
+            const y = edge.y1;
+            const x = other.x1;
 
-      const oxMin = Math.min(other.y1, other.y2);
-      const oxMax = Math.max(other.y1, other.y2);
-      const exMin = Math.min(edge.x1, edge.x2);
-      const exMax = Math.max(edge.x1, edge.x2);
+            const oxMin = Math.min(other.y1, other.y2);
+            const oxMax = Math.max(other.y1, other.y2);
+            const exMin = Math.min(edge.x1, edge.x2);
+            const exMax = Math.max(edge.x1, edge.x2);
 
-      if (y >= oxMin && y <= oxMax && x >= exMin && x <= exMax) {
-        intersections.push(x);
-      }
-    }
+            if (y >= oxMin && y <= oxMax && x >= exMin && x <= exMax) {
+                intersections.push(x);
+            }
+        }
 
-    if (isVertical && otherHorizontal) {
-      const x = edge.x1;
-      const y = other.y1;
+            if (isVertical && otherHorizontal) {
+            const x = edge.x1;
+            const y = other.y1;
 
-      const oxMin = Math.min(other.x1, other.x2);
-      const oxMax = Math.max(other.x1, other.x2);
-      const exMin = Math.min(edge.y1, edge.y2);
-      const exMax = Math.max(edge.y1, edge.y2);
+            const oxMin = Math.min(other.x1, other.x2);
+            const oxMax = Math.max(other.x1, other.x2);
+            const exMin = Math.min(edge.y1, edge.y2);
+            const exMax = Math.max(edge.y1, edge.y2);
 
-      if (x >= oxMin && x <= oxMax && y >= exMin && y <= exMax) {
-        intersections.push(y);
-      }
-    }
-  });
+            if (x >= oxMin && x <= oxMax && y >= exMin && y <= exMax) {
+                intersections.push(y);
+            }
+        }
+    });
 
-  return intersections;
+    return intersections;
 }
 
 function hasPerpendicularAtPoint(x, y, currentEdge) {
@@ -336,102 +338,94 @@ function hasPerpendicularAtPoint(x, y, currentEdge) {
 
 // auto generate shelves from edges
 function autoGenerateShelves() {
-  shelvesLayer.innerHTML = '';
-  shelves = [];
+    shelvesLayer.innerHTML = '';
+    shelves = [];
 
-  const aisleWidth = 20;
-  const shelfDepth = 8;
-  const offset = aisleWidth / 2 + shelfDepth / 2;
-  const MIN_LENGTH = 0;
-  const TOLERANCE = 3;
-  const END_CLEARANCE = 15; // half aisle width is a good start
+    edgesData.forEach(edge => {
+        const dx = edge.x2 - edge.x1;
+        const dy = edge.y2 - edge.y1;
 
-  edgesData.forEach(edge => {
-    const dx = edge.x2 - edge.x1;
-    const dy = edge.y2 - edge.y1;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
 
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
+        // ---------- HORIZONTAL AISLE ----------
+        if (absDy <= TOLERANCE && absDx >= MIN_LENGTH_OF_EDGE) {
+            const y = edge.y1;
 
-    // ---------- HORIZONTAL AISLE ----------
-    if (absDy <= TOLERANCE && absDx >= MIN_LENGTH) {
-        const y = edge.y1;
+            let startX = Math.min(edge.x1, edge.x2);
+            let endX   = Math.max(edge.x1, edge.x2);
 
-        let startX = Math.min(edge.x1, edge.x2);
-        let endX   = Math.max(edge.x1, edge.x2);
-
-        if (hasPerpendicularAtPoint(startX, y, edge)) {
-            startX += END_CLEARANCE;
-        }
-
-        if (hasPerpendicularAtPoint(endX, y, edge)) {
-            endX -= END_CLEARANCE;
-        }
-
-        const width = endX - startX;
-        if (width <= 0) return;
-
-        shelves.push(
-            {
-            id: uuid(),
-            x: startX,
-            y: y - offset - shelfDepth / 2,
-            width,
-            height: shelfDepth,
-            edgeId: edge.id
-            },
-            {
-            id: uuid(),
-            x: startX,
-            y: y + offset - shelfDepth / 2,
-            width,
-            height: shelfDepth,
-            edgeId: edge.id
+            if (hasPerpendicularAtPoint(startX, y, edge)) {
+                startX += END_CLEARANCE;
             }
-        );
 
-        return;
-    }
-
-    // ---------- VERTICAL AISLE ----------
-    if (absDx <= TOLERANCE && absDy >= MIN_LENGTH) {
-        const x = edge.x1;
-
-        let startY = Math.min(edge.y1, edge.y2);
-        let endY   = Math.max(edge.y1, edge.y2);
-
-        if (hasPerpendicularAtPoint(x, startY, edge)) {
-            startY += END_CLEARANCE;
-        }
-
-        if (hasPerpendicularAtPoint(x, endY, edge)) {
-            endY -= END_CLEARANCE;
-        }
-
-        const height = endY - startY;
-        if (height <= 0) return;
-
-        shelves.push(
-            {
-            id: uuid(),
-            x: x - offset - shelfDepth / 2,
-            y: startY,
-            width: shelfDepth,
-            height,
-            edgeId: edge.id
-            },
-            {
-            id: uuid(),
-            x: x + offset - shelfDepth / 2,
-            y: startY,
-            width: shelfDepth,
-            height,
-            edgeId: edge.id
+            if (hasPerpendicularAtPoint(endX, y, edge)) {
+                endX -= END_CLEARANCE;
             }
-        );
 
-        return;
-    }
+            const width = endX - startX;
+            if (width <= 0) return;
+
+            shelves.push(
+                {
+                id: uuid(),
+                x: startX,
+                y: y - OFFSET - SHELF_DEPTH / 2,
+                width,
+                height: SHELF_DEPTH,
+                edgeId: edge.id
+                },
+                {
+                id: uuid(),
+                x: startX,
+                y: y + OFFSET - SHELF_DEPTH / 2,
+                width,
+                height: SHELF_DEPTH,
+                edgeId: edge.id
+                }
+            );
+            return;
+        }
+
+        // ---------- VERTICAL AISLE ----------
+        if (absDx <= TOLERANCE && absDy >= MIN_LENGTH_OF_EDGE) {
+            const x = edge.x1;
+
+            let startY = Math.min(edge.y1, edge.y2);
+            let endY   = Math.max(edge.y1, edge.y2);
+
+            if (hasPerpendicularAtPoint(x, startY, edge)) {
+                startY += END_CLEARANCE;
+            }
+
+            if (hasPerpendicularAtPoint(x, endY, edge)) {
+                endY -= END_CLEARANCE;
+            }
+
+            const height = endY - startY;
+            if (height <= 0) return;
+
+            shelves.push(
+                {
+                id: uuid(),
+                x: x - OFFSET - SHELF_DEPTH / 2,
+                y: startY,
+                width: SHELF_DEPTH,
+                height,
+                edgeId: edge.id
+                },
+                {
+                id: uuid(),
+                x: x + OFFSET - SHELF_DEPTH / 2,
+                y: startY,
+                width: SHELF_DEPTH,
+                height,
+                edgeId: edge.id
+                }
+            );
+
+            return;
+        }
 
   });
 

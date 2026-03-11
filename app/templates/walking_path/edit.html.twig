@@ -83,15 +83,13 @@ const editor = document.getElementById('node-editor');
 const inputX = document.getElementById('edit-x');
 const inputY = document.getElementById('edit-y');
 
-const RENDER_SCALE = 30; // adjust until it feels right
 const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
 const SHOP_EDGE_BUFFER = 30; // distance from outermost nodes to the shop border
 
 const wrapper = document.getElementById('walking-path-wrapper');
 const rawData = JSON.parse(wrapper.dataset.rawData || '{}');
-const nodesData = rawData.path || []; // ✅ only take the path array out of the raw data
-const visualScale = rawData.visualScale || 1;
-let SNAP_DISTANCE = 1 * visualScale; // default = 1 steps
+const nodesData = rawData.path || []; // only take the path array out of the raw data
+const SCALE_MULTIPLIER = rawData.visualScale * 2.5; // increase this a bit to make the map more spaced out
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const nodes = [];
 
@@ -118,8 +116,8 @@ inputY.addEventListener('input', updateSelectedNode);
 
 // Draw existing nodes and populate array
 const scaledPath = nodesData.map(n => ({
-    x: n.x * visualScale,
-    y: n.y * visualScale,
+    x: n.x * SCALE_MULTIPLIER,
+    y: n.y * SCALE_MULTIPLIER,
     phase: n.phase
 }));
 
@@ -381,6 +379,8 @@ function updateSelectedNode() {
     updateShopBorder(); 
 }
 
+
+
 function createNode(x, y) {
     const circle = drawNode(x, y);
     nodes.push({ x, y, element: circle });
@@ -458,6 +458,37 @@ document.addEventListener('keydown', e => {
     }
 });
 
+document.addEventListener("keydown", (e) => {
+    if (!selectedNode) return;
+
+    let step = 1;
+    if (e.shiftKey) step = 5;   // faster
+
+    switch (e.key) {
+        case "ArrowUp":
+            inputY.value = parseFloat(inputY.value) - step;
+            break;
+
+        case "ArrowDown":
+            inputY.value = parseFloat(inputY.value) + step;
+            break;
+
+        case "ArrowLeft":
+            inputX.value = parseFloat(inputX.value) - step;
+            break;
+
+        case "ArrowRight":
+            inputX.value = parseFloat(inputX.value) + step;
+            break;
+
+        default:
+            return; // ignore other keys
+    }
+
+    e.preventDefault(); // stop page scrolling
+    updateSelectedNode();
+});
+
 function snapToSharedCoordinates(x, y) {
     let sx = x;
     let sy = y;
@@ -466,7 +497,7 @@ function snapToSharedCoordinates(x, y) {
     const ys = [...sharedY];
 
     let closestX = null;
-    let minDx = SNAP_DISTANCE;
+    let minDx = SCALE_MULTIPLIER;
 
     for (const px of xs) {
         const dx = Math.abs(x - px);
@@ -479,7 +510,7 @@ function snapToSharedCoordinates(x, y) {
     if (closestX !== null) sx = closestX;
 
     let closestY = null;
-    let minDy = SNAP_DISTANCE;
+    let minDy = SCALE_MULTIPLIER;
 
     for (const py of ys) {
         const dy = Math.abs(y - py);

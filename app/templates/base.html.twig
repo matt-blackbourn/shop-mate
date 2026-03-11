@@ -68,9 +68,9 @@
                 }
             }
 
-            function uuid() {
+            function uuid() { 
                 if (crypto.randomUUID) {
-                    return uuid();
+                    return crypto.randomUUID(); // ✅ correct
                 }
 
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {

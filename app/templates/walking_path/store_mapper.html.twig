@@ -254,8 +254,7 @@
     const footer = document.querySelector('.mapper-footer');
     const undoBtn = document.querySelector('.bi-arrow-counterclockwise')?.closest('button');
     const saveBtn = document.getElementById('save-map');
-    const STEP_SCALE = 20; // pixels per step
-    let VISUAL_SCALE = 20;
+    let VISUAL_SCALE = 20; // We need this because the screen uses svg units, which are tiny. This increases the size of the rendered path without affecting the underlying coordinate system used for calculations
 
     const PHASE_PERIMETER = 1;
     const PHASE_AISLES = 2;

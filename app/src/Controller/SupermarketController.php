@@ -221,7 +221,7 @@ class SupermarketController extends AbstractController
         return $this->render('supermarket/shelves.html.twig', [
             'nodes' => $mapBuilder->getAllNodes($supermarket),
             'edges' => $mapBuilder->getAllEdges($supermarket),
-            'map' => [$supermarket->getWidth(), $supermarket->getHeight()],
+            'viewBox' => $mapBuilder->getViewBox($supermarket),
             'supermarket' => $supermarket,
         ]);
     }

@@ -19,7 +19,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" id="placementCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi-arrow-left"></i> Back</button>
+                <button type="button" id="placementCancelBtn" class="btn-dark-base border-green" data-bs-dismiss="modal"><i class="bi-arrow-left"></i> Back</button>
                 <button type="submit" form="placementForm" id="placementConfirmBtn" disabled>Save placement</button>
             </div>
             <form method="POST" action="/placement/save" id="placementForm">
@@ -31,12 +31,14 @@
 </div>
 <style>
 #placementConfirmBtn {
-    background-color: #51cf66;
+    background-color: #212529;
     border: 1px solid #51cf66;
-    color: #0b0d12;
-    border-radius: 0.5rem; /* keep rounded corners */
-    padding: 0.5rem 1rem;  /* matches original spacing */
+    color: #fff;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    transition: background 0.15s ease; /* smooth highlight */
 }
+ 
 #placementCancelBtn {
     border: 1px solid #343a46;
     color: #e9ecef;
@@ -46,10 +48,3 @@
 }
 
 </style>
-
-<script>
-
-
-
-
-</script>
