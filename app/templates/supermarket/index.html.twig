@@ -32,10 +32,10 @@
 
                     | <a href="{{ path('app_supermarket_edit_shelves', {'id': supermarket.id}) }}">Edit shelves</a>
                     | <a href="{{ path('app_supermarket_delete', {'id': supermarket.id}) }}"
-                            class="text-danger"
-                            onclick="return confirm('Delete this supermarket?\\n\\nAll nodes, edges, shelves, and mapped food items will be permanently removed.')">
-                            Delete
-                            </a>
+                        class="text-danger"
+                        onclick="return confirm('Delete this supermarket?\\n\\nAll nodes, edges, shelves, and mapped food items will be permanently removed.')">
+                        Delete
+                    </a>
                 </td>
             </tr>
         {% else %}
