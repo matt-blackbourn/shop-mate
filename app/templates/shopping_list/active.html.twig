@@ -530,20 +530,19 @@
 }
 
 .node.entrance circle:first-child {
-    fill: #f59e0b;
+    fill: #51cf66;
 }
 
 .node.entrance circle:nth-child(2) {
-    fill: #f59e0b;
+    fill: #51cf66;
 }
 
 .node.entrance path {
-    fill: #f59e0b; /* same as node */
+    fill: #51cf66; /* same as node */
 }
 .arrow-line {
-    stroke: #f59e0b;        /* amber-500 */
+    stroke: #51cf66;        /* amber-500 */
     opacity: 1;
-    drop-shadow(0 0 8px rgba(245, 158, 11, 0.65))
 }
 
 /* Base route styling */
@@ -613,7 +612,7 @@ const otherPlacementEdgeEls = new Map(); // Keep references to all edges
 const pathEdgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
-//const AISLE_WIDTH = 20; // this is the same as the shelve generation width. 
+//const AISLE_WIDTH = 35; // this is the same as the shelve generation width. 
 const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 const shelfElsOther = []; // keep refs + geometry
 let mapRotation = 0;
@@ -995,6 +994,9 @@ function highlightItemOnMap() {
 }
 
 function highlightShelfPortion(shelf, edge) {
+    const MIN_RATIO = 0.25; // ignore highlights smaller than 25% (for small shelves)
+    const MAX_RATIO = 0.75; // expand highlights bigger than 75%
+
     const edgeIsHorizontal = edge.y1 === edge.y2;
     const edgeIsVertical   = edge.x1 === edge.x2;
 
@@ -1006,13 +1008,30 @@ function highlightShelfPortion(shelf, edge) {
     const halfHeight = shelf.height / 2;
     const halfWidth  = shelf.width / 2;
 
-    // 🔹 Edge runs left-right (above or below shelf)
+    // whether to enforce the MIN_RATIO skip
+    const enforceMinRatioRuleX = shelf.width < 3 * AISLE_WIDTH;
+    const enforceMinRatioRuleY = shelf.height < 3 * AISLE_WIDTH;
+
+    // 🔹 Horizontal edge
     if (edgeIsHorizontal) {
-        const x1 = Math.max(shelfMinX, Math.min(edge.x1, edge.x2));
-        const x2 = Math.min(shelfMaxX, Math.max(edge.x1, edge.x2));
+        let x1 = Math.max(shelfMinX, Math.min(edge.x1, edge.x2));
+        let x2 = Math.min(shelfMaxX, Math.max(edge.x1, edge.x2));
         if (x2 <= x1) return;
 
-        // Is edge above or below the shelf?
+        const portion = x2 - x1;
+        const ratio   = portion / shelf.width;
+
+        const touchesStart = x1 === shelfMinX;
+        const touchesEnd   = x2 === shelfMaxX;
+
+        // Only enforce skip if the shelf is shorter than 3×AISLE_WIDTH
+        if (enforceMinRatioRuleX && ratio < MIN_RATIO && !touchesStart && !touchesEnd) return;
+
+        if (ratio > MAX_RATIO || (enforceMinRatioRuleX && ratio < MIN_RATIO && (touchesStart || touchesEnd))) {
+            x1 = shelfMinX;
+            x2 = shelfMaxX;
+        }
+
         const edgeIsAbove = edge.y1 < shelfMinY;
 
         drawShelfHighlight(
@@ -1024,13 +1043,26 @@ function highlightShelfPortion(shelf, edge) {
         );
     }
 
-    // 🔹 Edge runs up-down (left or right of shelf)
+    // 🔹 Vertical edge
     if (edgeIsVertical) {
-        const y1 = Math.max(shelfMinY, Math.min(edge.y1, edge.y2));
-        const y2 = Math.min(shelfMaxY, Math.max(edge.y1, edge.y2));
+        let y1 = Math.max(shelfMinY, Math.min(edge.y1, edge.y2));
+        let y2 = Math.min(shelfMaxY, Math.max(edge.y1, edge.y2));
         if (y2 <= y1) return;
 
-        // Is edge left or right of shelf?
+        const portion = y2 - y1;
+        const ratio   = portion / shelf.height;
+
+        const touchesStart = y1 === shelfMinY;
+        const touchesEnd   = y2 === shelfMaxY;
+
+        // Only enforce skip if the shelf is shorter than 3×AISLE_WIDTH
+        if (enforceMinRatioRuleY && ratio < MIN_RATIO && !touchesStart && !touchesEnd) return;
+
+        if (ratio > MAX_RATIO || (enforceMinRatioRuleY && ratio < MIN_RATIO && (touchesStart || touchesEnd))) {
+            y1 = shelfMinY;
+            y2 = shelfMaxY;
+        }
+
         const edgeIsLeft = edge.x1 < shelfMinX;
 
         drawShelfHighlight(
@@ -1205,7 +1237,6 @@ function getLayer(svgId, layerId) {
 function drawEntranceArrow(node) {
     let layer = getLayer('placement-map', 'placement-entrance-layer');
 
-    // --- create group ---
     const g = document.createElementNS(SVG_NS, 'g');
     g.classList.add('node', 'entrance');
     g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
@@ -1215,41 +1246,46 @@ function drawEntranceArrow(node) {
     g.appendChild(ring);
     g.appendChild(circle);
 
-    let arrowLength
+    let arrowLength = 0;
+
     const firstEdge = edgesData.find(e => e.from === node.id);
     if (firstEdge) {
-        const dx = firstEdge.x2 - firstEdge.x1; // horizontal distance
-        const dy = firstEdge.y2 - firstEdge.y1; // vertical distance
-        const angle = Math.atan2(dy, dx) * (180 / Math.PI); // rotation in degrees
 
-        arrowLength = dx ? Math.abs(dx) : Math.abs(dy); // length of the line
-        const arrowTipWidth = arrowLength/2; // size of the tip
+        const dx = firstEdge.x2 - firstEdge.x1;
+        const dy = firstEdge.y2 - firstEdge.y1;
 
-        // Arrow line starting at node center
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        const edgeLength = Math.sqrt(dx*dx + dy*dy); // true edge length
+        const arrowTipWidth = edgeLength / 3;
+
+        const lineLength = edgeLength - arrowTipWidth; // shorten line
+
+        arrowLength = edgeLength;
+
+        // Arrow line
         const line = document.createElementNS(SVG_NS, 'line');
         line.setAttribute('x1', 0);
         line.setAttribute('y1', 0);
-        line.setAttribute('x2', arrowLength);
+        line.setAttribute('x2', lineLength);
         line.setAttribute('y2', 0);
         line.setAttribute('transform', `rotate(${angle})`);
-        line.setAttribute('stroke-width', arrowLength/7);
+        line.setAttribute('stroke-width', edgeLength / 8);
         line.classList.add('arrow-line');
         g.appendChild(line);
 
-        // Arrow tip at end of line
+        // Arrow tip
         const tip = document.createElementNS(SVG_NS, 'path');
         tip.setAttribute('d', `M0 ${-arrowTipWidth/2} L${arrowTipWidth} 0 L0 ${arrowTipWidth/2} Z`);
         tip.setAttribute('fill', '#f2b66d');
 
-        // Translate the tip along the rotated X axis so it sits exactly at the end of the line
-        tip.setAttribute('transform', `rotate(${angle}) translate(${arrowLength},0)`);
+        tip.setAttribute('transform', `rotate(${angle}) translate(${lineLength},0)`);
         g.appendChild(tip);
     }
 
-    ring.setAttribute('r', arrowLength/5);
-    circle.setAttribute('r', arrowLength/6);
+    ring.setAttribute('r', arrowLength / 7);
+    circle.setAttribute('r', arrowLength / 8);
 
-    // append to entrance layer
     layer.appendChild(g);
 }
 
