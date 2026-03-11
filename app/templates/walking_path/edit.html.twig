@@ -243,7 +243,7 @@ function drawGuidesForNode(x, y) {
     hLine.setAttribute('x2', viewBox.x + viewBox.width);
 
     [vLine, hLine].forEach(line => {
-        line.setAttribute('stroke', '#fa5252');
+        line.setAttribute('stroke', '#51cf66');
         line.setAttribute('stroke-width', '0.5');
         line.setAttribute('opacity', '0.25');
         line.setAttribute('pointer-events', 'none');
@@ -268,7 +268,7 @@ function drawGuidesForNode(x, y) {
     yLabel.textContent = Math.round(y);
 
     [xLabel, yLabel].forEach(label => {
-        label.setAttribute('fill', '#fa5252');
+        label.setAttribute('fill', '#51cf66');
         label.setAttribute('font-size', '8');
         label.setAttribute('opacity', '0.6');
         label.setAttribute('pointer-events', 'none');

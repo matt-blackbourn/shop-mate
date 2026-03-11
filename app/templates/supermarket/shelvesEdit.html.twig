@@ -86,6 +86,11 @@ const shelves = JSON.parse(svg.dataset.shelves);
 const edgesData = JSON.parse(svg.dataset.edges);
 const nodesData = JSON.parse(svg.dataset.nodes);
 
+const edgeLayer = document.createElementNS(SVG_NS, 'g');
+const shelfLayer = document.createElementNS(SVG_NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(shelfLayer);
+
 // --- Initial render ---
 renderShelves();
 
@@ -104,14 +109,15 @@ edgesData.forEach(e => {
     line.setAttribute('y1', from.y);
     line.setAttribute('x2', to.x);
     line.setAttribute('y2', to.y);
+    line.style.pointerEvents = 'none'; // important
     line.classList.add('path');
 
-    svg.appendChild(line);
+    edgeLayer.appendChild(line);
 });
 
 // --- Rendering ---
 function renderShelves() {
-    svg.innerHTML = '';
+    shelfLayer.innerHTML = '';
 
     shelves.forEach(shelf => {
         if(shelf.deleted) return;
@@ -135,7 +141,7 @@ function renderShelves() {
 
         if (shelf.clientId === activeShelfId) addEdgeHandles(g, shelf);
 
-        svg.appendChild(g);
+        shelfLayer.appendChild(g);
     });
 }
 
@@ -196,11 +202,11 @@ svg.addEventListener('click', (e) => {
 
     const newShelf = {
         id: null,
-        clientId: crypto.randomUUID(),
+        clientId: uuid(),
         x: svgP.x - 15, // small default size centered on click
         y: svgP.y - 5,
-        width: 25,
-        height: 25,
+        width: 10,
+        height: 15,
         fullSelect: false,
     };
 
