@@ -21,16 +21,17 @@ class Supermarket
      */
     #[ORM\OneToMany(targetEntity: Edge::class, mappedBy: 'supermarket')]
     private Collection $edges;
-
-    #[ORM\ManyToOne(inversedBy: 'supermarkets')]
-    private ?Node $entranceNode = null;
-
+    
     /**
      * @var Collection<int, Node>
      */
     #[ORM\OneToMany(targetEntity: Node::class, mappedBy: 'supermarket')]
     private Collection $nodes;
 
+    #[ORM\ManyToOne(inversedBy: 'supermarkets')]
+    #[ORM\JoinColumn(onDelete: 'SET NULL')]
+    private ?Node $entranceNode = null;
+    
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $imagePath = null;
 

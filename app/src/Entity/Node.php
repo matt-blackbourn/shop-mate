@@ -40,6 +40,7 @@ class Node
     private Collection $supermarkets;
 
     #[ORM\ManyToOne(inversedBy: 'nodes')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?Supermarket $supermarket = null;
 
     /**

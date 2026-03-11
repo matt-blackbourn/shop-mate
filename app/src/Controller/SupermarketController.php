@@ -424,4 +424,14 @@ class SupermarketController extends AbstractController
         ]);
     }
 
+    
+    #[Route('/{id}', name: 'app_supermarket_delete', methods: ['GET'])]
+    public function delete(Request $request, Supermarket $supermarket, EntityManagerInterface $entityManager): Response
+    {
+        $entityManager->remove($supermarket);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_supermarket_index', [], Response::HTTP_SEE_OTHER);
+    }
+
 }

@@ -35,6 +35,7 @@ class ShoppingSession
     private Collection $listItems;
 
     #[ORM\ManyToOne(inversedBy: 'shoppingSessions')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?Supermarket $supermarket = null;
 
     public function __construct()

@@ -38,6 +38,7 @@ class Edge
     private Collection $foodItems;
 
     #[ORM\ManyToOne(inversedBy: 'edges')]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?Supermarket $supermarket = null;
 
     #[ORM\Column]

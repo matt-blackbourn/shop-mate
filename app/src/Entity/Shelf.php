@@ -14,7 +14,7 @@ class Shelf
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'shelves')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Supermarket $supermarket = null;
 
     #[ORM\Column]

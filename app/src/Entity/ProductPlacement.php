@@ -22,7 +22,7 @@ class ProductPlacement
     private ?FoodItem $foodItem = null;
 
     #[ORM\ManyToOne(inversedBy: 'productPlacements')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Supermarket $supermarket = null;
 
     #[ORM\ManyToOne(inversedBy: 'productPlacements')]
