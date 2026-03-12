@@ -9,13 +9,13 @@
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
             <!-- Left -->
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center gap-5">
                 <button id="menu-button" class="btn-dark-base" aria-label="Open menu"><i class="bi bi-list-ul"></i></button>
+                <!-- Center -->
+                <h6>{{ supermarket.type.value }} - {{ supermarket.suburb }}</h6>
             </div>
 
 
-            <!-- Center -->
-            <h6>{{ supermarket.type.value }} - {{ supermarket.suburb }}</h6>
            
             <div class="flex-grow-1 d-flex justify-content-center">
                 <select id="phaseSelector">
@@ -176,10 +176,10 @@ let edges = [];
 const AISLE_WIDTH = 40; // default
 const STROKE_WIDTH = 10; // default
 const nodeIdMap = {};
+const nodesByUuid = {};
 
 let edgeStartNode = null;
 let entranceNode = null; // store the entrance node reference
-
 
 const selectedNodes = new Set();
 const selectedEdges = new Set();
@@ -223,6 +223,7 @@ nodesData.forEach(n => {
     const node = createNode(n.x, n.y);
     node.id = n.id;
     nodeIdMap[n.id] = node.uuid;
+    nodesByUuid[node.uuid] = node;
 });
 
 // do this after building nodes
@@ -582,15 +583,13 @@ function undo() {
 
 
 function showNodeInfo(node) {
-    infoBox.textContent =
-        `ID: ${node.id} | x: ${Math.round(node.x)} | y: ${Math.round(node.y)}`;
+    infoBox.textContent = `ID: ${node.id} | x: ${Math.round(node.x)} | y: ${Math.round(node.y)}`;
 }
 
 function showEdgeInfo(edge) {
-    const fromNode = nodesData.find(n => n.uuid === edge.from_id);
-    const toNode   = nodesData.find(n => n.uuid === edge.to_id);
-
-    infoBox.textContent = `ID: ${edge.id} | from: ${fromNode?.id} → to: ${toNode?.id}`;
+    const fromId = nodesByUuid[edge.from].id;
+    const toId   = nodesByUuid[edge.to].id;
+    infoBox.textContent = `ID: ${edge.id} | from: ${fromId} → to: ${toId}`;
 }
 
 function clearInfo() {
@@ -669,7 +668,6 @@ document.addEventListener('keydown', e => {
     snapshotState();
 
     selectedNodes.forEach(node => {
-        showNodeInfo(node);
         node.x += dx;
         node.y += dy;
 
@@ -677,6 +675,7 @@ document.addEventListener('keydown', e => {
         node.element.setAttribute('cy', node.y);
 
         updateEdgesForNode(node);
+        showNodeInfo(node);
 
     });
     rebuildAllGuides();

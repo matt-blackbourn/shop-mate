@@ -75,6 +75,13 @@
                 xLabel.setAttribute('y', labelY);
 
                 xLabel.textContent = Math.round(x);
+                const colours = [
+                    "#ff3b3b", // red
+                    "#ffcc00", // yellow
+                    "#00e676", // neon green
+                    "#00b0ff", // bright blue
+                    "#ff00ff"  // magenta
+                ];
 
                 // rotate around the label anchor
                 xLabel.setAttribute( 'transform', `rotate(-90 ${x - 2} ${labelY})`);
@@ -86,9 +93,8 @@
                 yLabel.textContent = Math.round(y);
 
                 [xLabel, yLabel].forEach(label => {
-                    label.setAttribute('fill', '#51cf66');
+                    label.setAttribute('fill', colours[Math.round(x) % 5]);
                     label.setAttribute('font-size', fontSize);
-                    label.setAttribute('opacity', '0.6');
                     label.setAttribute('pointer-events', 'none');
                     label.setAttribute('font-family', 'monospace');
                     guideLayer.appendChild(label);
