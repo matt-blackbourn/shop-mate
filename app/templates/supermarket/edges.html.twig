@@ -263,14 +263,13 @@ function clearSelections() {
 
 
 function createNode(x, y) {
-
     const nodeUuid = uuid();
 
     // 1️⃣ hit circle (invisible, large)
     const hit = document.createElementNS(SVG_NS, 'circle');
     hit.setAttribute('cx', x);
     hit.setAttribute('cy', y);
-    hit.setAttribute('r', 10);       // larger clickable radius
+    hit.setAttribute('r', 20);       // larger clickable radius
     hit.setAttribute('fill', 'transparent');
     hit.style.cursor = 'pointer';
     nodeLayer.appendChild(hit);
@@ -279,7 +278,7 @@ function createNode(x, y) {
     const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
-    circle.setAttribute('r', 5);
+    circle.setAttribute('r', 7);
     circle.classList.add('node');
     nodeLayer.appendChild(circle);
 
@@ -357,42 +356,26 @@ function deleteSelectedNodes() {
 }
 
 function redrawGraph() {
-    // remove everything from svg
+    // clear layers
     nodeLayer.innerHTML = '';
     edgeLayer.innerHTML = '';
 
-    // rebuild edges
-    edges.forEach(edge => {
-        drawEdge(edge);
+    // rebuild edges first (behind nodes)
+    edges.forEach(edge => drawEdge(edge));
+
+    // rebuild nodes using createNode (with hit areas)
+    Object.values(nodes).forEach(oldNode => {
+        // create a new node with the hit circle and visible circle
+        const rebuiltNode = createNode(oldNode.x, oldNode.y);
+
+        // preserve old UUID and ID
+        rebuiltNode.uuid = oldNode.uuid;
+        rebuiltNode.id = oldNode.id || null;
+
+        // replace the node in the nodes map
+        nodes[rebuiltNode.uuid] = rebuiltNode;
     });
 
-    // rebuild node elements
-    Object.values(nodes).forEach(node => {
-        const circle = document.createElementNS(SVG_NS, 'circle');
-
-        circle.setAttribute('cx', node.x);
-        circle.setAttribute('cy', node.y);
-        circle.setAttribute('r', 5);
-        circle.classList.add('node');
-        circle.dataset.uuid = node.uuid;
-
-        circle.addEventListener('click', (e) => {
-            e.stopPropagation();
-
-            if (mode === 'edge') {
-                handleEdgeNodeClick(node);
-            }
-
-            if (mode === 'node') {
-                handleNodeSelection(node, e);
-            }
-
-        });
-
-        node.element = circle;
-        nodeLayer.appendChild(circle);
-
-    });
 }
 
 function drawPathLine(walkingPath) {
@@ -558,7 +541,7 @@ function undo() {
 }
 
 
-
+// UNDO AND DELETE
 document.addEventListener('keydown', (e) => {
 
     // 1️⃣ Undo with Ctrl+Z / Cmd+Z
@@ -604,7 +587,8 @@ document.addEventListener('keydown', e => {
     if (mode !== 'node') return;
     if (!selectedNodes.size) return;
 
-    const step = 5;
+    let step = 1;
+    if (e.shiftKey) step = 5;   // faster
 
     let dx = 0;
     let dy = 0;
@@ -779,14 +763,15 @@ phaseSelector.addEventListener('change', () => {
 });
 
 document.getElementById('edgesForm').addEventListener('submit', (event) => {
-    // Make sure we actually have edges
     const edgesPayload = edges.map(edge => {
         const from = nodes[edge.from];
         const to = nodes[edge.to];
+
         return {
-            id: edge.id,
-            from: from.id,
-            to: to.id,
+            id: edge.id,         // DB id if existing
+            uuid: edge.uuid,     // frontend uuid to track new edges
+            from: from?.id || from?.uuid,
+            to: to?.id || to?.uuid,
             phase: edge.phase,
             aisleKey: edge.aisleKey
         };
@@ -798,6 +783,7 @@ document.getElementById('edgesForm').addEventListener('submit', (event) => {
         x: n.x,
         y: n.y
     }));
+
 
     document.getElementById('edgesInput').value = JSON.stringify(edgesPayload);
     document.getElementById('nodesInput').value = JSON.stringify(nodesPayload);

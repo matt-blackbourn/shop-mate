@@ -288,13 +288,13 @@ class SupermarketController extends AbstractController
 
             // remove deleted nodes
             $existingNodes = $nodeRepository->findBy(['supermarket' => $supermarket]);
-            $submittedIds = array_filter(
+            $submittedNodeIds = array_filter(
                 array_column($nodesData, 'id'),
                 fn($id) => $id !== null
             );
             foreach ($existingNodes as $node) {
 
-                if (!in_array($node->getId(), $submittedIds)) {
+                if (!in_array($node->getId(), $submittedNodeIds)) {
             
                     $edges = $edgeRepository->findBy([
                         'start' => $node
@@ -316,43 +316,51 @@ class SupermarketController extends AbstractController
                 }
             }
 
+            // Remove deleted edges
+            $submittedEdgeIds = array_filter(
+                array_column($edgeData, 'id'),
+                fn($id) => $id !== null
+            );
+            $existingEdges = $edgeRepository->findBy(['supermarket' => $supermarket]);
+            foreach ($existingEdges as $edge) {
+                if (!in_array($edge->getId(), $submittedEdgeIds)) {
+                    $em->remove($edge);
+                }
+            }
+
             foreach ($edgeData as $item) {
-                if (!isset($item['from'], $item['to'])) {
-                    continue;
-                }
-    
-                $from = $nodeRepository->find($item['from']);
-                $to   = $nodeRepository->find($item['to']);
-                if (!$from || !$to) {
-                    continue;
-                }
-    
-                // Safety: ensure nodes belong to this supermarket
-                if ($from->getSupermarket() !== $supermarket ||
-                    $to->getSupermarket() !== $supermarket) {
-                    continue;
-                }
-    
-                if($item['id']) {
+                if (!isset($item['from'], $item['to'])) continue;
+
+                // find nodes by DB id first, fallback to UUID if needed
+                $from = $nodeRepository->find($item['from']) ?: $nodeRepository->findOneByUuid($item['from']);
+                $to   = $nodeRepository->find($item['to']) ?: $nodeRepository->findOneByUuid($item['to']);
+            
+                if (!$from || !$to) continue;
+            
+                if ($from->getSupermarket() !== $supermarket || $to->getSupermarket() !== $supermarket) continue;
+            
+                if (!empty($item['id'])) {
                     $edge = $edgeRepository->find($item['id']);
-                    $edge->setPhase($item['phase']); // phase is all we can edit here
+                    if ($edge) {
+                        $edge->setPhase($item['phase']); // only editable field
+                    }
                 } else {
                     $edge = new Edge();
                     $edge->setPhase($item['phase']);
                     $edge->setSupermarket($supermarket);
                     $edge->setStart($from);
                     $edge->setEnd($to);
-                    
+            
                     $dx = $from->getXValue() - $to->getXValue();
                     $dy = $from->getYValue() - $to->getYValue();
                     $length = sqrt(($dx * $dx) + ($dy * $dy));
                     $edge->setLength($length);
-        
+            
                     $em->persist($edge);
                 }
-
-                // Save aisle
-                if($item['aisleKey'] === true) {
+            
+                // handle aisle key
+                if (!empty($item['aisleKey'])) {
                     $key = $edgeRepository->getNextAvailableAisleKey($supermarket);
                     $edge->setAisleKey($key);
                 }
