@@ -288,9 +288,30 @@ class SupermarketController extends AbstractController
 
             // remove deleted nodes
             $existingNodes = $nodeRepository->findBy(['supermarket' => $supermarket]);
-            $submittedIds = array_column($nodesData, 'id');
+            $submittedIds = array_filter(
+                array_column($nodesData, 'id'),
+                fn($id) => $id !== null
+            );
             foreach ($existingNodes as $node) {
+
                 if (!in_array($node->getId(), $submittedIds)) {
+            
+                    $edges = $edgeRepository->findBy([
+                        'start' => $node
+                    ]);
+            
+                    foreach ($edges as $edge) {
+                        $em->remove($edge);
+                    }
+            
+                    $edges = $edgeRepository->findBy([
+                        'end' => $node
+                    ]);
+            
+                    foreach ($edges as $edge) {
+                        $em->remove($edge);
+                    }
+            
                     $em->remove($node);
                 }
             }
@@ -338,7 +359,6 @@ class SupermarketController extends AbstractController
             }
     
             $em->flush();
-            $this->addFlash('success', 'Edges saved successfully!');
 
             return $this->redirectToRoute('app_supermarket_draw_edges', [
                 'id' => $supermarket->getId(),

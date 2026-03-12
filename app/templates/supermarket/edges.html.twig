@@ -26,8 +26,16 @@
 
             <!-- Right -->
             <div class="d-flex align-items-center">
-                <button id="save-aisle" type="button" class="btn-dark-base border-yellow">
-                    <i class="bi bi-signpost"></i>
+                <button id="toggle-mode" type="button" class="btn-dark-base border-red">
+                    <i id="mode-icon" class="bi bi-record-circle"></i>
+                </button>
+
+                <button id="split-aisle" class="btn-dark-base border-yellow">
+                    <i class="bi bi-node-plus"></i>
+                </button>
+
+                <button id="save-aisle" type="button" class="btn-dark-base border-green">
+                    <i class="bi bi-layout-three-columns"></i>
                 </button>
 
                 <form method="POST" action="/supermarket/{{ supermarket.id }}/edges/save"
@@ -88,19 +96,10 @@
         height: 100%;
         display: block;
     }
-    .node {
-        fill: #0d6efd;
-        cursor: pointer;
-    }      
 
-    .node-selected {
-        fill: orange;
-        stroke: black;
-        stroke-width: 2;
-    }
 
     .edge {
-        stroke-width: 5;
+        stroke-width: 4;
         cursor: pointer;
     }
 
@@ -108,14 +107,36 @@
         stroke-width: 6;
     }
 
-    .edge.selected {
-        stroke-width: 7;
-        stroke-dasharray: 6 4; /* optional but very nice */
-    }
 
     .aisle {
         filter: drop-shadow(0 0 3px white);
     }
+
+    .node.selected {
+        stroke: red;
+        stroke-width: 3;
+    }
+
+    .edge.selected {
+        stroke: red;
+        stroke-dasharray: 6 4; /* optional but very nice */
+    }
+
+    .node.edge-start {
+        stroke: orange;
+        stroke-width: 4;
+    }
+    .node {
+        pointer-events: visibleStroke;
+        fill: white;
+        stroke: #333;
+        stroke-width: 2;
+        cursor: pointer;
+    }
+
+    .node:hover {
+    stroke: #2196f3;
+}
 
 </style>
 <script>
@@ -129,55 +150,154 @@ const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
 const walkingPath = JSON.parse(wrapper.dataset.walkingPath || '[]');
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-const nodes = {};   // id -> { id, x, y, element }
-const edges = [];
+let nodes = {};
+let edges = [];
+const AISLE_WIDTH = 40; // default
 const STROKE_WIDTH = 10; // default
+const nodeIdMap = {};
 
-let selectedNode = null;
+let edgeStartNode = null;
+
+const selectedNodes = new Set();
+const selectedEdges = new Set();
+const undoStack = [];
+
+const edgeLayer = document.createElementNS(SVG_NS, 'g');
+edgeLayer.setAttribute('id', 'edge-layer');
+svg.appendChild(edgeLayer);
+
+const nodeLayer = document.createElementNS(SVG_NS, 'g');
+nodeLayer.setAttribute('id', 'node-layer');
+svg.appendChild(nodeLayer);
 
 const pathLayer = document.createElementNS(SVG_NS, 'g');
 pathLayer.setAttribute('id', 'path-layer');
 svg.appendChild(pathLayer);
 
+let mode = 'node'; // 'edge' | 'node'
 
-/* -----------------------------
-    * Load & draw nodes
-    * ----------------------------- */
-nodesData.forEach(n => {
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', n.x);
-    circle.setAttribute('cy', n.y);
-    circle.setAttribute('r', 5);
-    circle.classList.add('node');
-    svg.appendChild(circle);
+const toggleBtn = document.getElementById('toggle-mode');
+const icon = document.getElementById('mode-icon');
 
-    nodes[n.id] = {
-        ...n,
-        element: circle,
-        uuid: uuid()
-    };
+toggleBtn.addEventListener('click', () => {
+    if (mode === 'edge') {
+        mode = 'node';
+        icon.className = 'bi bi-record-circle';
+    } else {
+        mode = 'edge';
+        icon.className = 'bi bi-share';
+    }
 });
 
+
+
+nodesData.forEach(n => {
+    const node = createNode(n.x, n.y);
+
+    // preserve DB id if this node already exists
+    node.id = n.id;
+
+    // keep mapping for edges
+    nodeIdMap[n.id] = node.uuid;
+});
+
+
+edgeData.forEach(e => {
+    const edge = {
+        id: e.id,
+        from: nodeIdMap[e.from],
+        to: nodeIdMap[e.to],
+        phase: e.phase,
+        aisleKey: e.aisleKey,
+        selected: false
+    };
+
+    const line = drawEdge(edge);
+    if (line) {
+        edges.push(edge);
+    }
+});
+
+drawPathLine(walkingPath);
+
+
+svg.addEventListener('click', (e) => {
+
+    if (mode !== 'node') return;
+
+    // convert click to SVG coordinates
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgPoint = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const x = svgPoint.x;
+    const y = svgPoint.y;
+
+    // 1️⃣ check if click is on an existing node
+    const hitRadius = 20; // matches your hit circle size
+    const clickedNode = Object.values(nodes).find(n => {
+        const dx = n.x - x;
+        const dy = n.y - y;
+        return dx * dx + dy * dy <= hitRadius * hitRadius;
+    });
+
+    if (clickedNode) {
+        // node exists — toggle selection
+        handleNodeSelection(clickedNode, e);
+        return;
+    }
+
+    // 2️⃣ empty space — create new node
+    snapshotState();   // only snapshot if graph changes
+    createNode(x, y);
+
+});
+
+function clearSelections() {
+    selectedNodes.forEach(n => n.element.classList.remove('selected'));
+    selectedEdges.forEach(e => e.element.classList.remove('selected'));
+
+    selectedNodes.clear();
+    selectedEdges.clear();
+}
+
+
 function createNode(x, y) {
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+
+    const nodeUuid = uuid();
+
+    // 1️⃣ hit circle (invisible, large)
+    const hit = document.createElementNS(SVG_NS, 'circle');
+    hit.setAttribute('cx', x);
+    hit.setAttribute('cy', y);
+    hit.setAttribute('r', 10);       // larger clickable radius
+    hit.setAttribute('fill', 'transparent');
+    hit.style.cursor = 'pointer';
+    nodeLayer.appendChild(hit);
+
+    // 2️⃣ visible node circle
+    const circle = document.createElementNS(SVG_NS, 'circle');
     circle.setAttribute('cx', x);
     circle.setAttribute('cy', y);
     circle.setAttribute('r', 5);
     circle.classList.add('node');
+    nodeLayer.appendChild(circle);
 
-    svg.appendChild(circle);
+    const node = { id: null, uuid: nodeUuid, x, y, element: circle, hitElement: hit };
+    nodes[nodeUuid] = node;
 
-    const nodeUuid = crypto.randomUUID();
+    // click on either circle or hit area
+    const clickHandler = (e) => {
+        e.stopPropagation();
 
-    const node = {
-        id: null,      // not in DB yet
-        uuid: nodeUuid,
-        x,
-        y,
-        element: circle
+        if (mode === 'edge') handleEdgeNodeClick(node);
+        if (mode === 'node') handleNodeSelection(node, e);
     };
 
-    nodes[nodeUuid] = node; // key by UUID, not id
+    hit.addEventListener('click', clickHandler);
+    circle.addEventListener('click', clickHandler);
+
+    return node;
 }
 
 // optionally find node by either id or uuid
@@ -186,42 +306,95 @@ function getNode(key) {
     return nodes[key] || Object.values(nodes).find(n => n.uuid === key);
 }
 
+function deleteSelectedNodes() {
+    snapshotState();
 
-edgeData.forEach(e => {
-    e.selected = false; // <-- add selected state
-    const line = drawEdge(e);
-    e.element = line;
-    edges.push(e); // Prefill edges array so these are resubmitted with any changes
-});
+    selectedNodes.forEach(node => {
+        node.element.remove();
+        delete nodes[node.uuid];
+    });
 
-drawPathLine(walkingPath);
-
-console.log(nodes, edges)
-
-document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        undoLastEdge();
-    }
-});
-
-function undoLastEdge() {
-    if (edges.length === 0) return;
-    const last = edges.pop();
-    last.element.remove();
+    selectedNodes.clear();
 }
 
+function updateEdgesForNode(node) {
 
+    edges.forEach(edge => {
 
-function moveNode(dx, dy) {
-    selectedNode.x += dx;
-    selectedNode.y += dy;
+        if (edge.from !== node.uuid && edge.to !== node.uuid) return;
 
-    selectedNode.element.setAttribute('cx', selectedNode.x);
-    selectedNode.element.setAttribute('cy', selectedNode.y);
+        const from = nodes[edge.from];
+        const to = nodes[edge.to];
+
+        edge.element.setAttribute('x1', from.x);
+        edge.element.setAttribute('y1', from.y);
+        edge.element.setAttribute('x2', to.x);
+        edge.element.setAttribute('y2', to.y);
+
+    });
+
 }
 
-// COPIED FROM FLOORPLAN EDIT
+function deleteSelectedNodes() {
+
+    snapshotState();
+
+    selectedNodes.forEach(node => {
+
+        edges
+            .filter(e => e.from === node.uuid || e.to === node.uuid)
+            .forEach(e => {
+                e.element.remove();
+                edges.splice(edges.indexOf(e), 1);
+            });
+
+        node.element.remove();
+        delete nodes[node.uuid];
+
+    });
+
+    selectedNodes.clear();
+}
+
+function redrawGraph() {
+    // remove everything from svg
+    nodeLayer.innerHTML = '';
+    edgeLayer.innerHTML = '';
+
+    // rebuild edges
+    edges.forEach(edge => {
+        drawEdge(edge);
+    });
+
+    // rebuild node elements
+    Object.values(nodes).forEach(node => {
+        const circle = document.createElementNS(SVG_NS, 'circle');
+
+        circle.setAttribute('cx', node.x);
+        circle.setAttribute('cy', node.y);
+        circle.setAttribute('r', 5);
+        circle.classList.add('node');
+        circle.dataset.uuid = node.uuid;
+
+        circle.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            if (mode === 'edge') {
+                handleEdgeNodeClick(node);
+            }
+
+            if (mode === 'node') {
+                handleNodeSelection(node, e);
+            }
+
+        });
+
+        node.element = circle;
+        nodeLayer.appendChild(circle);
+
+    });
+}
+
 function drawPathLine(walkingPath) {
     const polyline = document.createElementNS(
         SVG_NS,
@@ -234,149 +407,278 @@ function drawPathLine(walkingPath) {
 
     polyline.setAttribute('points', pointString);
     polyline.setAttribute('fill', 'none');
-    polyline.setAttribute('stroke', '#ff4444');
     polyline.setAttribute('stroke-width', '1');
     polyline.setAttribute('pointer-events', 'none');
     polyline.setAttribute('stroke-dasharray', '2 4');
-    polyline.classList.add('path-line');
+    polyline.classList.add('path');
     pathLayer.appendChild(polyline);
 
     return polyline;
 }
 
-function drawEdge(edge) {
-    // Ensure the edge has a selected property
-    if (typeof edge.selected === 'undefined') {
-        edge.selected = false;
+function handleEdgeNodeClick(node) {
+
+    if (!edgeStartNode) {
+
+        edgeStartNode = node;
+        node.element.classList.add('edge-start');
+
+        return;
     }
 
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    if (edgeStartNode === node) {
+        edgeStartNode.element.classList.remove('edge-start');
+        edgeStartNode = null;
+        return;
+    }
 
-    line.setAttribute('x1', edge.x1);
-    line.setAttribute('y1', edge.y1);
-    line.setAttribute('x2', edge.x2);
-    line.setAttribute('y2', edge.y2);
+    createEdge(edgeStartNode, node);
+
+    edgeStartNode.element.classList.remove('edge-start');
+    edgeStartNode = null;
+}
+
+function drawEdge(edge) {
+
+    const from = nodes[edge.from];
+    const to = nodes[edge.to];
+
+    if (!from || !to) {
+        console.warn("Edge references missing node", edge);
+        return null;
+    }
+
+    const line = document.createElementNS(SVG_NS, 'line');
+
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
 
     line.classList.add('edge');
-    line.dataset.id = edge.id;
-    line.dataset.phase = edge.phase;
 
     const colorMap = {
-        '1': '#4caf50', // green
-        '2': '#2196f3', // blue
-        '3': '#ff9800', // orange
-        '4': '#9c27b0'  // purple
+        '1': '#4caf50',
+        '2': '#2196f3',
+        '3': '#ff9800',
+        '4': '#9c27b0'
     };
 
     line.setAttribute('stroke', colorMap[edge.phase] || '#999');
     line.setAttribute('stroke-width', STROKE_WIDTH);
-    if(edge.aisleKey) {
+
+    if (edge.aisleKey) {
         line.classList.add('aisle');
     }
 
-    // Click listener toggles selection
-    line.addEventListener('click', () => {
-        edge.selected = !edge.selected;                     // update JS state
-        line.classList.toggle('selected', edge.selected);   // visual highlight
-        console.log('Edge:', edge)
+    line.addEventListener('click', (e) => {
+        if (mode !== 'edge') return;
+
+        e.stopPropagation();
+
+        edge.selected = !edge.selected;
+        line.classList.toggle('selected', edge.selected);
+
+        // keep selectedEdges set in sync
+        if (edge.selected) {
+            selectedEdges.add(edge);
+        } else {
+            selectedEdges.delete(edge);
+        }
     });
 
-    // Insert behind nodes
-    svg.insertBefore(line, svg.firstChild);
+    edgeLayer.appendChild(line);
+
+    edge.element = line;
 
     return line;
 }
 
-svg.addEventListener('click', e => {
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+document.getElementById('split-aisle').addEventListener('click', insertAisleDivisionNodes);
 
-    const nearest = findNearestNode(x, y);
-    if (!nearest) return;
+function insertAisleDivisionNodes() {
 
-    console.log('Node:', nearest);
-
-    if (!selectedNode) {
-        selectNode(nearest);
+    if (selectedNodes.size !== 2) {
+        alert('Select exactly two nodes');
         return;
     }
 
-    if (selectedNode.id === nearest.id) {
-        clearSelection();
+    const [a, b] = [...selectedNodes];
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+
+    const distance = Math.sqrt(dx*dx + dy*dy);
+
+    const unitX = dx / distance;
+    const unitY = dy / distance;
+
+    const halfWidth = AISLE_WIDTH / 2;
+
+    const usable = distance - (2 * halfWidth);
+
+    if (usable <= 0) {
+        alert('Nodes too close together');
         return;
     }
 
-    createEdge(selectedNode, nearest);
-    clearSelection();
+    const section = usable / 3;
+
+    snapshotState();
+
+    const d1 = halfWidth + section;
+    const d2 = halfWidth + (section * 2);
+
+    const n1x = a.x + unitX * d1;
+    const n1y = a.y + unitY * d1;
+
+    const n2x = a.x + unitX * d2;
+    const n2y = a.y + unitY * d2;
+
+    createNode(n1x, n1y);
+    createNode(n2x, n2y);
+
+}
+
+function snapshotState() {
+    undoStack.push({
+        nodes: JSON.stringify(nodes),
+        edges: JSON.stringify(edges)
+    });
+}
+
+function undo() {
+    const state = undoStack.pop();
+    if (!state) return;
+
+    nodes = JSON.parse(state.nodes);
+    edges = JSON.parse(state.edges);
+
+    redrawGraph();
+}
+
+
+
+document.addEventListener('keydown', (e) => {
+
+    // 1️⃣ Undo with Ctrl+Z / Cmd+Z
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undo();
+        return;
+    }
+
+    // 2️⃣ Delete selected nodes/edges with Ctrl+X / Cmd+X
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        snapshotState(); // save state before deletion
+
+        // delete nodes
+        selectedNodes.forEach(node => {
+            // remove edges attached to this node
+            edges
+                .filter(edge => edge.from === node.uuid || edge.to === node.uuid)
+                .forEach(edge => {
+                    edge.element.remove();
+                    edges.splice(edges.indexOf(edge), 1);
+                });
+
+            // remove node
+            node.element.remove();
+            if (node.hitElement) node.hitElement.remove();
+            delete nodes[node.uuid];
+        });
+        selectedNodes.clear();
+
+        // delete edges
+        selectedEdges.forEach(edge => {
+            edge.element.remove();
+            edges.splice(edges.indexOf(edge), 1);
+        });
+        selectedEdges.clear();
+    }
+
 });
 
+document.addEventListener('keydown', e => {
+    if (mode !== 'node') return;
+    if (!selectedNodes.size) return;
+
+    const step = 5;
+
+    let dx = 0;
+    let dy = 0;
+
+    if (e.key === 'ArrowUp') dy = -step;
+    if (e.key === 'ArrowDown') dy = step;
+    if (e.key === 'ArrowLeft') dx = -step;
+    if (e.key === 'ArrowRight') dx = step;
+
+    if (!dx && !dy) return;
+
+    snapshotState();
+
+    selectedNodes.forEach(node => {
+
+        node.x += dx;
+        node.y += dy;
+
+        node.element.setAttribute('cx', node.x);
+        node.element.setAttribute('cy', node.y);
+
+        updateEdgesForNode(node);
+
+    });
+});
+
+
 function createEdge(a, b) {
-    if (edgeExists(a, b)){
+
+    if (edgeExists(a, b)) {
         alert('Edge exists already.');
-
         return;
+    }
 
-    } 
     const blockingNode = Object.values(nodes).find(n =>
-        n.id !== a.id &&
-        n.id !== b.id &&
+        n.uuid !== a.uuid &&
+        n.uuid !== b.uuid &&
         nodeOnSegment(a, b, n)
     );
 
     if (blockingNode) {
-        alert('An intermediate node exists on this edge. Connect through that node instead.');
+        alert('An intermediate node exists on this edge.');
         return;
     }
 
+    snapshotState();
+
     const edge = {
         id: null,
-        from: a.id,
-        to: b.id,
-        x1: a.x,
-        y1: a.y,
-        x2: b.x,
-        y2: b.y,
+        from: a.uuid,
+        to: b.uuid,
         phase: phaseSelector.value,
-        selected: false,
-        element: null,
         aisleKey: null,
+        selected: false,
+        element: null
     };
 
-    const line = drawEdge(edge);
-    edge.element = line; // add this in now for reference by undoLastEdge()
+    edge.element = drawEdge(edge);
+
     edges.push(edge);
 }
 
-function findNearestNode(x, y, maxDistance = 20) {
-    let nearest = null;
-    let minDist = Infinity;
+function handleNodeSelection(node, e) {
 
-    Object.values(nodes).forEach(node => {
-        const dx = node.x - x;
-        const dy = node.y - y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+    if (!e.shiftKey) clearSelections();
 
-        if (dist < minDist) {
-            minDist = dist;
-            nearest = node;
-        }
-    });
-
-    return minDist <= maxDistance ? nearest : null;
-}
-
-function selectNode(node) {
-    selectedNode = node;
-    node.element.classList.add('node-selected');
-}
-
-function clearSelection() {
-    if (selectedNode) {
-        selectedNode.element.classList.remove('node-selected');
-        selectedNode = null;
+    if (selectedNodes.has(node)) {
+        selectedNodes.delete(node);
+        node.element.classList.remove('selected');
+    } else {
+        selectedNodes.add(node);
+        node.element.classList.add('selected');
     }
+
 }
 
 function edgeExists(a, b) {
@@ -477,13 +779,25 @@ phaseSelector.addEventListener('change', () => {
 });
 
 document.getElementById('edgesForm').addEventListener('submit', (event) => {
-    if (!window.edges) {
-        window.edges = []; // fallback if edges not defined
-    }
-
     // Make sure we actually have edges
-    const edgesPayload = edges.map(({ element, ...data }) => data); // basically, pull out the element property
-    const nodesPayload = Object.values(nodes).map(n => ({id: n.id, x: n.x, y: n.y}));
+    const edgesPayload = edges.map(edge => {
+        const from = nodes[edge.from];
+        const to = nodes[edge.to];
+        return {
+            id: edge.id,
+            from: from.id,
+            to: to.id,
+            phase: edge.phase,
+            aisleKey: edge.aisleKey
+        };
+    });
+
+    const nodesPayload = Object.values(nodes).map(n => ({
+        id: n.id,
+        uuid: n.uuid,
+        x: n.x,
+        y: n.y
+    }));
 
     document.getElementById('edgesInput').value = JSON.stringify(edgesPayload);
     document.getElementById('nodesInput').value = JSON.stringify(nodesPayload);
