@@ -13,8 +13,10 @@
                 <button id="menu-button" class="btn-dark-base" aria-label="Open menu"><i class="bi bi-list-ul"></i></button>
             </div>
 
+
             <!-- Center -->
             <h6>{{ supermarket.type.value }} - {{ supermarket.suburb }}</h6>
+           
             <div class="flex-grow-1 d-flex justify-content-center">
                 <select id="phaseSelector">
                     <option value="1">Entrance Phase</option>
@@ -25,7 +27,9 @@
             </div>
 
             <!-- Right -->
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <div id="map-selection-info" class="small text-nowrap"></div>
+              
                 <button id="toggle-mode" type="button" class="btn-dark-base border-red">
                     <i id="mode-icon" class="bi bi-record-circle"></i>
                 </button>
@@ -149,6 +153,10 @@
         stroke: #fa5252;
         stroke-width: 4;
     }
+    #map-selection-info {
+        width: 200px;
+        text-align: right;
+    }
 
 </style>
 <script>
@@ -161,7 +169,7 @@ const edgeData = JSON.parse(wrapper.dataset.edges);
 const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
 const walkingPath = JSON.parse(wrapper.dataset.walkingPath || '[]');
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
+const infoBox = document.getElementById('map-selection-info');
 
 let nodes = {};
 let edges = [];
@@ -199,6 +207,7 @@ const toggleBtn = document.getElementById('toggle-mode');
 const icon = document.getElementById('mode-icon');
 
 toggleBtn.addEventListener('click', () => {
+    clearInfo();
     if (mode === 'edge') {
         mode = 'node';
         icon.className = 'bi bi-record-circle';
@@ -247,7 +256,6 @@ drawPathLine(walkingPath);
 
 
 svg.addEventListener('click', (e) => {
-
     if (mode !== 'node') return;
 
     // convert click to SVG coordinates
@@ -275,7 +283,6 @@ svg.addEventListener('click', (e) => {
     // 2️⃣ empty space — create new node
     snapshotState();   // only snapshot if graph changes
     createNode(x, y);
-
 });
 
 function clearSelections() {
@@ -336,7 +343,7 @@ function createNode(x, y) {
         if (mode === 'node') handleNodeSelection(node, e);
     };
 
-    drawGuidesForNode(x, y);
+    drawGuidesForNode(x, y, 20);
 
     hit.addEventListener('click', clickHandler);
     circle.addEventListener('click', clickHandler);
@@ -346,7 +353,6 @@ function createNode(x, y) {
 
 // optionally find node by either id or uuid
 function getNode(key) {
-    // key can be either id or uuid
     return nodes[key] || Object.values(nodes).find(n => n.uuid === key);
 }
 
@@ -390,28 +396,20 @@ function deleteSelectedNodes() {
 }
 
 function redrawGraph() {
-
     nodeLayer.innerHTML = '';
     edgeLayer.innerHTML = '';
     guideLayer.innerHTML = '';
 
     const newNodes = {};
-
     Object.values(nodes).forEach(oldNode => {
-
         const rebuiltNode = createNode(oldNode.x, oldNode.y);
-
         rebuiltNode.uuid = oldNode.uuid;
         rebuiltNode.id = oldNode.id || null;
-
         newNodes[rebuiltNode.uuid] = rebuiltNode;
-
     });
 
     nodes = newNodes;
-
     edges.forEach(edge => drawEdge(edge));
-
 }
 
 function drawPathLine(walkingPath) {
@@ -494,7 +492,7 @@ function drawEdge(edge) {
         if (mode !== 'edge') return;
 
         e.stopPropagation();
-
+        showEdgeInfo(edge);
         edge.selected = !edge.selected;
         line.classList.toggle('selected', edge.selected);
 
@@ -583,6 +581,23 @@ function undo() {
 }
 
 
+function showNodeInfo(node) {
+    infoBox.textContent =
+        `ID: ${node.id} | x: ${Math.round(node.x)} | y: ${Math.round(node.y)}`;
+}
+
+function showEdgeInfo(edge) {
+    const fromNode = nodesData.find(n => n.uuid === edge.from_id);
+    const toNode   = nodesData.find(n => n.uuid === edge.to_id);
+
+    infoBox.textContent = `ID: ${edge.id} | from: ${fromNode?.id} → to: ${toNode?.id}`;
+}
+
+function clearInfo() {
+    infoBox.textContent = "";
+}
+
+
 // UNDO AND DELETE
 document.addEventListener('keydown', (e) => {
 
@@ -630,7 +645,7 @@ function rebuildAllGuides() {
     guideLayer.innerHTML = '';
 
     Object.values(nodes).forEach(n => {
-        drawGuidesForNode(n.x, n.y);
+        drawGuidesForNode(n.x, n.y, 20);
     });
 }
 
@@ -654,7 +669,7 @@ document.addEventListener('keydown', e => {
     snapshotState();
 
     selectedNodes.forEach(node => {
-
+        showNodeInfo(node);
         node.x += dx;
         node.y += dy;
 
@@ -704,6 +719,7 @@ function createEdge(a, b) {
 }
 
 function handleNodeSelection(node, e) {
+    showNodeInfo(node);
 
     if (!e.shiftKey) clearSelections();
 

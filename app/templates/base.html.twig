@@ -31,8 +31,6 @@
 	</head>
 	<body>
         <script>
-         
-
             function uuid() { 
                 if (crypto.randomUUID) {
                     return crypto.randomUUID(); // ✅ correct
@@ -45,7 +43,7 @@
                 });
             }
 
-            function drawGuidesForNode(x, y) {
+            function drawGuidesForNode(x, y, fontSize = 8) {
                 const viewBox = svg.viewBox.baseVal;
 
                 // --- Vertical line ---
@@ -70,7 +68,7 @@
                     guideLayer.appendChild(line);
                 });
 
-                const labelY = viewBox.y + 25; // move down from top edge
+                const labelY = viewBox.y + 40; // move down from top edge
                 const xLabel = document.createElementNS(SVG_NS,'text');
 
                 xLabel.setAttribute('x', x - 2); // slight offset from line
@@ -89,7 +87,7 @@
 
                 [xLabel, yLabel].forEach(label => {
                     label.setAttribute('fill', '#51cf66');
-                    label.setAttribute('font-size', '8');
+                    label.setAttribute('font-size', fontSize);
                     label.setAttribute('opacity', '0.6');
                     label.setAttribute('pointer-events', 'none');
                     label.setAttribute('font-family', 'monospace');
