@@ -30,8 +30,12 @@
                     <i id="mode-icon" class="bi bi-record-circle"></i>
                 </button>
 
+                <button id="set-entrance" class="btn-dark-base border-yellow">
+                    <i class="bi bi-flag"></i>
+                </button>
+
                 <button id="split-aisle" class="btn-dark-base border-yellow">
-                    <i class="bi bi-node-plus"></i>
+                    <i class="bi bi bi-diagram-3"></i>
                 </button>
 
                 <button id="save-aisle" type="button" class="btn-dark-base border-green">
@@ -42,6 +46,7 @@
                     id="edgesForm" class="d-flex align-items-center gap-2">
                     <input type="hidden" name="edges" id="edgesInput">
                     <input type="hidden" name="nodes" id="nodesInput">
+                    <input type="hidden" id="entranceNodeInput" name="entranceNode" value="">
                     <button type="submit" class="btn-dark-base border-green"><i class="bi bi-check-lg"></i></button>
                 </form>
             </div>
@@ -72,16 +77,17 @@
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-walking-path='{{ supermarket.scaledPathData|json_encode }}'
+    {% if supermarket.entranceNode %}data-entrance-id='{{ supermarket.entranceNode.id }}'{% endif %}
 >
+{% set width = supermarket.width + 30 %}
+{% set height = supermarket.height + 30 %}
     <svg
         id="overlay"
-        viewBox="0 0 {{ supermarket.width }} {{ supermarket.height }}"
+        viewBox="-30 -30 {{ width }} {{ height }}"
         preserveAspectRatio="xMidYMid meet"
     >
     </svg>
 </div>
-
-
 
 <style>
     #supermarket-wrapper {
@@ -135,8 +141,14 @@
     }
 
     .node:hover {
-    stroke: #2196f3;
-}
+        stroke: #2196f3;
+    }
+
+    .node.entrance {
+        fill: #fa5252;
+        stroke: #fa5252;
+        stroke-width: 4;
+    }
 
 </style>
 <script>
@@ -149,6 +161,7 @@ const edgeData = JSON.parse(wrapper.dataset.edges);
 const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
 const walkingPath = JSON.parse(wrapper.dataset.walkingPath || '[]');
 const SVG_NS = 'http://www.w3.org/2000/svg';
+const EDITING_EDGE_BUFFER = 60; // space around nodes for numbers on the guides
 
 let nodes = {};
 let edges = [];
@@ -157,10 +170,16 @@ const STROKE_WIDTH = 10; // default
 const nodeIdMap = {};
 
 let edgeStartNode = null;
+let entranceNode = null; // store the entrance node reference
+
 
 const selectedNodes = new Set();
 const selectedEdges = new Set();
 const undoStack = [];
+
+const guideLayer = document.createElementNS(SVG_NS, 'g');
+guideLayer.setAttribute('id', 'guide-layer');
+svg.appendChild(guideLayer);
 
 const edgeLayer = document.createElementNS(SVG_NS, 'g');
 edgeLayer.setAttribute('id', 'edge-layer');
@@ -193,14 +212,20 @@ toggleBtn.addEventListener('click', () => {
 
 nodesData.forEach(n => {
     const node = createNode(n.x, n.y);
-
-    // preserve DB id if this node already exists
     node.id = n.id;
-
-    // keep mapping for edges
     nodeIdMap[n.id] = node.uuid;
 });
 
+// do this after building nodes
+const entranceId = parseInt(wrapper.dataset.entranceId);
+if (entranceId) {
+    // find node by DB id
+    const entranceNode = Object.values(nodes).find(n => n.id === entranceId);
+    if (entranceNode) {
+        entranceNode.element.classList.add('entrance');
+        window.entranceNode = entranceNode; // global reference
+    }
+}
 
 edgeData.forEach(e => {
     const edge = {
@@ -262,6 +287,24 @@ function clearSelections() {
 }
 
 
+document.getElementById('set-entrance').addEventListener('click', () => {
+    if (selectedNodes.size !== 1) {
+        alert('Please select exactly one node to set as entrance.');
+        return;
+    }
+
+    entranceNode = Array.from(selectedNodes)[0];
+
+    // update hidden input
+    document.getElementById('entranceNodeInput').value = entranceNode.uuid;
+
+    // optionally highlight it
+    Object.values(nodes).forEach(n => n.element.classList.remove('entrance'));
+    entranceNode.element.classList.add('entrance');
+
+    alert('Entrance node set!');
+});
+
 function createNode(x, y) {
     const nodeUuid = uuid();
 
@@ -292,6 +335,8 @@ function createNode(x, y) {
         if (mode === 'edge') handleEdgeNodeClick(node);
         if (mode === 'node') handleNodeSelection(node, e);
     };
+
+    drawGuidesForNode(x, y);
 
     hit.addEventListener('click', clickHandler);
     circle.addEventListener('click', clickHandler);
@@ -376,6 +421,7 @@ function redrawGraph() {
         nodes[rebuiltNode.uuid] = rebuiltNode;
     });
 
+    rebuildAllGuides();
 }
 
 function drawPathLine(walkingPath) {
@@ -572,6 +618,7 @@ document.addEventListener('keydown', (e) => {
             delete nodes[node.uuid];
         });
         selectedNodes.clear();
+        rebuildAllGuides();
 
         // delete edges
         selectedEdges.forEach(edge => {
@@ -582,6 +629,14 @@ document.addEventListener('keydown', (e) => {
     }
 
 });
+
+function rebuildAllGuides() {
+    guideLayer.innerHTML = '';
+
+    Object.values(nodes).forEach(n => {
+        drawGuidesForNode(n.x, n.y);
+    });
+}
 
 document.addEventListener('keydown', e => {
     if (mode !== 'node') return;
@@ -613,6 +668,7 @@ document.addEventListener('keydown', e => {
         updateEdgesForNode(node);
 
     });
+    rebuildAllGuides();
 });
 
 
@@ -785,14 +841,14 @@ document.getElementById('edgesForm').addEventListener('submit', (event) => {
     }));
 
 
+
     document.getElementById('edgesInput').value = JSON.stringify(edgesPayload);
     document.getElementById('nodesInput').value = JSON.stringify(nodesPayload);
+    document.getElementById('entranceInput').value = entranceNodeId;
 
-    // Optional: prevent empty submission
-    if (edges.length === 0) {
-        event.preventDefault();
-        alert('No edges to save!');
-    }
+    // Add entrance UUID
+    const entranceUuid = entranceNode ? entranceNode.uuid : null;
+    document.getElementById('entranceNodeInput').value = entranceUuid;
 });
 
 // find edges with a node in the middle of them. (delete these if found)

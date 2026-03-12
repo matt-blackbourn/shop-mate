@@ -316,6 +316,24 @@ class SupermarketController extends AbstractController
                 }
             }
 
+            $em->flush();
+
+            $entranceUuid = $request->request->get('entranceNode');
+            $entranceNode = null;
+            if ($entranceUuid) {
+                foreach ($nodesData as $n) {
+                    if ($n['uuid'] === $entranceUuid) {
+                        $entranceNode = isset($n['id']) ? $nodeRepository->find($n['id']) : null;
+                        break;
+                    }
+                }
+            }
+
+            // now you can save $entranceNode to the supermarket
+            if ($entranceNode) {
+                $supermarket->setEntranceNode($entranceNode);
+            }
+
             // Remove deleted edges
             $submittedEdgeIds = array_filter(
                 array_column($edgeData, 'id'),

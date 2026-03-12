@@ -298,7 +298,12 @@ a:hover {
     transition: background 0.15s ease; /* smooth highlight */
 }
 
-
+.guide-line,
+.guide-label,
+.perimeter-path,
+.aisle-path {
+    pointer-events: none;
+}
 
 /* Modifiers */
 .border-green {

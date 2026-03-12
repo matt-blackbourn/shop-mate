@@ -66,12 +66,7 @@
         cursor: pointer; 
     }
     
-    .guide-line,
-    .guide-label,
-    .perimeter-path,
-    .aisle-path {
-        pointer-events: none;
-    }
+
     
 </style>
 
@@ -223,63 +218,6 @@ function updateShopBorder() {
     rebuildAllGuides()
 }
 
-function drawGuidesForNode(x, y) {
-    const viewBox = svg.viewBox.baseVal;
-
-    // --- Vertical line ---
-    const vLine = document.createElementNS(SVG_NS,'line');
-    vLine.setAttribute('x1', x);
-    vLine.setAttribute('x2', x);
-    vLine.setAttribute('y1', viewBox.y);
-    vLine.setAttribute('y2', viewBox.y + viewBox.height);
-
-    // --- Horizontal line ---
-    const hLine = document.createElementNS(SVG_NS,'line');
-    hLine.setAttribute('y1', y);
-    hLine.setAttribute('y2', y);
-    hLine.setAttribute('x1', viewBox.x);
-    hLine.setAttribute('x2', viewBox.x + viewBox.width);
-
-    [vLine, hLine].forEach(line => {
-        line.setAttribute('stroke', '#51cf66');
-        line.setAttribute('stroke-width', '0.5');
-        line.setAttribute('opacity', '0.25');
-        line.setAttribute('pointer-events', 'none');
-        guideLayer.appendChild(line);
-    });
-
-    const labelY = viewBox.y + 25; // move down from top edge
-    const xLabel = document.createElementNS(SVG_NS,'text');
-
-    xLabel.setAttribute('x', x - 2); // slight offset from line
-    xLabel.setAttribute('y', labelY);
-
-    xLabel.textContent = Math.round(x);
-
-    // rotate around the label anchor
-    xLabel.setAttribute( 'transform', `rotate(-90 ${x - 2} ${labelY})`);
-
-    // --- Y label (left of horizontal line) ---
-    const yLabel = document.createElementNS(SVG_NS,'text');
-    yLabel.setAttribute('x', viewBox.x + 2);
-    yLabel.setAttribute('y', y - 2);
-    yLabel.textContent = Math.round(y);
-
-    [xLabel, yLabel].forEach(label => {
-        label.setAttribute('fill', '#51cf66');
-        label.setAttribute('font-size', '8');
-        label.setAttribute('opacity', '0.6');
-        label.setAttribute('pointer-events', 'none');
-        label.setAttribute('font-family', 'monospace');
-        guideLayer.appendChild(label);
-    });
-}
-
-
-function rebuildAllGuides() {
-    guideLayer.innerHTML = '';
-    nodes.forEach(n => drawGuidesForNode(n.x, n.y));
-}
 
 
 function drawPathLine(normalisedPath) {
@@ -427,6 +365,11 @@ function undoNode(){
     rebuildAllGuides();
     updateNodeCount();
     updateShopBorder(); 
+}
+
+function rebuildAllGuides() {
+    guideLayer.innerHTML = '';
+    nodes.forEach(n => drawGuidesForNode(n.x, n.y));
 }
 
 // DELETE NODE
