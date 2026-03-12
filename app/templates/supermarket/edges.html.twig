@@ -350,16 +350,7 @@ function getNode(key) {
     return nodes[key] || Object.values(nodes).find(n => n.uuid === key);
 }
 
-function deleteSelectedNodes() {
-    snapshotState();
 
-    selectedNodes.forEach(node => {
-        node.element.remove();
-        delete nodes[node.uuid];
-    });
-
-    selectedNodes.clear();
-}
 
 function updateEdgesForNode(node) {
 
@@ -380,11 +371,9 @@ function updateEdgesForNode(node) {
 }
 
 function deleteSelectedNodes() {
-
     snapshotState();
 
     selectedNodes.forEach(node => {
-
         edges
             .filter(e => e.from === node.uuid || e.to === node.uuid)
             .forEach(e => {
@@ -401,27 +390,28 @@ function deleteSelectedNodes() {
 }
 
 function redrawGraph() {
-    // clear layers
+
     nodeLayer.innerHTML = '';
     edgeLayer.innerHTML = '';
+    guideLayer.innerHTML = '';
 
-    // rebuild edges first (behind nodes)
-    edges.forEach(edge => drawEdge(edge));
+    const newNodes = {};
 
-    // rebuild nodes using createNode (with hit areas)
     Object.values(nodes).forEach(oldNode => {
-        // create a new node with the hit circle and visible circle
+
         const rebuiltNode = createNode(oldNode.x, oldNode.y);
 
-        // preserve old UUID and ID
         rebuiltNode.uuid = oldNode.uuid;
         rebuiltNode.id = oldNode.id || null;
 
-        // replace the node in the nodes map
-        nodes[rebuiltNode.uuid] = rebuiltNode;
+        newNodes[rebuiltNode.uuid] = rebuiltNode;
+
     });
 
-    rebuildAllGuides();
+    nodes = newNodes;
+
+    edges.forEach(edge => drawEdge(edge));
+
 }
 
 function drawPathLine(walkingPath) {
@@ -571,8 +561,14 @@ function insertAisleDivisionNodes() {
 
 function snapshotState() {
     undoStack.push({
-        nodes: JSON.stringify(nodes),
-        edges: JSON.stringify(edges)
+        nodes: JSON.stringify(Object.values(nodes).map(n => ({ x: n.x, y: n.y, uuid: n.uuid, id: n.id }))),
+        edges: JSON.stringify(edges.map(e => ({
+            id: e.id,
+            from: e.from,
+            to: e.to,
+            phase: e.phase,
+            aisleKey: e.aisleKey
+        })))
     });
 }
 
@@ -723,8 +719,8 @@ function handleNodeSelection(node, e) {
 
 function edgeExists(a, b) {
     return edges.some(e =>
-        (e.from === a.id && e.to === b.id) ||
-        (e.from === b.id && e.to === a.id)
+        (e.from === a.uuid && e.to === b.uuid) ||
+        (e.from === b.uuid && e.to === a.uuid)
     );
 }
 
@@ -844,7 +840,6 @@ document.getElementById('edgesForm').addEventListener('submit', (event) => {
 
     document.getElementById('edgesInput').value = JSON.stringify(edgesPayload);
     document.getElementById('nodesInput').value = JSON.stringify(nodesPayload);
-    document.getElementById('entranceInput').value = entranceNodeId;
 
     // Add entrance UUID
     const entranceUuid = entranceNode ? entranceNode.uuid : null;
