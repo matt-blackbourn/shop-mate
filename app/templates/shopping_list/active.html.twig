@@ -612,8 +612,8 @@ const otherPlacementEdgeEls = new Map(); // Keep references to all edges
 const pathEdgeEls = new Map(); // Keep references to all edges
 const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
-const AISLE_WIDTH = 35; // this is the same as the shelve generation width. 
-//const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
+//const AISLE_WIDTH = 35; // this is the same as the shelve generation width. 
+const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 const shelfElsOther = []; // keep refs + geometry
 let mapRotation = 0;
 const pathSvg = document.getElementById("path-map");
@@ -990,7 +990,11 @@ function highlightItemOnMap() {
     // HIGHLIGHT SHELVES 
     const shelves = shelvesNextToEdge(edge.id, shelfEls)
     const correctShelf = shelves.find(shelf => shelfIsOnAisleSide(shelf, edge, Number(routeState.currentItem.aisleSide)));
-    highlightShelfPortion(correctShelf, edge);
+
+    // Sometimes a change in aisleWidth can cause no shelf to be found
+    if(correctShelf){
+        highlightShelfPortion(correctShelf, edge);
+    }
 }
 
 function highlightShelfPortion(shelf, edge) {
@@ -1649,9 +1653,7 @@ edgesData.forEach(e => {
 });
 
 function onShelfClicked(shelf, click) {
-
     const edges = edgesNextToShelf(shelf, click);
-    console.log(edges)
     if (!edges.length) return;
 
     let index = 0;
@@ -1716,7 +1718,6 @@ function aisleSideForShelf(shelf, edge) {
 }
 
 function edgesNextToShelf(shelf, click) {
-    console.log(shelf)
     return edgesData.filter(edge =>
         shelfIsNextToEdge(shelf, edge, click)
     );
@@ -1731,12 +1732,10 @@ function shelfIsNextToEdge(shelf, edge, click) {
 
     // 🚫 Reject edges that don't run parallel to the shelf
     if (shelfIsHorizontal && !edgeIsHorizontal) {
-        console.log("Rejected: not parallel (expected horizontal) - check for exact horizontal", edge);
         return false;
     }
 
     if (shelfIsVertical && !edgeIsVertical) {
-        console.log("Rejected: not parallel (expected vertical) - check for exact vertical", edge);
         return false;
     }
 

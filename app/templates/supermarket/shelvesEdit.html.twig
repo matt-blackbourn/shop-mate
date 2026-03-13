@@ -8,6 +8,7 @@
     <button type="button" class="btn btn-primary" id="createShelfBtn">Create New Shelf</button>
     <button type="button" class="btn btn-danger" id="deleteShelfBtn" disabled>Delete Shelf</button>
     <button type="button" class="btn btn-secondary" id="toggleFullSelectBtn" disabled>Toggle Full Select</button>
+    <button type="button" class="btn btn-secondary" id="deleteAll">Delete All</button>
 
     <form method="POST" action="/supermarket/{{ supermarket.id }}/shelves/save" id="shelfForm">
         <input type="hidden" name="shelves" id="shelfInput">
@@ -187,6 +188,13 @@ document.getElementById('deleteShelfBtn').addEventListener('click', () => {
     activeShelfId = null;       // clear selection
 
     document.getElementById('deleteShelfBtn').disabled = true; // disable button
+    renderShelves();
+});
+
+document.getElementById('deleteAll').addEventListener('click', () => {
+    Object.values(shelves).forEach(shelf => {
+        shelf.deleted = true;
+    });
     renderShelves();
 });
 

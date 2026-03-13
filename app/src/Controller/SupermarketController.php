@@ -350,12 +350,10 @@ class SupermarketController extends AbstractController
                 if (!isset($item['from'], $item['to'])) continue;
 
                 // find nodes by DB id first, fallback to UUID if needed
-                $from = $nodeRepository->find($item['from']) ?: $nodeRepository->findOneByUuid($item['from']);
-                $to   = $nodeRepository->find($item['to']) ?: $nodeRepository->findOneByUuid($item['to']);
+                $from = $nodeRepository->find($item['from']);
+                $to   = $nodeRepository->find($item['to']);
             
                 if (!$from || !$to) continue;
-            
-                if ($from->getSupermarket() !== $supermarket || $to->getSupermarket() !== $supermarket) continue;
             
                 if (!empty($item['id'])) {
                     $edge = $edgeRepository->find($item['id']);

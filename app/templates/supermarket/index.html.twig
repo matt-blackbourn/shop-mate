@@ -19,18 +19,18 @@
                 <td>{{ supermarket.id }}</td>
                 <td>{{ supermarket.type.value }} - {{ supermarket.suburb }}</td>
                 <td>
-                    {# <a href="{{ path('admin_assign_food_edges', {'id': supermarket.id}) }}">assign food</a> #}
-                    {# <a href="{{ path('app_supermarket_edit', {'id': supermarket.id}) }}">edit</a> #}
-                    {# <a href="{{ path('app_supermarket_draw_nodes', {'id': supermarket.id}) }}">nodes</a> #}
                     {% if supermarket.imagePath %}
                         <a href="{{ path('app_supermarket_draw_edges_overlay', {'id': supermarket.id}) }}">Edges - image overlay</a>
                     {% else %}
                         <a href="{{ path('app_supermarket_draw_edges', {'id': supermarket.id}) }}">Map</a>
                     {% endif %}
 
-                    {% if supermarket.shelves|length == 0 %}| <a href="{{ path('app_supermarket_draw_shelves', {'id': supermarket.id}) }}">Generate Shelves</a>{% endif %}
+                    {% if supermarket.shelves|length == 0 %}
+                    | <a href="{{ path('app_supermarket_draw_shelves', {'id': supermarket.id}) }}">Generate Shelves</a>
+                    {% else %}
 
                     | <a href="{{ path('app_supermarket_edit_shelves', {'id': supermarket.id}) }}">Shelves</a>
+                    {% endif %}
                     | <a href="{{ path('app_supermarket_delete', {'id': supermarket.id}) }}"
                         class="text-danger"
                         onclick="return confirm('Delete this supermarket?\\n\\nAll nodes, edges, shelves, and mapped food items will be permanently removed.')">

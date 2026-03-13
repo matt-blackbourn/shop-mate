@@ -14,8 +14,6 @@
                 <!-- Center -->
                 <h6>{{ supermarket.type.value }} - {{ supermarket.suburb }}</h6>
             </div>
-
-
            
             <div class="flex-grow-1 d-flex justify-content-center">
                 <select id="phaseSelector">
@@ -31,7 +29,7 @@
                 <div id="map-selection-info" class="small text-nowrap"></div>
               
                 <button id="toggle-mode" type="button" class="btn-dark-base border-red">
-                    <i id="mode-icon" class="bi bi-record-circle"></i>
+                    <i id="mode-icon" class="bi bi-share"></i>
                 </button>
 
                 <button id="set-entrance" class="btn-dark-base border-yellow">
@@ -83,11 +81,9 @@
     data-walking-path='{{ supermarket.scaledPathData|json_encode }}'
     {% if supermarket.entranceNode %}data-entrance-id='{{ supermarket.entranceNode.id }}'{% endif %}
 >
-{% set width = supermarket.width + 30 %}
-{% set height = supermarket.height + 30 %}
     <svg
         id="overlay"
-        viewBox="-30 -30 {{ width }} {{ height }}"
+        viewBox="-30 -30 {{ supermarket.width + 30 }} {{ supermarket.height + 30 }}"
         preserveAspectRatio="xMidYMid meet"
     >
     </svg>
@@ -173,7 +169,7 @@ const infoBox = document.getElementById('map-selection-info');
 
 let nodes = {};
 let edges = [];
-const AISLE_WIDTH = 40; // default
+const AISLE_WIDTH = 35; // default
 const STROKE_WIDTH = 10; // default
 const nodeIdMap = {};
 const nodesByUuid = {};
@@ -201,7 +197,7 @@ const pathLayer = document.createElementNS(SVG_NS, 'g');
 pathLayer.setAttribute('id', 'path-layer');
 svg.appendChild(pathLayer);
 
-let mode = 'node'; // 'edge' | 'node'
+let mode = 'edge'; // 'edge' | 'node'
 
 const toggleBtn = document.getElementById('toggle-mode');
 const icon = document.getElementById('mode-icon');
@@ -286,13 +282,6 @@ svg.addEventListener('click', (e) => {
     createNode(x, y);
 });
 
-function clearSelections() {
-    selectedNodes.forEach(n => n.element.classList.remove('selected'));
-    selectedEdges.forEach(e => e.element.classList.remove('selected'));
-
-    selectedNodes.clear();
-    selectedEdges.clear();
-}
 
 
 document.getElementById('set-entrance').addEventListener('click', () => {
@@ -312,6 +301,15 @@ document.getElementById('set-entrance').addEventListener('click', () => {
 
     alert('Entrance node set!');
 });
+
+function clearSelections() {
+    selectedNodes.forEach(n => n.element.classList.remove('selected'));
+    selectedEdges.forEach(e => e.element.classList.remove('selected'));
+
+    selectedNodes.clear();
+    selectedEdges.clear();
+}
+
 
 function createNode(x, y) {
     const nodeUuid = uuid();
@@ -596,6 +594,146 @@ function clearInfo() {
     infoBox.textContent = "";
 }
 
+function rebuildAllGuides() {
+    guideLayer.innerHTML = '';
+
+    Object.values(nodes).forEach(n => {
+        drawGuidesForNode(n.x, n.y, 20);
+    });
+}
+
+
+function createEdge(a, b) {
+    if (edgeExists(a, b)) {
+        alert('Edge exists already.');
+        return;
+    }
+
+    const blockingNode = Object.values(nodes).find(n =>
+        n.uuid !== a.uuid &&
+        n.uuid !== b.uuid &&
+        nodeOnSegment(a, b, n)
+    );
+
+    if (blockingNode) {
+        alert('An intermediate node exists on this edge.');
+        return;
+    }
+
+    snapshotState();
+    const edge = {
+        id: null,
+        from: a.uuid,
+        to: b.uuid,
+        phase: phaseSelector.value,
+        aisleKey: null,
+        selected: false,
+        element: null
+    };
+
+    edge.element = drawEdge(edge);
+    edges.push(edge);
+}
+
+function handleNodeSelection(node, e) {
+    showNodeInfo(node);
+
+    if (!e.shiftKey) clearSelections();
+
+    if (selectedNodes.has(node)) {
+        selectedNodes.delete(node);
+        node.element.classList.remove('selected');
+    } else {
+        selectedNodes.add(node);
+        node.element.classList.add('selected');
+    }
+}
+
+function edgeExists(a, b) {
+    return edges.some(e =>
+        (e.from === a.uuid && e.to === b.uuid) ||
+        (e.from === b.uuid && e.to === a.uuid)
+    );
+}
+
+function nodeOnSegment(a, b, n, tolerance = 1) {
+    const cross =
+        (b.x - a.x) * (n.y - a.y) -
+        (b.y - a.y) * (n.x - a.x);
+
+    if (Math.abs(cross) > tolerance) return false;
+
+    const dot =
+        (n.x - a.x) * (b.x - a.x) +
+        (n.y - a.y) * (b.y - a.y);
+
+    if (dot < 0) return false;
+
+    const lenSq =
+        (b.x - a.x) ** 2 +
+        (b.y - a.y) ** 2;
+
+    if (dot > lenSq) return false;
+
+    return true;
+}
+
+phaseSelector.addEventListener('change', () => {
+    const newPhase = phaseSelector.value;
+    if (!newPhase) return;
+
+    const colorMap = { 
+        '1': '#4caf50',   // green
+        '2': '#2196f3',   // blue
+        '3': '#ff9800',   // orange
+        '4': '#9c27b0'    // purple
+    };
+
+    edges.forEach(edge => {
+        if (edge.selected) {
+            edge.phase = newPhase;
+
+            const line = svg.querySelector(`.edge[data-id="${edge.id}"]`);
+            if (line) {
+                line.dataset.phase = newPhase;
+                line.setAttribute('stroke', colorMap[newPhase]);
+            }
+
+        }
+    });
+
+    // ✅ DESELECT ALL EDGES
+    edges.forEach(edge => edge.selected = false);
+        svg.querySelectorAll('.edge.selected').forEach(line => {
+        line.classList.remove('selected');
+    });
+});
+
+function buildEdgesPayload() {
+    return edges.map(edge => {
+        const from = nodes[edge.from];
+        const to = nodes[edge.to];
+
+        return {
+            id: edge.id,
+            uuid: edge.uuid,
+            from: from?.id || from?.uuid,
+            to: to?.id || to?.uuid,
+            phase: edge.phase,
+            aisleKey: edge.aisleKey
+        };
+    });
+}
+
+function buildNodesPayload() {
+    return Object.values(nodes).map(n => ({
+        id: n.id,
+        uuid: n.uuid,
+        x: n.x,
+        y: n.y
+    }));
+}
+
 
 // UNDO AND DELETE
 document.addEventListener('keydown', (e) => {
@@ -640,14 +778,6 @@ document.addEventListener('keydown', (e) => {
 
 });
 
-function rebuildAllGuides() {
-    guideLayer.innerHTML = '';
-
-    Object.values(nodes).forEach(n => {
-        drawGuidesForNode(n.x, n.y, 20);
-    });
-}
-
 document.addEventListener('keydown', e => {
     if (mode !== 'node') return;
     if (!selectedNodes.size) return;
@@ -682,88 +812,17 @@ document.addEventListener('keydown', e => {
 });
 
 
-function createEdge(a, b) {
-
-    if (edgeExists(a, b)) {
-        alert('Edge exists already.');
-        return;
-    }
-
-    const blockingNode = Object.values(nodes).find(n =>
-        n.uuid !== a.uuid &&
-        n.uuid !== b.uuid &&
-        nodeOnSegment(a, b, n)
-    );
-
-    if (blockingNode) {
-        alert('An intermediate node exists on this edge.');
-        return;
-    }
-
-    snapshotState();
-
-    const edge = {
-        id: null,
-        from: a.uuid,
-        to: b.uuid,
-        phase: phaseSelector.value,
-        aisleKey: null,
-        selected: false,
-        element: null
-    };
-
-    edge.element = drawEdge(edge);
-
-    edges.push(edge);
-}
-
-function handleNodeSelection(node, e) {
-    showNodeInfo(node);
-
-    if (!e.shiftKey) clearSelections();
-
-    if (selectedNodes.has(node)) {
-        selectedNodes.delete(node);
-        node.element.classList.remove('selected');
-    } else {
-        selectedNodes.add(node);
-        node.element.classList.add('selected');
-    }
-
-}
-
-function edgeExists(a, b) {
-    return edges.some(e =>
-        (e.from === a.uuid && e.to === b.uuid) ||
-        (e.from === b.uuid && e.to === a.uuid)
-    );
-}
-
-function nodeOnSegment(a, b, n, tolerance = 1) {
-    const cross =
-        (b.x - a.x) * (n.y - a.y) -
-        (b.y - a.y) * (n.x - a.x);
-
-    if (Math.abs(cross) > tolerance) return false;
-
-    const dot =
-        (n.x - a.x) * (b.x - a.x) +
-        (n.y - a.y) * (b.y - a.y);
-
-    if (dot < 0) return false;
-
-    const lenSq =
-        (b.x - a.x) ** 2 +
-        (b.y - a.y) ** 2;
-
-    if (dot > lenSq) return false;
-
-    return true;
-}
+document.getElementById('edgesForm').addEventListener('submit', (event) => {
+    document.getElementById('edgesInput').value = JSON.stringify(buildEdgesPayload());
+    document.getElementById('nodesInput').value = JSON.stringify(buildNodesPayload());
+    document.getElementById('entranceNodeInput').value = entranceNode ? entranceNode.uuid : null;
+});
 
 const aisleSaveButton = document.getElementById('save-aisle');
 aisleSaveButton.addEventListener('click', () => {
+    
     let edgeSelected = false;
+
     edges.forEach(edge => {
         if (edge.selected) {
             edgeSelected = true;
@@ -771,17 +830,16 @@ aisleSaveButton.addEventListener('click', () => {
         }
     });
 
-    if(!edgeSelected || edges.length === 0) {
+    if (!edgeSelected) {
         alert('Select at least one edge to save as an aisle');
         return;
     }
 
-    // Populate hidden input here if needed
-    const payload = edges.map(({ element, ...data }) => data);
-    document.getElementById('edgesInput').value = JSON.stringify(payload);
+    document.getElementById('edgesInput').value = JSON.stringify(buildEdgesPayload());
+    document.getElementById('nodesInput').value = JSON.stringify(buildNodesPayload());
 
     // Submit the form directly
-    document.getElementById('edgesForm').submit();
+    document.getElementById('edgesForm').requestSubmit();
 });
 
 const removeAislesButton = document.getElementById('remove-aisles');
@@ -794,71 +852,7 @@ removeAislesButton.addEventListener('click', () => {
     form.action = `/supermarket/${supermarketId}/clear-aisles`; // backend route
 
     document.body.appendChild(form);
-    form.submit(); // this triggers a full page request and follows backend redirect
-});
-
-
-phaseSelector.addEventListener('change', () => {
-    const newPhase = phaseSelector.value;
-    if (!newPhase) return;
-
-    const colorMap = { 
-        '1': '#4caf50',   // green
-        '2': '#2196f3',   // blue
-        '3': '#ff9800',   // orange
-        '4': '#9c27b0'    // purple
-    };
-
-    edges.forEach(edge => {
-        if (edge.selected) {
-            edge.phase = newPhase;
-
-            const line = svg.querySelector(`.edge[data-id="${edge.id}"]`);
-            if (line) {
-                line.dataset.phase = newPhase;
-                line.setAttribute('stroke', colorMap[newPhase]);
-            }
-
-        }
-    });
-
-    // ✅ DESELECT ALL EDGES
-    edges.forEach(edge => edge.selected = false);
-        svg.querySelectorAll('.edge.selected').forEach(line => {
-        line.classList.remove('selected');
-    });
-});
-
-document.getElementById('edgesForm').addEventListener('submit', (event) => {
-    const edgesPayload = edges.map(edge => {
-        const from = nodes[edge.from];
-        const to = nodes[edge.to];
-
-        return {
-            id: edge.id,         // DB id if existing
-            uuid: edge.uuid,     // frontend uuid to track new edges
-            from: from?.id || from?.uuid,
-            to: to?.id || to?.uuid,
-            phase: edge.phase,
-            aisleKey: edge.aisleKey
-        };
-    });
-
-    const nodesPayload = Object.values(nodes).map(n => ({
-        id: n.id,
-        uuid: n.uuid,
-        x: n.x,
-        y: n.y
-    }));
-
-
-
-    document.getElementById('edgesInput').value = JSON.stringify(edgesPayload);
-    document.getElementById('nodesInput').value = JSON.stringify(nodesPayload);
-
-    // Add entrance UUID
-    const entranceUuid = entranceNode ? entranceNode.uuid : null;
-    document.getElementById('entranceNodeInput').value = entranceUuid;
+    form.requestSubmit(); // this triggers a full page request and follows backend redirect
 });
 
 // find edges with a node in the middle of them. (delete these if found)

@@ -30,7 +30,7 @@
 
 <svg 
     id="shelf-editor" 
-    viewBox="-50 -50 {{ viewBox.width + 100 }} {{ viewBox.height + 100 }}"
+    viewBox="-30 -30 {{ supermarket.width + 100 }} {{ supermarket.height + 100 }}"
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
 >
@@ -39,6 +39,11 @@
 </svg>
 
 <style>
+#shelf-editor {
+    width: 100%;
+    height: calc(100vh - 120px);
+    cursor: crosshair;
+}
 .toolbar {
   display: flex;
   gap: 8px;
@@ -59,8 +64,8 @@ const shelvesLayer = document.getElementById('shelves-layer');
 const autoGenerateBtn = document.getElementById('auto-generate');
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-const AISLE_WIDTH = 35; // try 40
-const SHELF_DEPTH = 20;
+const AISLE_WIDTH = 35; 
+const SHELF_DEPTH = 25;
 const OFFSET = AISLE_WIDTH / 2 + SHELF_DEPTH / 2; // how far from the center line of the aisle to place shelves
 const MIN_LENGTH_OF_EDGE = 0;  // set it higher to prevent short edges from generating shelves
 const TOLERANCE = 0; // Edges must be vertical or horizonal - this should show us non stright edges when generating shelves
@@ -76,6 +81,8 @@ let startY = 0;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
+const edgesData = JSON.parse(svg.dataset.edges);
+const nodesData = JSON.parse(svg.dataset.nodes);
 const shelfForm  = document.getElementById('shelfForm');
 const shelfInput = document.getElementById('shelfInput');
 
@@ -91,10 +98,6 @@ shelfForm.addEventListener('submit', (e) => {
     shelfInput.value = JSON.stringify(sanitized);
 });
 
-
-// set viewBox so SVG scales cleanly
-const edgesData = JSON.parse(svg.dataset.edges);
-const nodesData = JSON.parse(svg.dataset.nodes);
 
 const nodes = {};
 nodesData.forEach(n => {
@@ -127,6 +130,7 @@ edgesData.forEach(edge => {
   nodeMap.get(a).push(edge);
   nodeMap.get(b).push(edge);
 });
+
 
 autoGenerateBtn.onclick = autoGenerateShelves;
 
@@ -448,6 +452,17 @@ function drawShelf(shelf) {
     shelvesLayer.appendChild(rect);
 }
 
+shelfForm.addEventListener('submit', (e) => {
+    // Create a new array with only the fields you want to submit
+    const sanitized = shelfGroups.map(shelf => ({
+        x: shelf.x,
+        y: shelf.y,
+        width: shelf.width,
+        height: shelf.height
+    }));
+
+    shelfInput.value = JSON.stringify(sanitized);
+});
 
 
 </script>
