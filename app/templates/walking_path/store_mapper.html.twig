@@ -12,7 +12,7 @@
 
             <!-- Left: Menu -->
             <div class="header-left d-flex align-items-center">
-                <button class="menu-button" aria-label="Open menu">☰</button>
+                <button id="menu-button" aria-label="Open menu" class="btn-dark-base" ><i class="bi bi-list-ul"></i></button>
             </div>
 
             <!-- Center: Title -->
@@ -362,9 +362,17 @@
             currentPhase = PHASE_AISLES;
             updatePrimaryButton();
             showPhaseModal(currentPhase); 
-            updateDirectionArrow()
-            path.push({ x: 0, y: 0, steps: 0, phase: PHASE_AISLES }) // return to entrance for aisle mapping
+
+             // Find the end of the locked 'Entry' leg
+            const entryLeg = path.find(p => p.locked); 
+            const startX = entryLeg ? entryLeg.x : 0;
+            const startY = entryLeg ? entryLeg.y : 0;
+
+            // Start aisle mapping from that point
+            path.push({ x: startX, y: startY, steps: 0, phase: PHASE_AISLES });
+
             drawPath()
+            updateDirectionArrow()
             return;
         }
 
@@ -564,8 +572,16 @@
             text.setAttribute('y', (y1 + y2) / 2 - VISUAL_SCALE / 5);
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('font-size', Math.max(8, VISUAL_SCALE / 2));
-            text.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
             text.textContent = p2.steps;
+
+            // ✅ If this leg is locked, show 'Entry' in a different color
+            if (p2.locked) {
+                text.textContent = 'Entry';
+                text.setAttribute('fill', 'white');
+            } else {
+                text.textContent = p2.steps;
+                text.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+            }
 
             pathLayer.appendChild(text);
         }
@@ -669,32 +685,36 @@
     }
 
     function undoLeg() {
-        if (path.length > 1) {
-            path.pop();           // remove last point
-            headings.pop();       // remove last heading
-
-            // --- recompute bounds ---
-            const allX = path.map(p => p.x);
-            const allY = path.map(p => p.y);
-            const minX = Math.min(...allX);
-            const maxX = Math.max(...allX);
-            const minY = Math.min(...allY);
-            const maxY = Math.max(...allY);
-
-            const width = maxX - minX;
-            const height = maxY - minY;
-
-            // --- recompute VISUAL_SCALE dynamically ---
-            const baseSize = 20;       // starting base size
-            const referenceSize = 200; // designed reference width/height
-            VISUAL_SCALE = Math.max(4, baseSize * Math.sqrt(width * height) / referenceSize);
-
-            // --- update visuals ---
-            updateDirectionArrow();
-            drawPath();
-            enableSave();
-            saveToLocalStorage()
+        // Find the last leg that is not locked
+        for (let i = path.length - 1; i > 0; i--) { // start from last point, skip index 0 (origin)
+            if (!path[i].locked) {
+                path.splice(i, 1);       // remove last non-locked leg
+                headings.splice(i, 1);   // remove corresponding heading
+                break;
+            }
         }
+
+        // --- recompute bounds ---
+        const allX = path.map(p => p.x);
+        const allY = path.map(p => p.y);
+        const minX = Math.min(...allX);
+        const maxX = Math.max(...allX);
+        const minY = Math.min(...allY);
+        const maxY = Math.max(...allY);
+
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        // --- recompute VISUAL_SCALE dynamically ---
+        const baseSize = 20;       // starting base size
+        const referenceSize = 200; // designed reference width/height
+        VISUAL_SCALE = Math.max(4, baseSize * Math.sqrt(width * height) / referenceSize);
+
+        // --- update visuals ---
+        updateDirectionArrow();
+        drawPath();
+        enableSave();
+        saveToLocalStorage();
     }
 
 
@@ -772,25 +792,43 @@
 
     function restoreFromLocalStorage() {
         const saved = localStorage.getItem('storeMapping');
-        if (!saved) return;
 
-        try {
-            const state = JSON.parse(saved);
+        if (saved) {
+            try {
+                const state = JSON.parse(saved);
 
-            // Set local state from saved data
-            path = state.path || [];
-            headings = state.headings || [];
-            currentHeading = state.currentHeading || 0;
-            VISUAL_SCALE = state.visualScale || 20;
-            currentPhase = state.phase || PHASE_PERIMETER;
+                path = state.path || [];
+                headings = state.headings || [];
+                currentHeading = state.currentHeading || 0;
+                VISUAL_SCALE = state.visualScale || 20;
+                currentPhase = state.phase || PHASE_PERIMETER;
 
-            drawPath();
-            updateDirectionArrow();
-
-        } catch (e) {
-            console.warn('Failed to restore mapping', e);
+            } catch (e) {
+                console.warn('Failed to restore mapping', e);
+            }
         }
+
+        // --- if no path was restored, create a default 4-step leg ---
+        if (!path || path.length <= 1) {
+
+            path = [{ x: 0, y: 0, steps: 0, phase: currentPhase }];
+            headings = [0]; // start facing up
+            currentHeading = 0;
+
+            const last = path[path.length - 1];
+            const steps = 4;
+
+            const newX = last.x + steps * Math.sin(currentHeading);
+            const newY = last.y - steps * Math.cos(currentHeading);
+
+            path.push({ x: newX, y: newY, steps, phase: PHASE_PERIMETER, locked: true }); // starter leg
+            headings.push(currentHeading);
+        }
+
+        drawPath();
+        updateDirectionArrow();
     }
+
 
 
     // --- FORM SUBMISSION ---

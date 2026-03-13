@@ -6,8 +6,6 @@
 <div class="toolbar">
     <a href="{{ path('app_supermarket_index') }}" class="btn btn-outline-secondary btn-sm">← Back to list</a>
     <button type="button" class="btn btn-primary" id="createShelfBtn">Create New Shelf</button>
-    <button type="button" class="btn btn-danger" id="deleteShelfBtn" disabled>Delete Shelf</button>
-    <button type="button" class="btn btn-secondary" id="toggleFullSelectBtn" disabled>Toggle Full Select</button>
     <button type="button" class="btn btn-secondary" id="deleteAll">Delete All</button>
 
     <form method="POST" action="/supermarket/{{ supermarket.id }}/shelves/save" id="shelfForm">
@@ -149,17 +147,20 @@ function renderShelves() {
 function selectShelf(clientId) {
     activeShelfId = clientId;
     const hasSelection = !!activeShelfId;
-    document.getElementById('toggleFullSelectBtn').disabled = !hasSelection;
-    document.getElementById('deleteShelfBtn').disabled = !hasSelection;
     renderShelves();
 }
 
 // toggle full select button listener
-document.getElementById('toggleFullSelectBtn').addEventListener('click', toggleFullSelect);
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         toggleFullSelect();
+    }
+});
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        deleteShelf();
     }
 });
 
@@ -176,8 +177,7 @@ function toggleFullSelect() {
 }
 
 
-// Delete button listener
-document.getElementById('deleteShelfBtn').addEventListener('click', () => {
+function deleteShelf(){
     if (!activeShelfId) return;
 
     // Use strict equality to match UUID strings
@@ -187,9 +187,8 @@ document.getElementById('deleteShelfBtn').addEventListener('click', () => {
     shelves[index].deleted = true;   // remove shelf
     activeShelfId = null;       // clear selection
 
-    document.getElementById('deleteShelfBtn').disabled = true; // disable button
     renderShelves();
-});
+}
 
 document.getElementById('deleteAll').addEventListener('click', () => {
     Object.values(shelves).forEach(shelf => {
