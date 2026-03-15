@@ -120,4 +120,39 @@ class ProductPlacementRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    //------------------------------------
+    public function findDonorSupermarkets(int $foodItemId): array
+    {
+        return $this->createQueryBuilder('p')
+            ->select('IDENTITY(p.supermarket) as supermarketId')
+            ->where('p.foodItem = :foodItem')
+            ->setParameter('foodItem', $foodItemId)
+            ->groupBy('p.supermarket')
+            ->getQuery()
+            ->getScalarResult();
+    }
+
+    public function findPlacementsOnEdge(int $edgeId, int $excludeFoodId): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.edge = :edge')
+            ->andWhere('p.foodItem != :food')
+            ->setParameter('edge', $edgeId)
+            ->setParameter('food', $excludeFoodId)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findPlacementForFoodInStore(int $foodId, int $supermarketId): ?ProductPlacement
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.foodItem = :food')
+            ->andWhere('p.supermarket = :store')
+            ->setParameter('food', $foodId)
+            ->setParameter('store', $supermarketId)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
 }

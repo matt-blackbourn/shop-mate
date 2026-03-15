@@ -19,12 +19,6 @@ class FoodItem
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\ManyToOne(inversedBy: 'foodItems')]
-    private ?Edge $edge = null;
-
-    #[ORM\Column(type: Types::SMALLINT, nullable: true)]
-    private ?int $side = null;
-
     /**
      * @var Collection<int, ListItem>
      */
@@ -59,30 +53,6 @@ class FoodItem
     public function setName(string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getEdge(): ?Edge
-    {
-        return $this->edge;
-    }
-
-    public function setEdge(?Edge $edge): static
-    {
-        $this->edge = $edge;
-
-        return $this;
-    }
-
-    public function getSide(): ?int
-    {
-        return $this->side;
-    }
-
-    public function setSide(?int $side): static
-    {
-        $this->side = $side;
 
         return $this;
     }

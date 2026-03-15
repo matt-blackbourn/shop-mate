@@ -76,4 +76,17 @@ class EdgeRepository extends ServiceEntityRepository
 
         $qb->getQuery()->execute();
     }
+
+    public function findNeighbourEdges(int $startId, int $endId): array
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.start = :start')
+            ->orWhere('e.end = :start')
+            ->orWhere('e.start = :end')
+            ->orWhere('e.end = :end')
+            ->setParameter('start', $startId)
+            ->setParameter('end', $endId)
+            ->getQuery()
+            ->getResult();
+    }
 }
