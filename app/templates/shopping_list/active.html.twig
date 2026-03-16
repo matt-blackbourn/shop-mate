@@ -157,9 +157,10 @@
 </div>
 <div id="sheetBackdrop" class="sheet-backdrop"></div>
 
-{% include 'supermarket/_new_place_food_modal.html.twig' %}
 {% include 'food_item/_group_item_modal.html.twig' %}
-{% include 'supermarket/_show_path_modal.html.twig' %}
+{# {% include 'supermarket/_new_place_food_modal.html.twig' %}
+{% include 'supermarket/_show_path_modal.html.twig' %} #}
+{% include 'shopping_list/_combined_map_modal.html.twig' %}
 
 
 <style>
@@ -426,6 +427,27 @@
     flex: 1;           /* fill all available modal-body space */
     background: #0f1115;
     overflow: hidden;  /* map will scale within container */
+    position: relative;
+}
+.map-overlay {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none; /* clicks go through to map */
+    z-index: 10;
+
+}
+
+.overlay-card {
+    background: rgba(33, 37, 41, 0.9);
+    color: #fff;
+    border: 1px solid #51cf66;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+    line-height: 1.2;
 }
 
 
@@ -581,9 +603,23 @@
     fill: #f59e0b80
 }
 
-#path-map {
+#map-svg {
     transition: transform 1s ease;
 }
+
+#placementConfirmBtn {
+    background-color: #212529;
+    border: 1px solid #51cf66;
+    color: #fff;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    transition: background 0.15s ease; /* smooth highlight */
+}
+ 
+
+{# #path-map {
+    transition: transform 1s ease;
+} #}
 
 
 /* ----------------------
@@ -616,14 +652,18 @@ const shelfEls = []; // keep refs + geometry
 const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
 const shelfElsOther = []; // keep refs + geometry
 let mapRotation = 0;
-const pathSvg = document.getElementById("path-map");
+//const pathSvg = document.getElementById("path-map");
+const mapSvg = document.getElementById("map-svg");
+
+const MAP_MODE_PATH = 'path';
+const MAP_MODE_PLACEMENT = 'placement';
 
 
 
 // store original viewBox in SVG units
-if (!pathSvg.dataset.originalViewBox) {
-    const vb = pathSvg.viewBox.baseVal;
-    pathSvg.dataset.originalViewBox = `${vb.x} ${vb.y} ${vb.width} ${vb.height}`;
+if (!mapSvg.dataset.originalViewBox) {
+    const vb = mapSvg.viewBox.baseVal;
+    mapSvg.dataset.originalViewBox = `${vb.x} ${vb.y} ${vb.width} ${vb.height}`;
 }
 
 
@@ -662,7 +702,8 @@ nodesData.forEach(n => {
 edgesData.forEach(e => {
     const from = nodes[e.from];
     const to   = nodes[e.to];
-    const layer = getLayer('path-map', 'path-edges-layer');
+    //const layer = getLayer('path-map', 'path-edges-layer');
+    const layer = getLayer('map-svg', 'edges-layer');
 
     // invisible edges - only visible with styles added
     const line = document.createElementNS(SVG_NS, 'line');
@@ -725,8 +766,9 @@ routeState.segments.forEach(segment => {
 
 
 // draw shelves on maps
-drawShelves(shelvesData, document.getElementById('placement-map'))
-drawShelves(shelvesData, document.getElementById('path-map'))
+//drawShelves(shelvesData, document.getElementById('placement-map'))
+//drawShelves(shelvesData, document.getElementById('path-map'))
+drawShelves(shelvesData, document.getElementById('map-svg'))
 
 updateMapView();
 
@@ -740,6 +782,54 @@ highlightItemOnMap();
 
 
 
+let mapMode = 'path';
+document.getElementById('place-item-map').addEventListener('click', () => {
+    setMapMode('placement');
+
+    const overlay = document.getElementById('placementOverlay');
+    if (mapMode === 'placement') {
+        overlay.classList.remove('d-none');
+    } else {
+        overlay.classList.add('d-none');
+    }
+});
+function setMapMode(mode) {
+
+    mapMode = mode;
+
+    const placementInstructions = document.getElementById('placementInstructions'); // currently blank
+    const placementConfirmBtn = document.getElementById('placementConfirmBtn');
+    const placementCancelBtn = document.getElementById('placementCancelBtn');
+    const mapBackBtn = document.getElementById('mapBackBtn');
+
+    const skipBtn = document.getElementById('skip-item-map');
+    const pickBtn = document.getElementById('pick-item-map');
+
+    if (mode === 'placement') {
+
+        placementInstructions.classList.remove('d-none');// currently blank
+        placementConfirmBtn.classList.remove('d-none');
+        placementConfirmBtn.classList.remove('d-none');
+
+        mapBackBtn.classList.add('d-none');
+        skipBtn.classList.add('d-none');
+        pickBtn.classList.add('d-none');
+
+    } else {
+
+        placementInstructions.classList.add('d-none');// currently blank
+        placementConfirmBtn.classList.add('d-none');
+        placementConfirmBtn.classList.add('d-none');
+
+        mapBackBtn.classList.remove('d-none');
+        skipBtn.classList.remove('d-none');
+        pickBtn.classList.remove('d-none');
+
+    }
+
+}
+
+
 function rotateMap(){
     setTimeout(() => {
         const mapRotation = findRotationForNextItem();
@@ -748,10 +838,10 @@ function rotateMap(){
         }
 
         // Apply rotation to the map        
-        pathSvg.style.transform = `rotate(${mapRotation}deg)`;
-        pathSvg.style.transformOrigin = "center center";
+        mapSvg.style.transform = `rotate(${mapRotation}deg)`;
+        mapSvg.style.transformOrigin = "center center";
 
-        const vb = pathSvg.viewBox.baseVal;
+        const vb = mapSvg.viewBox.baseVal;
         const width = vb.width;
         const height = vb.height;
         
@@ -774,13 +864,13 @@ function rotateMap(){
                 height
             };
 
-            animateViewBox(pathSvg, start, end, 600); // 600ms animation
+            animateViewBox(mapSvg, start, end, 600); // 600ms animation
 
         } else {
-            const parts = pathSvg.dataset.originalViewBox.split(' ').map(Number);
+            const parts = mapSvg.dataset.originalViewBox.split(' ').map(Number);
             const end = { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
 
-            animateViewBox(pathSvg, start, end, 600); // 600ms animation
+            animateViewBox(mapSvg, start, end, 600); // 600ms animation
         }
     }, 500)
 }
@@ -862,8 +952,8 @@ function updateMapView() {
     notesEl.style.display = routeState.currentItem.notes ? '' : 'none';
 
     // update place item button on map view
-    const placeBtn = document.getElementById('place-item-map');
     // Remove old status classes first
+    const placeBtn = document.getElementById('place-item-map');
     placeBtn.classList.remove('border-green', 'border-yellow', 'border-red');
 
     if(segment){
@@ -898,7 +988,9 @@ function updateMapView() {
         );
 
         if (card) {
-            openPlacementModal(card);
+            setMapMode('placement');
+           // openPlacementModal(card);
+            openMapModal(card)
         }
     };
 
@@ -965,7 +1057,8 @@ function highlightItemOnMap() {
         });
     });
 
-    clearShelfHighlights('path-map');
+    //clearShelfHighlights('path-map');
+    clearShelfHighlights('map-svg');
 
     const activeSegment = routeState.segments[routeState.currentSegment];
     if(!activeSegment) return; // no placed items
@@ -1217,7 +1310,7 @@ function drawShelves(shelvesData, svg) {
         svg.appendChild(rect);
 
         // update shelfEls with geometry for hit testing during placement
-        if(svg.id == 'path-map'){
+       /** if(svg.id == 'path-map'){
             shelfEls.push({
                 el: rect,
                 ...shelf
@@ -1231,6 +1324,13 @@ function drawShelves(shelvesData, svg) {
                 ...shelf
             });
         }
+        **/
+        if(svg.id == 'map-svg'){
+            shelfElsOther.push({
+                el: rect,
+                ...shelf
+            });
+        }
     });
 }
 
@@ -1239,7 +1339,8 @@ function getLayer(svgId, layerId) {
 }
 
 function drawEntranceArrow(node) {
-    let layer = getLayer('placement-map', 'placement-entrance-layer');
+    //let layer = getLayer('placement-map', 'placement-entrance-layer');
+    let layer = getLayer('map-svg', 'entrance-layer');
 
     const g = document.createElementNS(SVG_NS, 'g');
     g.classList.add('node', 'entrance');
@@ -1319,35 +1420,43 @@ function linesIntersect(l1, l2) {
 
 document.getElementById('mapButton').addEventListener('click', e => {
     e.preventDefault();
-    const modalEl = document.getElementById('pathModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
+    setMapMode('path');
 
-    if(findRotationForNextItem() === 180){
-        setTimeout(() => {
-           rotateMap();
-        }, 500)
-    }
+    openMapModal();
 });
 
-
-function openPlacementModal(itemEl) {
-    const modalEl = document.getElementById('placementModal');
+function openMapModal(card){
+    const modalEl = document.getElementById('mapModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
-    const foodItemId = itemEl.dataset.foodItemId;
-    const edgeId = itemEl.dataset.placementEdgeId || null;
-    const aisleSide = itemEl.dataset.placementAisleSide || null;
+    if(mapMode === 'path'){
 
-    placementState.foodItemId = foodItemId;
+        if(findRotationForNextItem() === 180){
+            setTimeout(() => {
+            rotateMap();
+            }, 500)
+        }
 
-    // Only select edge if one exists
-    if (edgeId) {
-        preselectEdge(edgeId, aisleSide)
+    } else {
+        
+        const foodItemId = card.dataset.foodItemId;
+        const edgeId = card.dataset.placementEdgeId || null;
+        const aisleSide = card.dataset.placementAisleSide || null;
+
+        placementState.foodItemId = foodItemId;
+
+        // Only select edge if one exists
+        if (edgeId) {
+            preselectShelf(Number(edgeId), Number(aisleSide))
+        }
+
     }
-    
+
     modal.show();
 }
+
+
+
 
 
 
@@ -1377,7 +1486,7 @@ document.querySelector('#skip-item-map').addEventListener('click', () => {
 function checkForFinishedList() {
     if(routeState.currentSegment === routeState.segments.length -1) {
         // all items picked or skipped, close modal
-        const modalEl = document.getElementById('pathModal');
+        const modalEl = document.getElementById('mapModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
     }
@@ -1504,7 +1613,9 @@ function openPlacementMenu(card) {
     // ---- BUTTON HANDLERS ----
     mapItemBtn.onclick = () => {
         closeMenu();
-        openPlacementModal(mapItemBtn.closest('.shopping-card'));
+        setMapMode('placement');
+        openMapModal(mapItemBtn.closest('.shopping-card'));
+        //openPlacementModal(mapItemBtn.closest('.shopping-card'));
     };
 
     groupItemBtn.onclick = () => {
@@ -1636,7 +1747,8 @@ shelfElsOther.forEach(shelf => {
 edgesData.forEach(e => {
     const from = nodes[e.from];
     const to   = nodes[e.to];
-    const layer = getLayer('placement-map', 'placement-edges-layer');
+    //const layer = getLayer('placement-map', 'placement-edges-layer');
+    const layer = getLayer('map-svg', 'edges-layer');
 
     // visible edge
     const line = document.createElementNS(SVG_NS, 'line');
@@ -1653,6 +1765,8 @@ edgesData.forEach(e => {
 });
 
 function onShelfClicked(shelf, click) {
+    if(mapMode !== 'placement') return;
+
     const edges = edgesNextToShelf(shelf, click);
     if (!edges.length) return;
 
@@ -1676,7 +1790,8 @@ function onShelfClicked(shelf, click) {
     placementState.edgeId = edge.id;
 
     confirmBtn.disabled = false;
-    clearShelfHighlights('placement-map');
+    //clearShelfHighlights('placement-map');
+    clearShelfHighlights('map-svg');
     highlightShelfPortion(shelf, edge);
     updatePlacementPayload()
 }
@@ -1808,10 +1923,11 @@ function shelfOrientation(shelf) {
     return shelf.width >= shelf.height ? 'horizontal' : 'vertical';
 }
 
-
+/**
 function openPlacementModal(modalElement) {
-    const modalEl = document.getElementById('placementModal');
+    const modalEl = document.getElementById('mapModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
     const foodItemId = modalElement.dataset.foodItemId;
     const edgeId = modalElement.dataset.placementEdgeId || null;
     const aisleSide = modalElement.dataset.placementAisleSide || null;
@@ -1825,6 +1941,26 @@ function openPlacementModal(modalElement) {
     
     modal.show();
 }
+*/
+/**
+function openPlacementModal(itemEl) {
+    const modalEl = document.getElementById('placementModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    const foodItemId = itemEl.dataset.foodItemId;
+    const edgeId = itemEl.dataset.placementEdgeId || null;
+    const aisleSide = itemEl.dataset.placementAisleSide || null;
+
+    placementState.foodItemId = foodItemId;
+
+    // Only select edge if one exists
+    if (edgeId) {
+        preselectEdge(edgeId, aisleSide)
+    }
+    
+    modal.show();
+}
+*/
 
 function openGroupingModal(modalElement) {
     const modalEl = document.getElementById('groupItemModal');
@@ -1840,7 +1976,7 @@ function openGroupingModal(modalElement) {
 
 
 
-document.getElementById('placementCancelBtn').addEventListener('click', () => {
+document.getElementById('mapBackBtn').addEventListener('click', () => {
     clearSelection();
 
     placementState.edgeId = null;
@@ -1856,7 +1992,8 @@ function updatePlacementPayload() {
 }
 
 function clearSelection() {
-    clearShelfHighlights('placement-map');
+    //clearShelfHighlights('placement-map');
+    clearShelfHighlights('map-svg');
 
     placementState.edgeId = null;
     placementState.aisleSide = null;

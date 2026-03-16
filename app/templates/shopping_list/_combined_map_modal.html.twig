@@ -1,0 +1,71 @@
+<div class="modal fade map-modal" id="mapModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header d-flex justify-content-between">
+
+                <div class="title">
+                    <span id="modalItemName"></span>
+                    <span id="modalItemQty"></span>
+                    <div id="modalItemNotes"></div>
+                </div>
+
+                <!-- Path Mode Button -->
+                <button type="button" id="place-item-map" class="btn-dark-base border-green">
+                    <i class="bi-geo-alt-fill"></i>
+                </button>
+
+                <!-- Placement Instructions -->
+                <div id="placementInstructions" class="d-none">
+                </div>
+
+            </div>
+
+            <div class="modal-body">
+                <div class="map-container">
+                    <svg id="map-svg" class="map-svg"
+                         viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
+                        <g id="edges-layer"></g>
+                        <g id="entrance-layer"></g>
+                    </svg>
+                        <div id="placementOverlay" class="map-overlay d-none">
+                            <div class="overlay-card">
+                                Tap the shelf this item belongs on.<br>
+                                Tap again to change sides.
+                            </div>
+                        </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+
+                <!-- Left button -->
+                <button type="button" id="mapBackBtn" class="map-nav-button" data-bs-dismiss="modal">
+                    <i class="bi-arrow-left"></i> Back
+                </button>
+                <button type="button" id="placementCancelBtn" class="map-nav-button d-none" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <!-- Path Mode Buttons -->
+                <button id="skip-item-map" class="btn-dark-base border-yellow">Skip</button>
+                <button id="pick-item-map" class="btn-dark-base border-green">Pick Item</button>
+
+                <!-- Placement Mode Button -->
+                <button type="submit"
+                        form="placementForm"
+                        id="placementConfirmBtn"
+                        class="d-none"
+                        disabled>
+                    Save placement
+                </button>
+
+            </div>
+
+            <form method="POST" action="/placement/save" id="placementForm">
+                <input type="hidden" name="placement" id="placementPayload">
+            </form>
+
+        </div>
+    </div>
+</div>
