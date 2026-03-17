@@ -17,21 +17,19 @@
     
             <!-- Center: Title -->
             <div class="header-center flex-grow-1 text-center fw-semibold">
-                  {# <div class="mapping-steps">
-                    <span id="stepPerimeter">Perimeter</span> →
-                    <span id="stepAisles">Aisles</span>
-                </div> #}
                 <div class="mapper-display"><span id="stepDisplay">0</span></div>
-
             </div>
-            {# <button type="button" id="rotate" class="btn-dark-base">
-                <i class="bi-arrow-repeat"></i>
-            </button> #}
             <button type="button" id="saveLeg" class="btn-dark-base">
                 <i class="bi bi-floppy"></i>
             </button>
             <button type="button" id="repeatLeg" class="btn-dark-base">
-                <i class="bi bi-arrow-repeat"></i>
+                <i class="bi bi-share"></i>
+            </button>
+            <button type="button" id="addWaypoint" class="btn-dark-base">
+                <i class="bi bi-geo-alt-fill"></i>
+            </button>
+            <button type="button" id="returnToWaypoint" class="btn-dark-base">
+                <i class="bi-skip-forward"></i>
             </button>
         </div>
     </div>
@@ -50,7 +48,7 @@
     <div class="page-body">
         <div class="mapper-map-container">
             <svg class="mapper-svg"></svg>
-
+            <div id="overlayMessage" class="overlay-message"></div>
         </div>
     </div>
 
@@ -70,7 +68,7 @@
             {% endfor %}
             <button class="btn-dark-base">⌫</button>
             <button class="btn-dark-base" data-number="0">0</button>
-            <button type="button" class="btn-dark-base"><i class="bi bi-arrow-counterclockwise"></i></button>
+            <button id="undo" type="button" class="btn-dark-base"><i class="bi bi-arrow-counterclockwise"></i></button>
 
         </div>
 
@@ -236,7 +234,40 @@
     stroke: white; 
     fill: white; 
 }
+.overlay-message {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, 10px);
+    
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid transparent; /* default */
+    
+    font-size: 14px;
+    pointer-events: none;
 
+    opacity: 0;
+    transition: opacity 0.5s ease;
+
+    z-index: 9999; /* 🔥 important */
+}
+
+.overlay-message.show {
+    opacity: 1;
+    transform: translate(-50%, 10px);
+}
+
+/* states */
+.overlay-message.success {
+    border-color: #51cf66; /* green */
+}
+
+.overlay-message.error {
+    border-color: #ff6b6b; /* red */
+}
 
 </style>
 
@@ -252,7 +283,6 @@
 
     const stepDisplay = document.getElementById('stepDisplay');
     const footer = document.querySelector('.mapper-footer');
-    const undoBtn = document.querySelector('.bi-arrow-counterclockwise')?.closest('button');
     const saveBtn = document.getElementById('save-map');
     let VISUAL_SCALE = 20; // We need this because the screen uses svg units, which are tiny. This increases the size of the rendered path without affecting the underlying coordinate system used for calculations
 
@@ -269,6 +299,8 @@
     let hasChanges = false;
     let rotateTimer = null;
     let savedLeg = null;
+    let waypoints = [];
+    let currentWaypointIndex = 0;
 
     createDirectionArrow();
 
@@ -286,22 +318,39 @@
         });
     });
 
-/**
-    document.getElementById('rotate').addEventListener('click', () => {
-        rotate180()
-    });
+    let overlayTimer;
+    function showOverlayMessage(text, type = 'success') {
+        const el = document.getElementById('overlayMessage');
 
-    function rotate180(){
-        mapRotation = (mapRotation + 180) % 360;
-        svg.style.transform = `rotate(${mapRotation}deg)`;
-        svg.style.transformOrigin = "center center";
+        // reset previous state
+        el.classList.remove('success', 'error');
+
+        // apply new state
+        el.classList.add(type);
+
+        el.textContent = text;
+        el.classList.add('show');
+
+        clearTimeout(overlayTimer);
+
+        overlayTimer = setTimeout(() => {
+            el.classList.remove('show');
+        }, 2000);
     }
-*/
+
+    document.querySelector('#undo').addEventListener('click', undoLeg);
+
     document.getElementById('saveLeg').addEventListener('click', () => {
         saveLastLeg()
     });
     document.getElementById('repeatLeg').addEventListener('click', () => {
         reapplySavedLeg()
+    });
+    document.getElementById('addWaypoint').addEventListener('click', () => {
+        addWaypoint()
+    });
+    document.getElementById('returnToWaypoint').addEventListener('click', () => {
+        returnToLastWaypoint()
     });
 
     function saveLastLeg() {
@@ -316,11 +365,14 @@
             steps: b.steps // ✅ leg length directly
         };
 
-        console.log('Saved leg:', savedLeg);
+        showOverlayMessage(`Leg saved: ${savedLeg.steps} steps`);
     }
 
     function reapplySavedLeg() {
-        if (!savedLeg) return;
+        if (!savedLeg){
+            showOverlayMessage('Save a leg/aisle first!', 'error');
+            return;
+        }
 
         const current = path[path.length - 1];
 
@@ -345,6 +397,70 @@
         path.push(returnPoint);
 
         drawPath();
+    }
+
+    function addWaypoint() {
+        if (!path.length) return;
+
+        const last = path[path.length - 1]; // endpoint of current path
+
+        // Add new waypoint
+        waypoints.push({
+            x: last.x,
+            y: last.y
+        });
+
+        // Make this the current waypoint for cycling
+        currentWaypointIndex = waypoints.length - 1;
+
+        // Tag the last path point with the waypoint index
+        last.waypointIndex = currentWaypointIndex;
+
+        showOverlayMessage(
+            `Waypoint ${waypoints.length} saved!`,
+            'success'
+        );
+    }
+
+    function returnToLastWaypoint() {
+        if (!waypoints.length) {
+            showOverlayMessage(
+                `No waypoints saved!`,
+                'error'
+            );
+            return;
+        }
+
+        // Decrement currentWaypointIndex for reverse cycling
+        // Wrap around to the last waypoint if we go below 0
+        currentWaypointIndex =
+            (currentWaypointIndex - 1 + waypoints.length) % waypoints.length;
+
+        const waypoint = waypoints[currentWaypointIndex];
+
+        // If last leg is already a return, overwrite it
+        const last = path[path.length - 1];
+        if (last && last.type === TYPE_RETURN) {
+            path.pop();
+        }
+
+        // Push new return leg
+        path.push({
+            x: waypoint.x,
+            y: waypoint.y,
+            steps: 0,
+            type: TYPE_RETURN,
+            waypointIndex: currentWaypointIndex
+        });
+
+        updateDirectionArrow();
+        drawPath();
+
+        // show overlay with human-friendly number
+        showOverlayMessage(
+            `Returned to waypoint ${currentWaypointIndex + 1}`,
+            'success'
+        );
     }
 
     function createDirectionArrow() {
@@ -412,15 +528,6 @@
         return Math.min(max, Math.max(min, value));
     }
 
-/**
-    // Find the end of the locked 'Entry' leg
-    const entryLeg = path.find(p => p.locked); 
-    const startX = entryLeg ? entryLeg.x : 0;
-    const startY = entryLeg ? entryLeg.y : 0;
-
-    // Start aisle mapping from that point
-    path.push({ x: startX, y: startY, steps: 0});
-*/
 
     // Handle modal form submission
     document.getElementById('walkingPathForm').addEventListener('submit', async (e) => {
@@ -570,7 +677,7 @@
             dot.setAttribute('cx', x2);
             dot.setAttribute('cy', y2);
             dot.setAttribute('r', Math.max(2, VISUAL_SCALE / 6));
-            dot.setAttribute('fill', '#fa5252');
+            dot.setAttribute('fill', p2.waypointIndex !== undefined ? '#51cf66' : '#fa5252');
             pathLayer.appendChild(dot);
 
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -584,10 +691,12 @@
             if (p2.locked) {
                 text.textContent = 'Entry';
                 text.setAttribute('fill', 'white');
-            } else {
+            } else if(p2.type !== TYPE_RETURN) {
+                // dont print the number on return legs
                 text.textContent = p2.steps;
                 text.setAttribute('fill', 'white');
             }
+            
 
             pathLayer.appendChild(text);
         }
@@ -688,12 +797,28 @@
     }
 
     function undoLeg() {
+        let removedPoint = null;
+
         // Find the last leg that is not locked
-        for (let i = path.length - 1; i > 0; i--) { // start from last point, skip index 0 (origin)
+        for (let i = path.length - 1; i > 0; i--) {
             if (!path[i].locked) {
-                path.splice(i, 1);       // remove last non-locked leg
-                headings.splice(i, 1);   // remove corresponding heading
+                removedPoint = path[i];   // ✅ capture before removing
+                path.splice(i, 1);
+                headings.splice(i, 1);
                 break;
+            }
+        }
+
+        // --- waypoint cleanup ---
+        if (
+            removedPoint &&
+            removedPoint.type === TYPE_RETURN &&
+            removedPoint.waypointIndex !== undefined
+        ) {
+            // Only remove if it's the last waypoint (stack-safe)
+            if (removedPoint.waypointIndex === waypoints.length - 1) {
+                waypoints.pop();
+                currentWaypointIndex = Math.max(0, waypoints.length - 1);
             }
         }
 
@@ -709,8 +834,8 @@
         const height = maxY - minY;
 
         // --- recompute VISUAL_SCALE dynamically ---
-        const baseSize = 20;       // starting base size
-        const referenceSize = 200; // designed reference width/height
+        const baseSize = 20;
+        const referenceSize = 200;
         VISUAL_SCALE = Math.max(4, baseSize * Math.sqrt(width * height) / referenceSize);
 
         // --- update visuals ---
@@ -761,9 +886,6 @@
         }
     });
 
-    if (undoBtn) {
-        undoBtn.addEventListener('click', undoLeg);
-    }
 
     function clearMappingSession() {
         if (!confirm('Clear this mapping session? This cannot be undone.')) {
@@ -819,12 +941,25 @@
             const last = path[path.length - 1];
             const steps = 4;
 
-            const newX = last.x + steps * Math.sin(currentHeading);
-            const newY = last.y - steps * Math.cos(currentHeading);
+            const newX = Math.round(last.x + steps * Math.sin(currentHeading));
+            const newY = Math.round(last.y - steps * Math.cos(currentHeading));
 
-            path.push({ x: newX, y: newY, steps, type: TYPE_NORMAL,  locked: true }); // starter leg
+            path.push({ x: newX, y: newY, steps, type: TYPE_NORMAL, locked: true }); // starter leg
             headings.push(currentHeading);
         }
+
+        // --- rebuild waypoints[] ---
+        waypoints = [];
+        currentWaypointIndex = 0;
+
+        path.forEach(p => {
+            if (p.waypointIndex !== undefined) {
+                waypoints[p.waypointIndex] = { x: p.x, y: p.y };
+            }
+        });
+
+        // remove any undefined gaps (if user deleted some waypoints in past session)
+        waypoints = waypoints.filter(Boolean);
 
         drawPath();
         updateDirectionArrow();
