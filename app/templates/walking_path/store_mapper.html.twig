@@ -27,15 +27,12 @@
             {# <button type="button" id="rotate" class="btn-dark-base">
                 <i class="bi-arrow-repeat"></i>
             </button> #}
-
-
-            <!-- Right: Save -->
-            <div class="header-right d-flex align-items-center">
-            
-                <button type="button" id="phaseButton" class="btn-dark-base border-green d-none">
-                    NEXT
-                </button>
-            </div>
+            <button type="button" id="saveLeg" class="btn-dark-base">
+                <i class="bi bi-floppy"></i>
+            </button>
+            <button type="button" id="repeatLeg" class="btn-dark-base">
+                <i class="bi bi-arrow-repeat"></i>
+            </button>
         </div>
     </div>
 
@@ -104,22 +101,6 @@
         </div>
     </div>
 </div>
-
-<div class="modal fade" id="phaseModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content">
-            <div class="modal-body text-center p-4">
-
-                <h5 id="phaseTitle"></h5>
-                <p id="phaseDescription" class="small"></p>
-
-                <button class="btn btn-primary w-100 mt-3" data-bs-dismiss="modal">Got it</button>
-
-            </div>
-        </div>
-    </div>
-</div>
-
 
 <style>
 #phaseDescription {
@@ -247,6 +228,15 @@
     fill: white;
 }
 
+.normal-path {
+    stroke: #fab005; 
+    fill: #fab005; 
+}
+.repeat-path {
+    stroke: white; 
+    fill: white; 
+}
+
 
 </style>
 
@@ -266,27 +256,24 @@
     const saveBtn = document.getElementById('save-map');
     let VISUAL_SCALE = 20; // We need this because the screen uses svg units, which are tiny. This increases the size of the rendered path without affecting the underlying coordinate system used for calculations
 
-    const PHASE_PERIMETER = 1;
-    const PHASE_AISLES = 2;
-    const PHASE_FINAL = 3;
-    let pathClass = 'perimeter-path';
-
-    let currentPhase = PHASE_PERIMETER;
+    const TYPE_NORMAL = 1;
+    const TYPE_REPEAT = 2;
+    const TYPE_RETURN = 3;
 
     let directionArrow; // persistent arrow group
     let mapRotation = 0;
     let stepsBuffer = '';
-    let path = [{ x: 0, y: 0, steps: 0, phase: PHASE_PERIMETER }]; // start at origin with 0 steps
+    let path = [{ x: 0, y: 0, steps: 0, type: TYPE_NORMAL }]
     let headings = [0];
     let currentHeading = 0;
     let hasChanges = false;
     let rotateTimer = null;
+    let savedLeg = null;
 
     createDirectionArrow();
 
     document.addEventListener('DOMContentLoaded', () => {
         restoreFromLocalStorage();
-        //showPhaseModal(currentPhase);
     });
 
     document.querySelector('#clearSession').addEventListener('click', clearMappingSession);
@@ -310,6 +297,55 @@
         svg.style.transformOrigin = "center center";
     }
 */
+    document.getElementById('saveLeg').addEventListener('click', () => {
+        saveLastLeg()
+    });
+    document.getElementById('repeatLeg').addEventListener('click', () => {
+        reapplySavedLeg()
+    });
+
+    function saveLastLeg() {
+        if (path.length < 2) return;
+
+        const a = path[path.length - 2];
+        const b = path[path.length - 1];
+
+        savedLeg = {
+            dx: b.x - a.x,
+            dy: b.y - a.y,
+            steps: b.steps // ✅ leg length directly
+        };
+
+        console.log('Saved leg:', savedLeg);
+    }
+
+    function reapplySavedLeg() {
+        if (!savedLeg) return;
+
+        const current = path[path.length - 1];
+
+        // --- go opposite direction ---
+        const outPoint = {
+            x: current.x - savedLeg.dx,
+            y: current.y - savedLeg.dy,
+            steps: savedLeg.steps,
+            type: 2
+        };
+
+        path.push(outPoint);
+
+        // --- come back ---
+        const returnPoint = {
+            x: outPoint.x + savedLeg.dx,
+            y: outPoint.y + savedLeg.dy,
+            steps: savedLeg.steps,
+            type: 3
+        };
+
+        path.push(returnPoint);
+
+        drawPath();
+    }
 
     function createDirectionArrow() {
         directionArrow = document.createElementNS(SVG_NS, 'g');
@@ -322,16 +358,13 @@
         line.setAttribute('x2', 10); // initial length, will be scaled
         line.setAttribute('y2', 0);
         
-        //line.setAttribute('stroke-width', VISUAL_SCALE / 10);
         line.setAttribute('stroke-width', 1);
         line.classList.add('arrow-line');
-        //line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
 
         // Arrow tip
         const tip = document.createElementNS(SVG_NS, 'path');
         tip.setAttribute('d', `M0 -4 L8 0 L0 4 Z`); // initial tip
         tip.classList.add('arrow-tip');
-        //tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
         tip.setAttribute('transform', `translate(25,0)`);
 
         directionArrow.appendChild(line);
@@ -365,89 +398,29 @@
         const scale = clamp(screenScale / 300, 0.8, 2.5);
 
         // Line length can be proportional to VISUAL_SCALE
-        //const lineLength = 20 * VISUAL_SCALE / 10; 
         const lineLength = 20 * scale;
         line.setAttribute('x2', lineLength);
-        //line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 5));
         line.setAttribute('stroke-width', clamp(VISUAL_SCALE / 5, 2, 8));
-        //line.classList.remove('perimeter-path', 'aisle-path');
-        //line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
 
-
-        // Tip size & position scaled
-        //const tipWidth = 8 * VISUAL_SCALE / 10;
-        //const tipHeight = 4 * VISUAL_SCALE / 10;
-        
         const tipWidth = 8 * scale;
         const tipHeight = 4 * scale;
         tip.setAttribute('d', `M0 ${-tipHeight} L${tipWidth} 0 L0 ${tipHeight} Z`);
         tip.setAttribute('transform', `translate(${lineLength},0)`);
-        //tip.classList.remove('perimeter-path', 'aisle-path');
-        //tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
-
     }
 
     function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
     }
 
+/**
+    // Find the end of the locked 'Entry' leg
+    const entryLeg = path.find(p => p.locked); 
+    const startX = entryLeg ? entryLeg.x : 0;
+    const startY = entryLeg ? entryLeg.y : 0;
 
-    // Open the modal when clicking the save button
-    const phaseButton = document.getElementById('phaseButton');
-    phaseButton.addEventListener('click', () => {
-        if (currentPhase === PHASE_PERIMETER) {
-            currentPhase = PHASE_AISLES;
-            updatePrimaryButton();
-            showPhaseModal(currentPhase); 
-
-             // Find the end of the locked 'Entry' leg
-            const entryLeg = path.find(p => p.locked); 
-            const startX = entryLeg ? entryLeg.x : 0;
-            const startY = entryLeg ? entryLeg.y : 0;
-
-            // Start aisle mapping from that point
-            path.push({ x: startX, y: startY, steps: 0, phase: PHASE_AISLES });
-
-            drawPath()
-            updateDirectionArrow()
-            return;
-        }
-
-        if (currentPhase === PHASE_AISLES) {
-            currentPhase = PHASE_FINAL;
-            // NOW open the final form modal
-            const modal = new bootstrap.Modal(document.getElementById('walkingPathModal'));
-            modal.show();
-            return;
-        }
-    });
-
-    function showPhaseModal(phase) {
-        let title = "";
-        let description = "";
-
-        if (phase === PHASE_PERIMETER) {
-            title = "Map the perimeter";
-            description = "The first step in the mapping process is to map the path around the inside perimeter of the store. \n\nStart at the entrance of the shelving area (not the external door), count your steps and use the number pad to enter your count at each waypoint. Use the yellow turning button to turn the arrow, and the undo button if you make a mistake. Follow the wall shelving all the way around until you are back near the entrance. \n\nTap NEXT when you are finished.";
-            pathClass = 'perimeter-path';
-        }
-
-        if (phase === PHASE_AISLES) {
-            title = "Map the aisles";
-            description = "The next step is to map all the island shelving, stand alone-freezers and main aisles, moving up and down them like a snake. \n\nThis can take a bit longer as there will be lots of turns and shorter waypoints around these shelves. You should end up walking over some of the same path as you walked in step 1. \n\nThe direction arrow has been moved back to the entrance as your new start position. You dont need to walk around any 'specials' shelving which changes products often - these are often located at or near the entrance and can be ignored.";
-            pathClass = 'aisle-path';
-        }
-
-        if (phase === PHASE_FINAL) {
-            return // we show the final submission form instead of this modal
-        }
-
-        document.getElementById("phaseTitle").textContent = title;
-        document.getElementById("phaseDescription").textContent = description;
-
-        const modal = new bootstrap.Modal(document.getElementById("phaseModal"));
-        modal.show();
-    }
+    // Start aisle mapping from that point
+    path.push({ x: startX, y: startY, steps: 0});
+*/
 
     // Handle modal form submission
     document.getElementById('walkingPathForm').addEventListener('submit', async (e) => {
@@ -485,18 +458,6 @@
         }
     });
     
-    function updatePrimaryButton() {
-        const btn = document.getElementById("phaseButton");
-
-        if (currentPhase === PHASE_PERIMETER) {
-            btn.textContent = "NEXT";
-        }
-
-        if (currentPhase === PHASE_AISLES) {
-            btn.textContent = "FINISH";
-        }
-    }
-
     function updateDisplay() {
         stepDisplay.textContent = stepsBuffer || '0';
     }
@@ -511,20 +472,15 @@
 
         rotateTimer = setTimeout(() => {
             const headingDeg = currentHeading * 180 / Math.PI;
-
             const baseRotation = getBaseRotation();
 
             // Snap heading to 180°
             const snappedHeading = Math.round(headingDeg / 180) * 180;
-
             let targetRotation = baseRotation - snappedHeading;
-
-            // ✅ Always keep target in sane range too
             targetRotation = normalizeAngle(targetRotation);
 
             // Smooth shortest-path rotation (max ±180)
             let delta = normalizeAngle(targetRotation - mapRotation);
-
             mapRotation += delta;
 
             svg.style.transform = `rotate(${mapRotation}deg)`;
@@ -572,8 +528,18 @@
         return Math.round(deg / 180) * 180;
     }
 
+    function getLineClass(lineType) {
+        switch(lineType) {
+            case TYPE_NORMAL: return 'normal-path';
+            case TYPE_REPEAT: return 'repeat-path';
+            case TYPE_RETURN: return '';
+            default: return 'normal-path';
+        }
+        
+    }
 
     function drawPath() {
+        console.log(path)
         pathLayer.innerHTML = '';
 
         for (let i = 1; i < path.length; i++) {
@@ -592,8 +558,7 @@
             line.setAttribute('x2', x2);
             line.setAttribute('y2', y2);
             line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 10));
-            //line.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
-            line.setAttribute('class', 'aisle-path');
+            line.setAttribute('class', getLineClass(p2.type));
 
             const dashLength = Math.max(1, VISUAL_SCALE / 5);
             const gapLength = Math.max(1, VISUAL_SCALE / 5);
@@ -621,7 +586,6 @@
                 text.setAttribute('fill', 'white');
             } else {
                 text.textContent = p2.steps;
-                //text.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
                 text.setAttribute('fill', 'white');
             }
 
@@ -683,8 +647,8 @@
         const logicalDistance = steps; // raw units
 
         // --- compute new leg coordinates ---
-        const newX = last.x + logicalDistance * Math.sin(currentHeading);
-        const newY = last.y - logicalDistance * Math.cos(currentHeading);
+        const newX = Math.round(last.x + logicalDistance * Math.sin(currentHeading));
+        const newY = Math.round(last.y - logicalDistance * Math.cos(currentHeading));
 
         // --- build a temporary path including the new leg ---
         const tempPath = [...path, { x: newX, y: newY, steps }];
@@ -709,11 +673,9 @@
             x: newX, 
             y: newY, 
             steps: steps,
-            phase: currentPhase,
+            type: TYPE_NORMAL 
         });
         headings.push(currentHeading);
-
-        console.log(path)
 
         // --- reset step buffer and update visuals ---
         stepsBuffer = '';
@@ -819,7 +781,6 @@
             headings: headings,
             currentHeading: currentHeading,
             visualScale: VISUAL_SCALE,
-            phase: currentPhase,
         };
     }
 
@@ -842,7 +803,6 @@
                 headings = state.headings || [];
                 currentHeading = state.currentHeading || 0;
                 VISUAL_SCALE = state.visualScale || 20;
-                currentPhase = state.phase || PHASE_PERIMETER;
 
             } catch (e) {
                 console.warn('Failed to restore mapping', e);
@@ -852,7 +812,7 @@
         // --- if no path was restored, create a default 4-step leg ---
         if (!path || path.length <= 1) {
 
-            path = [{ x: 0, y: 0, steps: 0, phase: currentPhase }];
+            path = [{ x: 0, y: 0, steps: 0, type: TYPE_NORMAL }];
             headings = [0]; // start facing up
             currentHeading = 0;
 
@@ -862,7 +822,7 @@
             const newX = last.x + steps * Math.sin(currentHeading);
             const newY = last.y - steps * Math.cos(currentHeading);
 
-            path.push({ x: newX, y: newY, steps, phase: PHASE_PERIMETER, locked: true }); // starter leg
+            path.push({ x: newX, y: newY, steps, type: TYPE_NORMAL,  locked: true }); // starter leg
             headings.push(currentHeading);
         }
 
