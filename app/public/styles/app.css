@@ -331,10 +331,7 @@ a:hover {
     stroke-dasharray: 8 3;
 }
 
-.perimeter-path { 
-    stroke: #fa5252; 
-    fill: #fa5252; 
-}
+
 .aisle-path { 
     stroke: #fab005; 
     fill: #fab005; 

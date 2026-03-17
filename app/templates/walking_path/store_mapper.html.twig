@@ -24,9 +24,9 @@
                 <div class="mapper-display"><span id="stepDisplay">0</span></div>
 
             </div>
-            <button type="button" id="rotate" class="btn-dark-base">
+            {# <button type="button" id="rotate" class="btn-dark-base">
                 <i class="bi-arrow-repeat"></i>
-            </button>
+            </button> #}
 
 
             <!-- Right: Save -->
@@ -242,6 +242,10 @@
     transition: transform 1s ease;
 }
 
+.arrow-line, .arrow-tip {
+    stroke: white;
+    fill: white;
+}
 
 
 </style>
@@ -295,6 +299,7 @@
         });
     });
 
+/**
     document.getElementById('rotate').addEventListener('click', () => {
         rotate180()
     });
@@ -304,7 +309,7 @@
         svg.style.transform = `rotate(${mapRotation}deg)`;
         svg.style.transformOrigin = "center center";
     }
-
+*/
 
     function createDirectionArrow() {
         directionArrow = document.createElementNS(SVG_NS, 'g');
@@ -314,18 +319,19 @@
         const line = document.createElementNS(SVG_NS, 'line');
         line.setAttribute('x1', 0);
         line.setAttribute('y1', 0);
-        line.setAttribute('x2', 20); // initial length, will be scaled
+        line.setAttribute('x2', 10); // initial length, will be scaled
         line.setAttribute('y2', 0);
         
-        line.setAttribute('stroke-width', VISUAL_SCALE / 10);
+        //line.setAttribute('stroke-width', VISUAL_SCALE / 10);
+        line.setAttribute('stroke-width', 1);
         line.classList.add('arrow-line');
-        line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+        //line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
 
         // Arrow tip
         const tip = document.createElementNS(SVG_NS, 'path');
         tip.setAttribute('d', `M0 -4 L8 0 L0 4 Z`); // initial tip
         tip.classList.add('arrow-tip');
-        tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+        //tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
         tip.setAttribute('transform', `translate(25,0)`);
 
         directionArrow.appendChild(line);
@@ -353,22 +359,36 @@
         const line = directionArrow.querySelector('.arrow-line');
         const tip = directionArrow.querySelector('.arrow-tip');
 
+        // derive a stable scale from viewport instead
+        const viewBox = svg.viewBox.baseVal;
+        const screenScale = Math.min(viewBox.width, viewBox.height);
+        const scale = clamp(screenScale / 300, 0.8, 2.5);
+
         // Line length can be proportional to VISUAL_SCALE
-        const lineLength = 20 * VISUAL_SCALE / 10; 
+        //const lineLength = 20 * VISUAL_SCALE / 10; 
+        const lineLength = 20 * scale;
         line.setAttribute('x2', lineLength);
-        line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 5));
-        line.classList.remove('perimeter-path', 'aisle-path');
-        line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+        //line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 5));
+        line.setAttribute('stroke-width', clamp(VISUAL_SCALE / 5, 2, 8));
+        //line.classList.remove('perimeter-path', 'aisle-path');
+        //line.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
 
 
         // Tip size & position scaled
-        const tipWidth = 8 * VISUAL_SCALE / 10;
-        const tipHeight = 4 * VISUAL_SCALE / 10;
+        //const tipWidth = 8 * VISUAL_SCALE / 10;
+        //const tipHeight = 4 * VISUAL_SCALE / 10;
+        
+        const tipWidth = 8 * scale;
+        const tipHeight = 4 * scale;
         tip.setAttribute('d', `M0 ${-tipHeight} L${tipWidth} 0 L0 ${tipHeight} Z`);
         tip.setAttribute('transform', `translate(${lineLength},0)`);
-        tip.classList.remove('perimeter-path', 'aisle-path');
-        tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+        //tip.classList.remove('perimeter-path', 'aisle-path');
+        //tip.classList.add(path[path.length - 1].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
 
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
     }
 
 
@@ -486,28 +506,70 @@
         if (saveBtn) saveBtn.disabled = false;
     }
 
-    function rotateMap(){
+    function rotateMap() {
         clearTimeout(rotateTimer);
 
         rotateTimer = setTimeout(() => {
-            const last = path[path.length - 1];
             const headingDeg = currentHeading * 180 / Math.PI;
 
-            // rotate map so arrow points up
-            let targetRotation = -headingDeg;
+            const baseRotation = getBaseRotation();
 
-            // compute shortest rotation
-            let delta = targetRotation - mapRotation;
-            delta = ((delta + 180) % 360) - 180;
+            // Snap heading to 180°
+            const snappedHeading = Math.round(headingDeg / 180) * 180;
+
+            let targetRotation = baseRotation - snappedHeading;
+
+            // ✅ Always keep target in sane range too
+            targetRotation = normalizeAngle(targetRotation);
+
+            // Smooth shortest-path rotation (max ±180)
+            let delta = normalizeAngle(targetRotation - mapRotation);
+
             mapRotation += delta;
 
-            // Apply rotation to the map        
             svg.style.transform = `rotate(${mapRotation}deg)`;
             svg.style.transformOrigin = "center center";
 
-            updateViewBox(); // always fit full path
+            updateViewBox();
+        }, 200);
+    }
 
-        }, 500)
+    function normalizeAngle(angle) {
+        return ((angle % 360) + 540) % 360 - 180;
+    }
+
+    function getBaseRotation() {
+        const { width, height } = getPathAspect();
+
+        // If wider than tall → rotate base by 90°
+        if (width > height) {
+            return 90; // or 270 depending on preference
+        }
+
+        return 0;
+    }
+
+    function getPathAspect() {
+        let minX = path[0].x;
+        let maxX = path[0].x;
+        let minY = path[0].y;
+        let maxY = path[0].y;
+
+        for (let p of path) {
+            minX = Math.min(minX, p.x);
+            maxX = Math.max(maxX, p.x);
+            minY = Math.min(minY, p.y);
+            maxY = Math.max(maxY, p.y);
+        }
+
+        return {
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    }
+
+    function snapTo180(deg) {
+        return Math.round(deg / 180) * 180;
     }
 
 
@@ -530,7 +592,8 @@
             line.setAttribute('x2', x2);
             line.setAttribute('y2', y2);
             line.setAttribute('stroke-width', Math.max(1, VISUAL_SCALE / 10));
-            line.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+            //line.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+            line.setAttribute('class', 'aisle-path');
 
             const dashLength = Math.max(1, VISUAL_SCALE / 5);
             const gapLength = Math.max(1, VISUAL_SCALE / 5);
@@ -610,8 +673,6 @@
         currentHeading = (currentHeading + Math.PI * 2) % (Math.PI * 2);
 
         updateDirectionArrow(); // rotate instantly
-
-        rotateMap()
     }
 
     function addLeg() {
@@ -657,6 +718,7 @@
         // --- reset step buffer and update visuals ---
         stepsBuffer = '';
         updateDirectionArrow();
+        rotateMap()
         updateDisplay();
         drawPath();
         enableSave();
