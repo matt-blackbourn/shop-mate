@@ -2,7 +2,7 @@
     <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
         <div class="modal-content">
 
-            <div class="modal-header d-flex justify-content-between">
+            <div class="modal-header d-flex justify-content-between gap-2">
 
                 <div id='foodInfo' class="title">
                     <span id="modalItemName"></span>
@@ -15,12 +15,12 @@
                         Tap again to change aisle sides.</h6>
                 </div>
 
-                <!-- Path Mode Button -->
+                <button type="button" id="rotate" class="btn-dark-base">
+                    <i class="bi-arrow-repeat"></i>
+                </button>
                 <button type="button" id="placeItemBtn" class="btn-dark-base border-green">
                     <i class="bi-geo-alt-fill"></i>
                 </button>
-
-            
 
             </div>
 
@@ -31,12 +31,12 @@
                         <g id="edges-layer"></g>
                         <g id="entrance-layer"></g>
                     </svg>
-                        <div id="placementOverlay" class="map-overlay d-none">
+                        {# <div id="placementOverlay" class="map-overlay d-none">
                             <div class="overlay-card">
                                 Tap the shelf where this item belongs.<br>
                                 Tap again to change aisle sides.
                             </div>
-                        </div>
+                        </div> #}
                 </div>
             </div>
 

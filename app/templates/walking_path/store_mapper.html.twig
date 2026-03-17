@@ -8,25 +8,31 @@
 
     <!-- HEADER -->
     <div class="page-header">
-        <div class="d-flex align-items-center px-2 py-2 w-100">
+        <div class="d-flex align-items-center px-2 py-2 w-100 gap-2">
 
             <!-- Left: Menu -->
             <div class="header-left d-flex align-items-center">
                 <button id="menu-button" aria-label="Open menu" class="btn-dark-base" ><i class="bi bi-list-ul"></i></button>
             </div>
-
+    
             <!-- Center: Title -->
             <div class="header-center flex-grow-1 text-center fw-semibold">
-                  <div class="mapping-steps">
+                  {# <div class="mapping-steps">
                     <span id="stepPerimeter">Perimeter</span> →
                     <span id="stepAisles">Aisles</span>
-                </div>
+                </div> #}
+                <div class="mapper-display"><span id="stepDisplay">0</span></div>
+
             </div>
+            <button type="button" id="rotate" class="btn-dark-base">
+                <i class="bi-arrow-repeat"></i>
+            </button>
+
 
             <!-- Right: Save -->
             <div class="header-right d-flex align-items-center">
             
-                <button type="button" id="phaseButton" class="btn-dark-base border-green">
+                <button type="button" id="phaseButton" class="btn-dark-base border-green d-none">
                     NEXT
                 </button>
             </div>
@@ -55,8 +61,8 @@
     <div class="mapper-footer">
 
         <div class="mapper-actions">
-            <div class="mapper-display"><span id="stepDisplay">0</span></div>
-            <button class="btn-dark-base border-yellow" data-direction="right"><i class="bi bi-arrow-90deg-right"></i></i></i></button>
+            <button class="btn-dark-base border-yellow" data-direction="left"><i class="bi bi-arrow-left"></i></i></i></button>
+            <button class="btn-dark-base border-yellow" data-direction="right"><i class="bi bi-arrow-right"></i></i></i></button>
             <button class="btn-dark-base border-green">Enter</button>
         </div>
 
@@ -202,7 +208,7 @@
     display: flex;
     justify-content: center;
     text-align: center;
-    color: #51cf66;
+    color: 'white';
 
     width: 100%;
     height: 100%;
@@ -276,7 +282,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         restoreFromLocalStorage();
-        showPhaseModal(currentPhase);
+        //showPhaseModal(currentPhase);
     });
 
     document.querySelector('#clearSession').addEventListener('click', clearMappingSession);
@@ -288,6 +294,17 @@
             setTimeout(() => btn.classList.remove('clicked'), 50);
         });
     });
+
+    document.getElementById('rotate').addEventListener('click', () => {
+        rotate180()
+    });
+
+    function rotate180(){
+        mapRotation = (mapRotation + 180) % 360;
+        svg.style.transform = `rotate(${mapRotation}deg)`;
+        svg.style.transformOrigin = "center center";
+    }
+
 
     function createDirectionArrow() {
         directionArrow = document.createElementNS(SVG_NS, 'g');
@@ -447,9 +464,6 @@
             alert('Submission failed — your progress is still saved offline.');
         }
     });
-
-
-
     
     function updatePrimaryButton() {
         const btn = document.getElementById("phaseButton");
@@ -494,42 +508,6 @@
             updateViewBox(); // always fit full path
 
         }, 500)
-    }
-
-
-    function getRotatedPathBounds(rotationDeg) {
-
-        const rad = rotationDeg * Math.PI / 180;
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
-
-        let minX = Infinity;
-        let maxX = -Infinity;
-        let minY = Infinity;
-        let maxY = -Infinity;
-
-        for (const p of path) {
-
-            const x = p.x * VISUAL_SCALE;
-            const y = p.y * VISUAL_SCALE;
-
-            const rx = x * cos - y * sin;
-            const ry = x * sin + y * cos;
-
-            minX = Math.min(minX, rx);
-            maxX = Math.max(maxX, rx);
-            minY = Math.min(minY, ry);
-            maxY = Math.max(maxY, ry);
-        }
-
-        return {
-            minX,
-            maxX,
-            minY,
-            maxY,
-            width: maxX - minX,
-            height: maxY - minY
-        };
     }
 
 
@@ -580,7 +558,8 @@
                 text.setAttribute('fill', 'white');
             } else {
                 text.textContent = p2.steps;
-                text.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+                //text.setAttribute('class', path[i].phase === PHASE_PERIMETER ? 'perimeter-path' : 'aisle-path');
+                text.setAttribute('fill', 'white');
             }
 
             pathLayer.appendChild(text);

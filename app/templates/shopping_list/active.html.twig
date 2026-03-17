@@ -852,6 +852,17 @@ function setMapMode(mode) {
 }
 
 
+document.getElementById('rotate').addEventListener('click', () => {
+    rotate180()
+});
+
+function rotate180(){
+    mapRotation = (mapRotation + 180) % 360;
+    mapSvg.style.transform = `rotate(${mapRotation}deg)`;
+    mapSvg.style.transformOrigin = "center center";
+}
+
+
 function rotateMap(){
     setTimeout(() => {
         const mapRotation = findRotationForNextItem();
@@ -1345,10 +1356,10 @@ function drawEntranceArrow(node) {
     g.classList.add('node', 'entrance');
     g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
 
-    const ring = document.createElementNS(SVG_NS, 'circle');
-    const circle = document.createElementNS(SVG_NS, 'circle');
-    g.appendChild(ring);
-    g.appendChild(circle);
+    //const ring = document.createElementNS(SVG_NS, 'circle');
+    //const circle = document.createElementNS(SVG_NS, 'circle');
+    //g.appendChild(ring);
+    //g.appendChild(circle);
 
     let arrowLength = 0;
 
@@ -1387,8 +1398,8 @@ function drawEntranceArrow(node) {
         g.appendChild(tip);
     }
 
-    ring.setAttribute('r', arrowLength / 7);
-    circle.setAttribute('r', arrowLength / 8);
+    //ring.setAttribute('r', arrowLength / 7);
+    //circle.setAttribute('r', arrowLength / 8);
 
     layer.appendChild(g);
 }
