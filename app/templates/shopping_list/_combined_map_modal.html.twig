@@ -4,20 +4,23 @@
 
             <div class="modal-header d-flex justify-content-between">
 
-                <div class="title">
+                <div id='foodInfo' class="title">
                     <span id="modalItemName"></span>
                     <span id="modalItemQty"></span>
                     <div id="modalItemNotes"></div>
                 </div>
+                    <!-- Placement Instructions -->
+                <div id="placementInstructions" class="d-none">
+                    <h6>Tap the shelf where this item belongs.<br>
+                        Tap again to change aisle sides.</h6>
+                </div>
 
                 <!-- Path Mode Button -->
-                <button type="button" id="place-item-map" class="btn-dark-base border-green">
+                <button type="button" id="placeItemBtn" class="btn-dark-base border-green">
                     <i class="bi-geo-alt-fill"></i>
                 </button>
 
-                <!-- Placement Instructions -->
-                <div id="placementInstructions" class="d-none">
-                </div>
+            
 
             </div>
 
@@ -30,8 +33,8 @@
                     </svg>
                         <div id="placementOverlay" class="map-overlay d-none">
                             <div class="overlay-card">
-                                Tap the shelf this item belongs on.<br>
-                                Tap again to change sides.
+                                Tap the shelf where this item belongs.<br>
+                                Tap again to change aisle sides.
                             </div>
                         </div>
                 </div>
@@ -43,7 +46,7 @@
                 <button type="button" id="mapBackBtn" class="map-nav-button" data-bs-dismiss="modal">
                     <i class="bi-arrow-left"></i> Back
                 </button>
-                <button type="button" id="placementCancelBtn" class="map-nav-button d-none" data-bs-dismiss="modal">
+                <button type="button" id="placementCancelBtn" class="map-nav-button d-none">
                     Cancel
                 </button>
 
