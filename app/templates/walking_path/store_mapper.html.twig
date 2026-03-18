@@ -19,8 +19,9 @@
                     <i class="bi bi-floppy"></i>
                 </button>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" id="addWaypoint">Save Waypoint</a></li>
-                    <li><a class="dropdown-item" href="#" id="saveLeg">Save Last Leg</a></li>
+                    <li><a class="dropdown-item" href="#" id="addWaypoint">Add Waypoint</a></li>
+                    <li><a class="dropdown-item" href="#" id="saveLeg">Copy Last Leg</a></li>
+                    <li><a class="dropdown-item" href="#" id="saveSupermarket" data-bs-toggle="modal" data-bs-target="#walkingPathModal">Submit Floor Plan</a></li>
                 </ul>
             </div>
     
@@ -998,8 +999,6 @@
                 waypoints[p.waypointIndex] = { x: p.x, y: p.y };
             }
         });
-
-        console.log(waypoints, path)
 
         drawPath();
         updateDirectionArrow();
