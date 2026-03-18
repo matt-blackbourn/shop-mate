@@ -11,43 +11,50 @@
         <div class="d-flex align-items-center px-2 py-2 w-100 gap-2">
 
             <!-- Left: Menu -->
-            <div class="header-left d-flex align-items-center">
+            {# <div class="header-left d-flex align-items-center">
                 <button id="menu-button" aria-label="Open menu" class="btn-dark-base" ><i class="bi bi-list-ul"></i></button>
+            </div> #}
+            <div class="btn-group">
+                <button type="button" id="legAction" class="btn-dark-base" data-bs-toggle="dropdown">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ path('app_home') }}">Back to List</a></li>
+                    <li><a class="dropdown-item" href="#" id="clearSession">Clear Session</a></li>
+                    <li><a class="dropdown-item" href="#" id="saveSupermarket" data-bs-toggle="modal" data-bs-target="#walkingPathModal">Submit Floor Plan</a></li>
+                </ul>
             </div>
+            <button type="button" id="repeatLeg" class="btn-dark-base">
+                <i class="bi bi-repeat"></i>
+            </button>
+            <button type="button" id="returnToWaypoint" class="btn-dark-base">
+                <i class="bi bi-skip-backward"></i>
+            </button>
 
             <div class="header-center flex-grow-1 text-center fw-semibold">
                 <div class="mapper-display"><span id="stepDisplay">0</span></div>
             </div>
 
-            <div class="btn-group">
-                <button type="button" id="legAction" class="btn-dark-base" data-bs-toggle="dropdown">
-                    <i class="bi bi-floppy"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" id="saveLeg">Save Last Leg</a></li>
-                    <li><a class="dropdown-item" href="#" id="addWaypoint">Add Waypoint</a></li>
-                    <li><a class="dropdown-item" href="#" id="saveSupermarket" data-bs-toggle="modal" data-bs-target="#walkingPathModal">Submit Floor Plan</a></li>
-                </ul>
-            </div>
        
-            <button type="button" id="returnToWaypoint" class="btn-dark-base">
-                <i class="bi bi-geo-alt-fill"></i>
+            <button type="button" id="saveLeg" class="btn-dark-base">
+                <i class="bi bi-floppy"></i>
             </button>
-            <button type="button" id="repeatLeg" class="btn-dark-base">
-                <i class="bi bi-repeat"></i>
+            <button type="button" id="addWaypoint" class="btn-dark-base">
+                <i class="bi bi-geo-alt-fill"></i>
             </button>
         </div>
     </div>
 
     <!-- MENU (outside header for z-index safety) -->
-    <div class="menu-overlay" hidden></div>
+    {# <div class="menu-overlay" hidden></div>
     <nav class="side-menu" hidden>
         <button type="button" class="menu-close">×</button>
         <ul>
             <li><a href="{{ path('app_home') }}">Back to List</a></li>
             <li><button type="button" id="clearSession">Clear Session</button></li>
+            <li><button type="button" id="saveSupermarket"  data-bs-toggle="modal" data-bs-target="#walkingPathModal">Submit Floor Plan</button></li>
         </ul>
-    </nav>
+    </nav> #}
 
     <!-- BODY (MAP) -->
     <div class="page-body">
@@ -310,7 +317,6 @@
 
     const stepDisplay = document.getElementById('stepDisplay');
     const footer = document.querySelector('.mapper-footer');
-    const saveBtn = document.getElementById('save-map');
     let VISUAL_SCALE = 20; // We need this because the screen uses svg units, which are tiny. This increases the size of the rendered path without affecting the underlying coordinate system used for calculations
 
     const TYPE_NORMAL = 1;
@@ -596,6 +602,12 @@
     }
 
     function rotateMap() {
+        const viewBox = svg.viewBox.baseVal;
+        if(viewBox.width < 200 || viewBox.height < 200){
+            // If the viewBox is too small, skip rotation to avoid disorienting zoom
+            return;
+        }
+
         clearTimeout(rotateTimer);
 
         rotateTimer = setTimeout(() => {
@@ -696,24 +708,25 @@
             dot.setAttribute('fill', p2.waypointIndex !== undefined ? '#51cf66' : '#fa5252');
             pathLayer.appendChild(dot);
 
-            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute('x', (x1 + x2) / 2);
-            text.setAttribute('y', (y1 + y2) / 2 - VISUAL_SCALE / 5);
-            text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('font-size', Math.max(8, VISUAL_SCALE / 2));
-            text.textContent = p2.steps;
-
-            // ✅ If this leg is locked, show 'Entry' in a different color
-            if (p2.locked) {
-                text.textContent = 'Entry';
-                text.setAttribute('fill', 'white');
-            } else if(p2.type !== TYPE_RETURN) {
-                // dont print the number on return legs
+            if(p2.type !== TYPE_RETURN) {
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute('x', (x1 + x2) / 2);
+                text.setAttribute('y', (y1 + y2) / 2 - VISUAL_SCALE / 5);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', Math.max(8, VISUAL_SCALE / 2));
                 text.textContent = p2.steps;
                 text.setAttribute('fill', 'white');
-            }
 
-            pathLayer.appendChild(text);
+                // ✅ If this leg is locked, show 'Entry' in a different color
+                if (p2.locked) {
+                    text.textContent = 'Entry';
+                } else {
+                    text.textContent = p2.steps;
+                    text.setAttribute('fill', 'white');
+                }
+
+                pathLayer.appendChild(text);
+            }
         }
 
         updateViewBox();
@@ -744,7 +757,7 @@
         const width = maxX - minX + padding * 2;
         const height = maxY - minY + padding * 2;
 
-        svg.setAttribute( 'viewBox', `${minX - padding} ${minY - padding} ${width} ${height}`);
+        svg.setAttribute('viewBox', `${minX - padding} ${minY - padding} ${width} ${height}`);
     }
 
     /* -----------------------------
