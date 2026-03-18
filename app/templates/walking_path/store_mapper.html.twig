@@ -14,33 +14,28 @@
             <div class="header-left d-flex align-items-center">
                 <button id="menu-button" aria-label="Open menu" class="btn-dark-base" ><i class="bi bi-list-ul"></i></button>
             </div>
+
+            <div class="header-center flex-grow-1 text-center fw-semibold">
+                <div class="mapper-display"><span id="stepDisplay">0</span></div>
+            </div>
+
             <div class="btn-group">
                 <button type="button" id="legAction" class="btn-dark-base" data-bs-toggle="dropdown">
                     <i class="bi bi-floppy"></i>
                 </button>
                 <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" id="saveLeg">Save Last Leg</a></li>
                     <li><a class="dropdown-item" href="#" id="addWaypoint">Add Waypoint</a></li>
-                    <li><a class="dropdown-item" href="#" id="saveLeg">Copy Last Leg</a></li>
                     <li><a class="dropdown-item" href="#" id="saveSupermarket" data-bs-toggle="modal" data-bs-target="#walkingPathModal">Submit Floor Plan</a></li>
                 </ul>
             </div>
-    
-            <!-- Center: Title -->
-            {# <button type="button" id="saveLeg" class="btn-dark-base">
-                <i class="bi bi-download"></i>
-            </button> #}
-            <div class="header-center flex-grow-1 text-center fw-semibold">
-                <div class="mapper-display"><span id="stepDisplay">0</span></div>
-            </div>
+       
+            <button type="button" id="returnToWaypoint" class="btn-dark-base">
+                <i class="bi bi-geo-alt-fill"></i>
+            </button>
             <button type="button" id="repeatLeg" class="btn-dark-base">
                 <i class="bi bi-repeat"></i>
             </button>
-            <button type="button" id="returnToWaypoint" class="btn-dark-base">
-                <i class="bi bi-skip-backward"></i>
-            </button>
-            {# <button type="button" id="addWaypoint" class="btn-dark-base">
-                <i class="bi bi-geo-alt-fill"></i>
-            </button> #}
         </div>
     </div>
 
@@ -360,7 +355,6 @@
 
         // apply new state
         el.classList.add(type);
-
         el.textContent = text;
         el.classList.add('show');
 
@@ -371,20 +365,11 @@
         }, 2000);
     }
 
-    document.querySelector('#undo').addEventListener('click', undoLeg);
-
-    document.getElementById('saveLeg').addEventListener('click', () => {
-        saveLastLeg()
-    });
-    document.getElementById('repeatLeg').addEventListener('click', () => {
-        reapplySavedLeg()
-    });
-    document.getElementById('addWaypoint').addEventListener('click', () => {
-        addWaypoint()
-    });
-    document.getElementById('returnToWaypoint').addEventListener('click', () => {
-        returnToLastWaypoint()
-    });
+    document.getElementById('undo').addEventListener('click', undoLeg);
+    document.getElementById('saveLeg').addEventListener('click', saveLastLeg)
+    document.getElementById('repeatLeg').addEventListener('click', reapplySavedLeg)
+    document.getElementById('addWaypoint').addEventListener('click', addWaypoint)
+    document.getElementById('returnToWaypoint').addEventListener('click', returnToLastWaypoint)
 
     function saveLastLeg() {
         if (path.length < 2) return;
@@ -428,7 +413,6 @@
         };
 
         path.push(returnPoint);
-
         drawPath();
     }
 
@@ -449,18 +433,14 @@
         // Tag the last path point with the waypoint index
         last.waypointIndex = currentWaypointIndex;
 
-        showOverlayMessage(
-            `Waypoint ${waypoints.length} saved!`,
-            'success'
-        );
+        saveToLocalStorage()
+        drawPath();
+        showOverlayMessage(`Waypoint ${waypoints.length} saved!`, 'success');
     }
 
     function returnToLastWaypoint() {
         if (!waypoints.length) {
-            showOverlayMessage(
-                `No waypoints saved!`,
-                'error'
-            );
+            showOverlayMessage(`No waypoints saved!`,'error');
             return;
         }
 
@@ -586,7 +566,7 @@
         };
 
         try {
-            const response = await fetch('/walkingpath/save', { // ✅ new POST route
+            const response = await fetch('/walkingpath/save', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -613,11 +593,6 @@
     
     function updateDisplay() {
         stepDisplay.textContent = stepsBuffer || '0';
-    }
-
-    function enableSave() {
-        hasChanges = true;
-        if (saveBtn) saveBtn.disabled = false;
     }
 
     function rotateMap() {
@@ -677,9 +652,6 @@
         };
     }
 
-    function snapTo180(deg) {
-        return Math.round(deg / 180) * 180;
-    }
 
     function getLineClass(lineType) {
         switch(lineType) {
@@ -772,10 +744,7 @@
         const width = maxX - minX + padding * 2;
         const height = maxY - minY + padding * 2;
 
-        svg.setAttribute(
-            'viewBox',
-            `${minX - padding} ${minY - padding} ${width} ${height}`
-        );
+        svg.setAttribute( 'viewBox', `${minX - padding} ${minY - padding} ${width} ${height}`);
     }
 
     /* -----------------------------
@@ -835,7 +804,6 @@
         rotateMap()
         updateDisplay();
         drawPath();
-        enableSave();
         saveToLocalStorage()
     }
 
@@ -884,11 +852,8 @@
         // --- update visuals ---
         updateDirectionArrow();
         drawPath();
-        enableSave();
         saveToLocalStorage();
     }
-
-
 
     function backspace() {
         stepsBuffer = stepsBuffer.slice(0, -1);
@@ -909,23 +874,23 @@
         if (!btn) return;
 
         if (btn.dataset.direction) {
-        turn(btn.dataset.direction);
-        return;
+            turn(btn.dataset.direction);
+            return;
         }
 
         if (btn.dataset.number !== undefined) {
-        addDigit(btn.dataset.number);
-        return;
+            addDigit(btn.dataset.number);
+            return;
         }
 
         if (btn.textContent.trim() === 'Enter') {
-        addLeg();
-        return;
+            addLeg();
+            return;
         }
 
         if (btn.textContent.trim() === '⌫') {
-        backspace();
-        return;
+            backspace();
+            return;
         }
     });
 
@@ -936,7 +901,6 @@
         }
 
         localStorage.removeItem('storeMapping');
-
         window.location.reload();
     }
 
@@ -1004,11 +968,6 @@
         updateDirectionArrow();
     }
 
-
-
-    // --- FORM SUBMISSION ---
-
- 
 })();
 </script>
 
