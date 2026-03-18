@@ -19,8 +19,8 @@
                     <i class="bi bi-floppy"></i>
                 </button>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" id="saveLeg">Save Last Leg</a></li>
                     <li><a class="dropdown-item" href="#" id="addWaypoint">Save Waypoint</a></li>
+                    <li><a class="dropdown-item" href="#" id="saveLeg">Save Last Leg</a></li>
                 </ul>
             </div>
     
@@ -245,7 +245,7 @@
 }
 .overlay-message {
     position: fixed;
-    top: 30%;
+    top: 10%;
     left: 50%;
     transform: translate(-50%, 10px);
     
@@ -332,6 +332,7 @@
     let savedLeg = null;
     let waypoints = [];
     let currentWaypointIndex = 0;
+    let cycleWaypoints = true
 
     createDirectionArrow();
 
@@ -462,15 +463,32 @@
             return;
         }
 
-        // Decrement currentWaypointIndex for reverse cycling
-        // Wrap around to the last waypoint if we go below 0
-        currentWaypointIndex = (currentWaypointIndex - 1 + waypoints.length) % waypoints.length;
-
         // If last leg is already a return, overwrite it
         const last = path[path.length - 1];
         if (last && last.type === TYPE_RETURN) {
             path.pop();
         }
+
+        // Once we reach the end of the waypoints list, we go back to the last position in the path 
+        if(!cycleWaypoints){
+            path.push({
+                x: path[path.length-1].x,
+                y: path[path.length-1].y,
+                steps: 0,
+                type: TYPE_RETURN,
+            });
+
+            cycleWaypoints = true
+            updateDirectionArrow();
+            drawPath();
+            showOverlayMessage(`Back at last known location`, 'success');
+
+            return
+        }
+
+        // Decrement currentWaypointIndex for reverse cycling
+        // Wrap around to the last waypoint if we go below 0
+        currentWaypointIndex = (currentWaypointIndex - 1 + waypoints.length) % waypoints.length;
 
         // Push new return leg
         const waypoint = waypoints[currentWaypointIndex];
@@ -479,17 +497,15 @@
             y: waypoint.y,
             steps: 0,
             type: TYPE_RETURN,
-            waypointIndex: currentWaypointIndex
         });
+
+        if(currentWaypointIndex === 0){
+            cycleWaypoints = false;
+        }
 
         updateDirectionArrow();
         drawPath();
-
-        // show overlay with human-friendly number
-        showOverlayMessage(
-            `Returned to waypoint ${currentWaypointIndex + 1}`,
-            'success'
-        );
+        showOverlayMessage( `Returned to waypoint ${currentWaypointIndex + 1}`, 'success');
     }
 
     function createDirectionArrow() {
@@ -982,6 +998,8 @@
                 waypoints[p.waypointIndex] = { x: p.x, y: p.y };
             }
         });
+
+        console.log(waypoints, path)
 
         drawPath();
         updateDirectionArrow();
