@@ -26,7 +26,7 @@ final class WalkingPathController extends AbstractController
     }
 
     #[Route('/new', name: 'app_walking_path_new')]
-    public function new(Request $request): Response
+    public function new(Request $request, WalkingPathRepository $walkingPathRepository): Response
     {
         $form = $this->createForm(WalkingPathType::class);
 

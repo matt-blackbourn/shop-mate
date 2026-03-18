@@ -14,23 +14,32 @@
             <div class="header-left d-flex align-items-center">
                 <button id="menu-button" aria-label="Open menu" class="btn-dark-base" ><i class="bi bi-list-ul"></i></button>
             </div>
+            <div class="btn-group">
+                <button type="button" id="legAction" class="btn-dark-base" data-bs-toggle="dropdown">
+                    <i class="bi bi-floppy"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" id="saveLeg">Save Last Leg</a></li>
+                    <li><a class="dropdown-item" href="#" id="addWaypoint">Save Waypoint</a></li>
+                </ul>
+            </div>
     
             <!-- Center: Title -->
+            {# <button type="button" id="saveLeg" class="btn-dark-base">
+                <i class="bi bi-download"></i>
+            </button> #}
             <div class="header-center flex-grow-1 text-center fw-semibold">
                 <div class="mapper-display"><span id="stepDisplay">0</span></div>
             </div>
-            <button type="button" id="saveLeg" class="btn-dark-base">
-                <i class="bi bi-floppy"></i>
-            </button>
             <button type="button" id="repeatLeg" class="btn-dark-base">
-                <i class="bi bi-share"></i>
-            </button>
-            <button type="button" id="addWaypoint" class="btn-dark-base">
-                <i class="bi bi-geo-alt-fill"></i>
+                <i class="bi bi-repeat"></i>
             </button>
             <button type="button" id="returnToWaypoint" class="btn-dark-base">
-                <i class="bi-skip-forward"></i>
+                <i class="bi bi-skip-backward"></i>
             </button>
+            {# <button type="button" id="addWaypoint" class="btn-dark-base">
+                <i class="bi bi-geo-alt-fill"></i>
+            </button> #}
         </div>
     </div>
 
@@ -269,6 +278,28 @@
     border-color: #ff6b6b; /* red */
 }
 
+/* Dark mode dropdown */
+.btn-group .dropdown-menu {
+    background-color: #1f1f1f; /* dark background */
+    border: 1px solid #333;    /* optional border */
+}
+
+.btn-group .dropdown-item {
+    color: #f8f9fa;            /* light text */
+}
+
+.btn-group .dropdown-item:hover,
+.btn-group .dropdown-item:focus {
+    background-color: #333;    /* highlight on hover/focus */
+    color: #fff;
+}
+
+/* Optional: active state if needed */
+.btn-group .dropdown-item.active {
+    background-color: #444;
+    color: #fff;
+}
+
 </style>
 
 <script>
@@ -370,7 +401,7 @@
 
     function reapplySavedLeg() {
         if (!savedLeg){
-            showOverlayMessage('Save a leg/aisle first!', 'error');
+            showOverlayMessage('Save a leg first!', 'error');
             return;
         }
 
@@ -433,10 +464,7 @@
 
         // Decrement currentWaypointIndex for reverse cycling
         // Wrap around to the last waypoint if we go below 0
-        currentWaypointIndex =
-            (currentWaypointIndex - 1 + waypoints.length) % waypoints.length;
-
-        const waypoint = waypoints[currentWaypointIndex];
+        currentWaypointIndex = (currentWaypointIndex - 1 + waypoints.length) % waypoints.length;
 
         // If last leg is already a return, overwrite it
         const last = path[path.length - 1];
@@ -445,6 +473,7 @@
         }
 
         // Push new return leg
+        const waypoint = waypoints[currentWaypointIndex];
         path.push({
             x: waypoint.x,
             y: waypoint.y,
@@ -642,11 +671,9 @@
             case TYPE_RETURN: return '';
             default: return 'normal-path';
         }
-        
     }
 
     function drawPath() {
-        console.log(path)
         pathLayer.innerHTML = '';
 
         for (let i = 1; i < path.length; i++) {
@@ -696,7 +723,6 @@
                 text.textContent = p2.steps;
                 text.setAttribute('fill', 'white');
             }
-            
 
             pathLayer.appendChild(text);
         }
@@ -951,15 +977,11 @@
         // --- rebuild waypoints[] ---
         waypoints = [];
         currentWaypointIndex = 0;
-
         path.forEach(p => {
             if (p.waypointIndex !== undefined) {
                 waypoints[p.waypointIndex] = { x: p.x, y: p.y };
             }
         });
-
-        // remove any undefined gaps (if user deleted some waypoints in past session)
-        waypoints = waypoints.filter(Boolean);
 
         drawPath();
         updateDirectionArrow();
