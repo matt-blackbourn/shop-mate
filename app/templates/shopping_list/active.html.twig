@@ -14,6 +14,8 @@
     data-entrance-node-id="{{ supermarket.entranceNode.id }}"
     data-supermarket-id="{{ supermarket.id }}" 
     data-landscape="{{ supermarket.landscape ? 1 : 0 }}"
+    data-aisle-width='{{ supermarket.aisleWidth }}'
+    data-shelf-depth='{{ supermarket.shelfDepth }}'
 >
 
     <div class="sticky-header">
@@ -158,8 +160,6 @@
 <div id="sheetBackdrop" class="sheet-backdrop"></div>
 
 {% include 'food_item/_group_item_modal.html.twig' %}
-{# {% include 'supermarket/_new_place_food_modal.html.twig' %}
-{% include 'supermarket/_show_path_modal.html.twig' %} #}
 {% include 'shopping_list/_combined_map_modal.html.twig' %}
 
 
@@ -642,19 +642,16 @@ const segments = JSON.parse(container.dataset.segments);
 const entranceNodeId = container.dataset.entranceNodeId;  
 const supermarketId = container.dataset.supermarketId;  
 const placementStatuses = JSON.parse(document.getElementById('data').dataset.placementStatus);
-const placementEdgeEls = new Map(); // Keep references to all edges
-const otherPlacementEdgeEls = new Map(); // Keep references to all edges
-const pathEdgeEls = new Map(); // Keep references to all edges
+const otherPlacementEdgeEls = new Map(); 
+const pathEdgeEls = new Map(); 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
-//const AISLE_WIDTH = 35; // this is the same as the shelve generation width. 
-const AISLE_WIDTH = 80; // this is the same as the shelve generation width. 
-let mapRotation = 0;
-//const pathSvg = document.getElementById("path-map");
 const mapSvg = document.getElementById("map-svg");
+const AISLE_WIDTH = container.dataset.aisleWidth
 
 const MAP_MODE_PATH = 'path';
 const MAP_MODE_PLACEMENT = 'placement';
+let mapRotation = 0;
 let mapView = false
 
 
@@ -664,11 +661,9 @@ if (!mapSvg.dataset.originalViewBox) {
     mapSvg.dataset.originalViewBox = `${vb.x} ${vb.y} ${vb.width} ${vb.height}`;
 }
 
-
 /*
  we loop over edges data a lot of times in this code, it probably needs optimising
 */
-
 const currentItemState = {
     itemId: null,
     name: null,

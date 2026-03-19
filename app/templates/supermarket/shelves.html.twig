@@ -33,6 +33,8 @@
     viewBox="-30 -30 {{ supermarket.width + 100 }} {{ supermarket.height + 100 }}"
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
+    data-aisle-width='{{ supermarket.aisleWidth }}'
+    data-shelf-depth='{{ supermarket.shelfDepth }}'
 >
   <g id="edges-layer"></g>
   <g id="shelves-layer"></g>
@@ -64,8 +66,8 @@ const shelvesLayer = document.getElementById('shelves-layer');
 const autoGenerateBtn = document.getElementById('auto-generate');
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-const AISLE_WIDTH = 40; 
-const SHELF_DEPTH = 20;
+const AISLE_WIDTH = svg.dataset.aisleWidth
+const SHELF_DEPTH = svg.dataset.shelfDepth
 const OFFSET = AISLE_WIDTH / 2 + SHELF_DEPTH / 2; // how far from the center line of the aisle to place shelves
 const MIN_LENGTH_OF_EDGE = 0;  // set it higher to prevent short edges from generating shelves
 const TOLERANCE = 0; // Edges must be vertical or horizonal - this should show us non stright edges when generating shelves

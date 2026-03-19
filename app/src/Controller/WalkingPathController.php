@@ -90,6 +90,17 @@ final class WalkingPathController extends AbstractController
         $supermarket->setWalkingPath($walkingPath);
         $supermarket->setDateCreated(new \DateTimeImmutable());
         $supermarket->setScaledPathData($data['walkingPath'] ?? []);
+
+        if($data['width'] * $data['height'] > 1000000) {
+            // Large supermarket
+            $supermarket->setAisleWidth(40);
+            $supermarket->setShelfDepth(20);
+        } else {
+            // Smaller supermarket
+            $supermarket->setAisleWidth(35);
+            $supermarket->setShelfDepth(25);
+        }
+
         $em->persist($supermarket);
     
         $seen = [];

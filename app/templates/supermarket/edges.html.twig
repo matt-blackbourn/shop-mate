@@ -79,6 +79,7 @@
     data-nodes="{{ nodes|json_encode|e('html_attr') }}"
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-walking-path='{{ supermarket.scaledPathData|json_encode }}'
+    data-aisle-width='{{ supermarket.aisleWidth }}'
     {% if supermarket.entranceNode %}data-entrance-id='{{ supermarket.entranceNode.id }}'{% endif %}
 >
     <svg
@@ -166,17 +167,17 @@ const supermarketId = JSON.parse(wrapper.dataset.supermarketId);
 const walkingPath = JSON.parse(wrapper.dataset.walkingPath || '[]');
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const infoBox = document.getElementById('map-selection-info');
+const AISLE_WIDTH = wrapper.dataset.aisleWidth
 
 let nodes = {};
 let edges = [];
-const AISLE_WIDTH = 35; // default
-const STROKE_WIDTH = 10; // default
 const nodeIdMap = {};
 const nodesByUuid = {};
 
 let edgeStartNode = null;
 let entranceNode = null; // store the entrance node reference
 
+const STROKE_WIDTH = 10; // default
 const selectedNodes = new Set();
 const selectedEdges = new Set();
 const undoStack = [];
@@ -510,7 +511,6 @@ function drawEdge(edge) {
 document.getElementById('split-aisle').addEventListener('click', insertAisleDivisionNodes);
 
 function insertAisleDivisionNodes() {
-
     if (selectedNodes.size !== 2) {
         alert('Select exactly two nodes');
         return;
