@@ -461,15 +461,17 @@
 .map-modal .modal-dialog {
     margin: 0;
     max-width: 100%; /* full width modal if needed */
+    height: 100dvh;   /* ✅ THIS fixes mobile */
 }
 
 .map-modal .modal-content {
+    height: 100%;
     background: #0f1115;
     color: #e9ecef;
     border: 1px solid #1f2430;
     display: flex;
     flex-direction: column;
-    height: 90vh; /* adjust as needed */
+    height: 100%
 }
 
 .map-modal .modal-header {
@@ -479,6 +481,7 @@
     align-items: center;        /* vertically center button/title */
     justify-content: flex-start;/* left-align navigation button */
 }
+
 
 .map-modal .btn-close {
     filter: invert(1) opacity(0.8);

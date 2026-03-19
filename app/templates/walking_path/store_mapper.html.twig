@@ -14,6 +14,7 @@
             {# <div class="header-left d-flex align-items-center">
                 <button id="menu-button" aria-label="Open menu" class="btn-dark-base" ><i class="bi bi-list-ul"></i></button>
             </div> #}
+            
             <div class="btn-group">
                 <button type="button" id="legAction" class="btn-dark-base" data-bs-toggle="dropdown">
                     <i class="bi bi-list-ul"></i>
@@ -24,13 +25,14 @@
                     <li><a class="dropdown-item" href="#" id="saveSupermarket" data-bs-toggle="modal" data-bs-target="#walkingPathModal">Submit Floor Plan</a></li>
                 </ul>
             </div>
-            <button type="button" id="repeatLeg" class="btn-dark-base">
-                <i class="bi bi-repeat"></i>
-            </button>
+
             <button type="button" id="returnToWaypoint" class="btn-dark-base">
                 <i class="bi bi-skip-backward"></i>
             </button>
-
+            <button type="button" id="addWaypoint" class="btn-dark-base">
+                <i class="bi bi-geo-alt-fill"></i>
+            </button>
+            
             <div class="header-center flex-grow-1 text-center fw-semibold">
                 <div class="mapper-display"><span id="stepDisplay">0</span></div>
             </div>
@@ -39,8 +41,8 @@
             <button type="button" id="saveLeg" class="btn-dark-base">
                 <i class="bi bi-floppy"></i>
             </button>
-            <button type="button" id="addWaypoint" class="btn-dark-base">
-                <i class="bi bi-geo-alt-fill"></i>
+            <button type="button" id="repeatLeg" class="btn-dark-base">
+                <i class="bi bi-share"></i>
             </button>
         </div>
     </div>
