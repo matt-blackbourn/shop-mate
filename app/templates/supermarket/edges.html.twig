@@ -412,10 +412,7 @@ function redrawGraph() {
 }
 
 function drawPathLine(walkingPath) {
-    const polyline = document.createElementNS(
-        SVG_NS,
-        'polyline'
-    );
+    const polyline = document.createElementNS(SVG_NS, 'polyline');
 
     const pointString = walkingPath
         .map(p => `${p.x},${p.y}`)

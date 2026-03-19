@@ -85,15 +85,16 @@
 
                 // rotate around the label anchor
                 xLabel.setAttribute( 'transform', `rotate(-90 ${x - 2} ${labelY})`);
+                xLabel.setAttribute('fill', colours[Math.round(x) % 5]);
 
                 // --- Y label (left of horizontal line) ---
                 const yLabel = document.createElementNS(SVG_NS,'text');
                 yLabel.setAttribute('x', viewBox.x + 2);
                 yLabel.setAttribute('y', y - 2);
                 yLabel.textContent = Math.round(y);
+                yLabel.setAttribute('fill', colours[Math.round(y) % 5]);
 
                 [xLabel, yLabel].forEach(label => {
-                    label.setAttribute('fill', colours[Math.round(x) % 5]);
                     label.setAttribute('font-size', fontSize);
                     label.setAttribute('pointer-events', 'none');
                     label.setAttribute('font-family', 'monospace');

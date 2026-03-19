@@ -86,6 +86,12 @@ class Supermarket
     #[ORM\Column]
     private ?bool $landscape = false;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $aisleWidth = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $shelfDepth = null;
+
     public function __construct()
     {
         $this->edges = new ArrayCollection();
@@ -411,6 +417,30 @@ class Supermarket
     public function setLandscape(bool $landscape): static
     {
         $this->landscape = $landscape;
+
+        return $this;
+    }
+
+    public function getAisleWidth(): ?int
+    {
+        return $this->aisleWidth;
+    }
+
+    public function setAisleWidth(?int $aisleWidth): static
+    {
+        $this->aisleWidth = $aisleWidth;
+
+        return $this;
+    }
+
+    public function getShelfDepth(): ?int
+    {
+        return $this->shelfDepth;
+    }
+
+    public function setShelfDepth(?int $shelfDepth): static
+    {
+        $this->shelfDepth = $shelfDepth;
 
         return $this;
     }
