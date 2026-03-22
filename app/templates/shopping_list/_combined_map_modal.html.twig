@@ -26,17 +26,14 @@
 
             <div class="modal-body">
                 <div class="map-container">
-                    <svg id="map-svg" class="map-svg"
-                         viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
-                        <g id="edges-layer"></g>
-                        <g id="entrance-layer"></g>
+                    <svg id="map-svg" class="map-svg" viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
+                        <g id="map-inner">
+                            <g id="edges-layer"></g>
+                            <g id="entrance-layer"></g>
+                            <g id="shelves-layer"></g>
+                        </g>
                     </svg>
-                        {# <div id="placementOverlay" class="map-overlay d-none">
-                            <div class="overlay-card">
-                                Tap the shelf where this item belongs.<br>
-                                Tap again to change aisle sides.
-                            </div>
-                        </div> #}
+                    
                 </div>
             </div>
 
