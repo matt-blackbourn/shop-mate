@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\ListItem;
+use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
 use App\Entity\ShoppingSession;
+use App\Enum\PlacementType;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
@@ -148,23 +150,18 @@ final class ShoppingListController extends AbstractController
             ]);
 
             if(!$placement){
-                dd($placementResolver->inferPlacement($listItem->getFoodItem()->getId(), $supermarket->getId()));
-                // $category = $listItem->getFoodItem()->getCategory();
-                // if($category) {
-                //     $similarPlacement = $productPlacementRepository->findOnePlacedByCategoryInSupermarket($category, $supermarket);
-                //     if($similarPlacement) {
-                //         $newPlacement = new ProductPlacement();
-                //         $newPlacement->setFoodItem($listItem->getFoodItem());
-                //         $newPlacement->setSupermarket($supermarket);
-                //         $newPlacement->setEdge($similarPlacement->getEdge());
-                //         $newPlacement->setType(PlacementType::CATEGORY);
-                //         $newPlacement->setAisleSide($similarPlacement->getAisleSide());
-                //         $em->persist($newPlacement);
-                //     }
-                // }
+                $inferredPlacement = $placementResolver->inferPlacement($listItem->getFoodItem()->getId(), $supermarket->getId());
+                $newPlacement = new ProductPlacement();
+                $newPlacement->setFoodItem($listItem->getFoodItem());
+                $newPlacement->setSupermarket($supermarket);
+                $newPlacement->setType(PlacementType::GROUP);
+                $newPlacement->setEdge($inferredPlacement['edge']);
+                $newPlacement->setAisleSide($inferredPlacement['aisleSide']);
+                $em->persist($newPlacement);
             }
         }
 
+        $em->flush();
         
         $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, $currentNodeId);
         if(count($orderedList) === 0) {

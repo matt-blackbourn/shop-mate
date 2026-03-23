@@ -70,29 +70,20 @@ final class PlacementResolver
         return null;
     }
 
-    public function inferPlacement(
-        int $foodItemId,
-        int $targetSupermarketId
-    ): ?array {
-    
+    public function inferPlacement(int $foodItemId, int $targetSupermarketId): ?array {
         $bestMatch = [];
         $donors = $this->productPlacementRepo->findDonorSupermarkets($foodItemId);
     
         foreach ($donors as $donor) {
-    
-            $donorStoreId = $donor['supermarketId'];
-            $donorPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($foodItemId, $donorStoreId);
+            $donorPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($foodItemId, $donor['supermarketId']);
             if (!$donorPlacement) {
                 continue;
             }
 
-            $edge = $donorPlacement->getEdge();
-    
             // --- SAME EDGE CHECK ---
-            $placements = $this->productPlacementRepo->findPlacementsOnEdge($edge->getId(), $foodItemId);
+            $placements = $this->productPlacementRepo->findPlacementsOnEdge($donorPlacement->getEdge()->getId(), $foodItemId);
             foreach ($placements as $placement) {
-                $anchorFoodId = $placement->getFoodItem()->getId();
-                $targetPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($anchorFoodId, $targetSupermarketId);
+                $targetPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($placement->getFoodItem()->getId(), $targetSupermarketId);
                 if (!$targetPlacement) {
                     continue;
                 }
@@ -102,17 +93,15 @@ final class PlacementResolver
                     'aisleSide' => $placement->getAisleSide(),
                 ];
 
-                $type = $targetPlacement->getType();
-    
-                if ($type === PlacementType::SYSTEM) {
+                if ($targetPlacement->getType() === PlacementType::SYSTEM) {
                     return $match;
                 }
     
-                if ($type === PlacementType::USER) {
+                if ($targetPlacement->getType() === PlacementType::USER) {
                     $bestMatch = $match;
                 }
     
-                if ($type === PlacementType::GROUP && !count($bestMatch)) {
+                if ($targetPlacement->getType() === PlacementType::GROUP && !count($bestMatch)) {
                     $bestMatch = $match;
                 }
             }
@@ -125,22 +114,17 @@ final class PlacementResolver
         // ---- NEIGHBOUR EDGE PHASE ----
     
         foreach ($donors as $donor) {
-            $donorStoreId = $donor['supermarketId'];
-            $donorPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($foodItemId, $donorStoreId);
-    
+            $donorPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($foodItemId, $donor['supermarketId']);
             if (!$donorPlacement) {
                 continue;
             }
     
-            $edge = $donorPlacement->getEdge();
-            $neighbours = $this->edgeRepo->findNeighbourEdges($edge->getStart()->getId(), $edge->getEnd()->getId());
-            
+            $neighbours = $this->edgeRepo->findNeighbourEdges($donorPlacement->getEdge()->getStart()->getId(), $donorPlacement->getEdge()->getEnd()->getId());
             foreach ($neighbours as $neighbour) {
                 $placements = $this->productPlacementRepo->findPlacementsOnEdge($neighbour->getId(), $foodItemId);
 
                 foreach ($placements as $placement) {
-                    $anchorFoodId = $placement->getFoodItem()->getId();
-                    $targetPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($anchorFoodId, $targetSupermarketId);
+                    $targetPlacement = $this->productPlacementRepo->findPlacementForFoodInStore($placement->getFoodItem()->getId(), $targetSupermarketId);
                     if (!$targetPlacement) {
                         continue;
                     }
@@ -150,17 +134,15 @@ final class PlacementResolver
                         'aisleSide' => $placement->getAisleSide(),
                     ];
     
-                    $type = $targetPlacement->getType();
-    
-                    if ($type === PlacementType::SYSTEM) {
+                    if ($targetPlacement->getType() === PlacementType::SYSTEM) {
                         return $match;
                     }
     
-                    if ($type === PlacementType::USER) {
+                    if ($targetPlacement->getType() === PlacementType::USER) {
                         $bestMatch = $match;
                     }
     
-                    if ($type === PlacementType::GROUP && !count($bestMatch)) {
+                    if ($targetPlacement->getType() === PlacementType::GROUP && !count($bestMatch)) {
                         $bestMatch = $match;
                     }
                 }
