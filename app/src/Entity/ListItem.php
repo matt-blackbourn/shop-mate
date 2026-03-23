@@ -4,7 +4,6 @@ namespace App\Entity;
 
 use App\Enum\PlacementStatus;
 use App\Repository\ListItemRepository;
-use App\Service\PlacementResolver;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ListItemRepository::class)]

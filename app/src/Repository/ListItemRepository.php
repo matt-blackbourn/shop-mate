@@ -18,7 +18,7 @@ class ListItemRepository extends ServiceEntityRepository
         parent::__construct($registry, ListItem::class);
     }
 
-    public function findByShoppingList(ShoppingList $shoppingList): array {
+    public function findUnpickedByShoppingList(ShoppingList $shoppingList): array {
         return $this->createQueryBuilder('li')
             ->addSelect('fi')
             ->innerJoin('li.foodItem', 'fi')

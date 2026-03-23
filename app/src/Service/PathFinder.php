@@ -38,7 +38,7 @@ class PathFinder
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
 
-        foreach ($this->listItemRepository->findByShoppingList($shoppingList) as $listItem) {
+        foreach ($this->listItemRepository->findUnpickedByShoppingList($shoppingList) as $listItem) {
             $placement = $this->placementResolver->resolve($listItem, $supermarket);
             if($placement){
                 $mappedItems[$placement->getEdge()->getPhase()][$listItem->getId()] = $listItem;

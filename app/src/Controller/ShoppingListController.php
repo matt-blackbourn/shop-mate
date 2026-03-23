@@ -16,6 +16,7 @@ use App\Repository\ShoppingSessionRepository;
 use App\Repository\SupermarketRepository;
 use App\Service\MapBuilder;
 use App\Service\PathFinder;
+use App\Service\PlacementResolver;
 use App\Service\RoutedListItemDto;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -51,7 +52,7 @@ final class ShoppingListController extends AbstractController
         $picked = $shoppingList->getListItems()->filter(fn($item) => $item->getPickedAt() !== null)->toArray();
 
         $form = $this->createForm(ShoppingListType::class, $shoppingList, [
-            'unpickedItems' => $listItemRepository->findByShoppingList($shoppingList),
+            'unpickedItems' => $listItemRepository->findUnpickedByShoppingList($shoppingList),
         ]);
         $form->handleRequest($request);
 
@@ -110,6 +111,7 @@ final class ShoppingListController extends AbstractController
         EntityManagerInterface $em,
         SupermarketRepository $supermarketRepository,
         MapBuilder $mapBuilder,
+        PlacementResolver $placementResolver,
         Request $request,
         int $supermarketId,
         bool $showModal,
@@ -139,32 +141,29 @@ final class ShoppingListController extends AbstractController
         $currentSession = $shoppingSessionRepository->findCurrentSession($shoppingList->getId(), $supermarket->getId());
         $currentNodeId = $currentSession ? $currentSession->getCurrentNode()->getId() : null;
         
+        foreach ($listItemRepository->findUnpickedByShoppingList($shoppingList) as $listItem) {
+            $placement = $productPlacementRepository->findOneBy([
+                'foodItem' => $listItem->getFoodItem(),
+                'supermarket' => $supermarket,
+            ]);
 
-        // here we want to look for any items that do not have a mapped location
-        // if those items have a category, we look for any item in this category in this supermarket that is mapped
-        // if we find one, we create and persist a new ProductPlacement for this item, type=category, and then run the pathfinder
-        // foreach ($shoppingList->getListItems() as $listItem) {
-        //     $placement = $productPlacementRepository->findOneBy([
-        //         'foodItem' => $listItem->getFoodItem(),
-        //         'supermarket' => $supermarket,
-        //     ]);
-
-        //     if(!$placement){
-        //         $category = $listItem->getFoodItem()->getCategory();
-        //         if($category) {
-        //             $similarPlacement = $productPlacementRepository->findOnePlacedByCategoryInSupermarket($category, $supermarket);
-        //             if($similarPlacement) {
-        //                 $newPlacement = new ProductPlacement();
-        //                 $newPlacement->setFoodItem($listItem->getFoodItem());
-        //                 $newPlacement->setSupermarket($supermarket);
-        //                 $newPlacement->setEdge($similarPlacement->getEdge());
-        //                 $newPlacement->setType(PlacementType::CATEGORY);
-        //                 $newPlacement->setAisleSide($similarPlacement->getAisleSide());
-        //                 $em->persist($newPlacement);
-        //             }
-        //         }
-        //     }
-        // }
+            if(!$placement){
+                dd($placementResolver->inferPlacement($listItem->getFoodItem()->getId(), $supermarket->getId()));
+                // $category = $listItem->getFoodItem()->getCategory();
+                // if($category) {
+                //     $similarPlacement = $productPlacementRepository->findOnePlacedByCategoryInSupermarket($category, $supermarket);
+                //     if($similarPlacement) {
+                //         $newPlacement = new ProductPlacement();
+                //         $newPlacement->setFoodItem($listItem->getFoodItem());
+                //         $newPlacement->setSupermarket($supermarket);
+                //         $newPlacement->setEdge($similarPlacement->getEdge());
+                //         $newPlacement->setType(PlacementType::CATEGORY);
+                //         $newPlacement->setAisleSide($similarPlacement->getAisleSide());
+                //         $em->persist($newPlacement);
+                //     }
+                // }
+            }
+        }
 
         
         $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, $currentNodeId);
