@@ -10,6 +10,19 @@
     --header-bg: #121520;        /* headers, modal footers */
     --fab-bg: #51cf66;           /* floating action button */
     --fab-color: #0b0d12;
+
+
+    /* Shelf */
+    --shelf-fill: #1C4E65;
+    --shelf-stroke: #0A96B1;
+
+    --shelf-highlight-fill: rgba(226, 254, 84, 0.43);
+    --shelf-highlight-stroke: #E1FE54;
+
+    /* Route */
+    --route-active: #F968F5;
+    --route-complete: #64748b;
+    --route-upcoming: #f59e0b;
 }
 
 /* =================================
@@ -318,19 +331,79 @@ a:hover {
     border-color: #fa5252;
 }
 
+/** shelf styling-------------------------*/
+
+
 .shelf {
+    fill: var(--shelf-fill);
+    stroke: var(--shelf-stroke);
+    stroke-width: 1;
+    cursor: pointer;
+}
+.shelf-highlight {
+    fill: var(--shelf-highlight-fill);
+    stroke: var(--shelf-highlight-stroke);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none; 
+}
+/* .shelf {
     fill: #40272e;
     stroke: #a96f79;
     stroke-width: 1;
     cursor: pointer;
+} */
+/* .shelf-highlight {
+    fill: rgba(81, 207, 102, 0.25);
+    stroke: #51cf66;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none; 
+}  */
+
+/* Base route styling */
+.path-edge.route-upcoming,
+.path-edge.route-active,
+.path-edge.route-complete {
+    stroke-width: 6;              /* thicker line */
+    stroke-dasharray: 40 20;      /* long dash, clear gap */
+    transition: stroke 200ms ease, opacity 200ms ease;
 }
+
+.path-edge.route-complete {
+    stroke: var(--route-complete);
+    opacity: 0.7;
+    stroke-width: 4;
+}
+
+/* .path-edge.route-active {
+    stroke: #f59e0b;   
+    opacity: 1;
+    stroke-width: 4;
+    animation: pulse 1s infinite;
+} */
+.path-edge.route-active {
+    stroke: var(--route-active); 
+    opacity: 1;
+    stroke-width: 4;
+    animation: pulse 1s infinite;
+}
+
+/* Upcoming (same hue, hint only) */
+.path-edge.route-upcoming {
+    stroke: var(--route-upcoming);
+    opacity: 0.4;
+    stroke-width: 4;
+}
+
+
+/**-------------------------*/
 
 .path{
     stroke:#64748b;        /* slate-500 */
     stroke-width: 2;
     stroke-dasharray: 8 3;
 }
-
 
 .aisle-path { 
     stroke: #fab005; 

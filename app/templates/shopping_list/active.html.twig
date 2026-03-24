@@ -540,14 +540,6 @@
     font-style: italic;
 }
 
-.shelf-highlight {
-    fill: rgba(81, 207, 102, 0.25);
-    stroke: #51cf66;
-    stroke-width: 2;
-    vector-effect: non-scaling-stroke;
-    pointer-events: none; 
-}
-
 .node.entrance {
     paint-order: stroke fill; /* ensures arrow is above circle */
 }
@@ -568,37 +560,7 @@
     opacity: 1;
 }
 
-/* Base route styling */
-.path-edge.route-upcoming,
-.path-edge.route-active,
-.path-edge.route-complete {
-    stroke-width: 6;              /* thicker line */
-    stroke-dasharray: 40 20;      /* long dash, clear gap */
-    transition: stroke 200ms ease, opacity 200ms ease;
-}
 
-.path-edge.route-complete {
-    stroke: #64748b;        /* slate-500 */
-    opacity: 0.7;
-    stroke-width: 4;
-}
-
-/* Active (warm, obvious) */
-.path-edge.route-active {
-    stroke: #f59e0b;        /* amber-500 */
-    opacity: 1;
-    stroke-width: 7;
-    drop-shadow(0 0 8px rgba(245, 158, 11, 0.65))
-    stroke-dasharray: 60 0; /* solid */
-    animation: pulse 1s infinite;
-}
-
-/* Upcoming (same hue, hint only) */
-.path-edge.route-upcoming {
-    stroke: #f59e0b;
-    opacity: 0.4;
-    stroke-width: 4;
-}
 
 .location-side {
     fill: #f59e0b80

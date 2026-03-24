@@ -68,10 +68,12 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const AISLE_WIDTH = svg.dataset.aisleWidth
 const SHELF_DEPTH = svg.dataset.shelfDepth
+
+const END_CLEARANCE = AISLE_WIDTH / 2; // prevent shelves touching at intersections - half aisle width is a good start
 const OFFSET = AISLE_WIDTH / 2 + SHELF_DEPTH / 2; // how far from the center line of the aisle to place shelves
+
 const MIN_LENGTH_OF_EDGE = 0;  // set it higher to prevent short edges from generating shelves
 const TOLERANCE = 0; // Edges must be vertical or horizonal - this should show us non stright edges when generating shelves
-const END_CLEARANCE = AISLE_WIDTH / 2; // prevent shelves touching at intersections - half aisle width is a good start
 
 let mode = 'select'; // 'draw' | 'select'
 let shelves = [];
