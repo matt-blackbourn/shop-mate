@@ -96,8 +96,7 @@ final class ShoppingListController extends AbstractController
         return $this->render('shopping_list/edit.html.twig', [
             'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),
-            'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets(),
-            'lastUsedSupermarketId' => $this->getUser()->getLastUsedSupermarket()?->getId(),
+            'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
         ]);
     }
 
@@ -119,11 +118,6 @@ final class ShoppingListController extends AbstractController
         bool $showModal,
     ): Response {
         $shoppingList = $shoppingListRepository->findOneByUser($this->getUser());
-        if(!$shoppingList) {
-            $this->addFlash('warning', 'You have nothing in your shopping list!');
-            $this->redirectToRoute('app_home');
-        }
-
         $supermarket = $supermarketRepository->find($supermarketId);
 
         // find any open sessions for this list and supermarket, and close them (we open a new session once the first item is picked)
@@ -134,8 +128,6 @@ final class ShoppingListController extends AbstractController
                 $session->setCompletedAt($lastPicked?->getPickedAt() ?? new \DateTimeImmutable());
             }
         }
-
-        $this->getUser()->setLastUsedSupermarket($supermarket);
 
         $em->flush();
 
@@ -151,6 +143,10 @@ final class ShoppingListController extends AbstractController
 
             if(!$placement){
                 $inferredPlacement = $placementResolver->inferPlacement($listItem->getFoodItem()->getId(), $supermarket->getId());
+                if(!$inferredPlacement) {
+                    continue;
+                }
+                
                 $newPlacement = new ProductPlacement();
                 $newPlacement->setFoodItem($listItem->getFoodItem());
                 $newPlacement->setSupermarket($supermarket);

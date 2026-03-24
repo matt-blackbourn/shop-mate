@@ -17,7 +17,6 @@
                 name="supermarketId"
                 id="supermarket-{{ supermarket.id }}"
                 value="{{ supermarket.id }}"
-                {% if supermarket.id == lastUsedSupermarketId %} checked {% endif %}
               >
               <label class="form-check-label" for="supermarket-{{ supermarket.id }}">
                 {{ supermarket.type.value }} - {{ supermarket.suburb }}

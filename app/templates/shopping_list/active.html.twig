@@ -13,7 +13,6 @@
     data-segments="{{ segments|json_encode|e('html_attr') }}"
     data-entrance-node-id="{{ supermarket.entranceNode.id }}"
     data-supermarket-id="{{ supermarket.id }}" 
-    data-landscape="{{ supermarket.landscape ? 1 : 0 }}"
     data-aisle-width='{{ supermarket.aisleWidth }}'
     data-shelf-depth='{{ supermarket.shelfDepth }}'
 >
@@ -766,11 +765,6 @@ routeState.segments.forEach(segment => {
 drawShelves(shelvesData)
 
 updateMapView();
-
-// If map is landscape, rotate it so that it is in portrait orientation when initially displayed
-if(document.getElementById('shoppingListContainer').dataset.landscape == true) {
-    rotateMap();
-}
 
 // 4. 🔥 Render initial route
 highlightItemOnMap();

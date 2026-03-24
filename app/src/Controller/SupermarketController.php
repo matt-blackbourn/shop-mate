@@ -76,6 +76,26 @@ class SupermarketController extends AbstractController
         ]);
     }
 
+    #[Route('/default', name: 'app_supermarket_set_default', methods: ['POST'])]
+    public function setDefault(
+        Request $request,
+        EntityManagerInterface $em,
+        SupermarketRepository $repo
+    ): Response {
+        $user = $this->getUser();
+        $id = $request->request->get('supermarket_id');
+        $supermarket = $repo->find($id);
+        if (!$supermarket) {
+            throw $this->createNotFoundException();
+        }
+
+        $user->setDefaultSupermarket($supermarket);
+        $em->flush();
+
+        return $this->redirectToRoute('app_home');
+    }
+
+
     
     #[Route('/{id}/edit', name: 'app_supermarket_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Supermarket $supermarket, EntityManagerInterface $em): Response

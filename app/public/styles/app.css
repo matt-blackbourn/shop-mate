@@ -337,4 +337,26 @@ a:hover {
     fill: #fab005; 
 }
 
+/* Dark mode dropdown menu */
+.btn-group .dropdown-menu {
+    background-color: #1f1f1f; /* dark background */
+    border: 1px solid #333;    /* optional border */
+    min-width: max-content;   /* expands to fit content */
+    white-space: nowrap;      /* prevents wrapping */
+}
 
+.btn-group .dropdown-item {
+    color: #f8f9fa;            /* light text */
+}
+
+.btn-group .dropdown-item:hover,
+.btn-group .dropdown-item:focus {
+    background-color: #333;    /* highlight on hover/focus */
+    color: #fff;
+}
+
+/* Optional: active state if needed */
+.btn-group .dropdown-item.active {
+    background-color: #444;
+    color: #fff;
+}

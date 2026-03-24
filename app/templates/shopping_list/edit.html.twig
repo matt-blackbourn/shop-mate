@@ -6,14 +6,32 @@
 
 <div class="list-page">
 
-
     <!-- HEADER -->
     <div class="page-header">
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
             <!-- Left -->
-            <div class="d-flex align-items-center">
-                <button id="menu-button" class="btn-dark-base" aria-label="Open menu"><i class="bi bi-list-ul"></i></button>
+            <div class="btn-group">
+                <button type="button" class="btn-dark-base" data-bs-toggle="dropdown">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="" id="quickAddItems" data-quick-add-items="{{ quickAddItems|json_encode|e('html_attr') }}">Quick-add Items</a>
+                    </li>
+                    <li>
+                        <a href="" id="defaultSupermarket">Set Default Supermarket</a>
+                    </li>
+                    <li class="desktop-only">
+                        <a href="{{ path('app_supermarket_index') }}">Supermarkets</a>
+                    </li>
+                    <li class="desktop-only">
+                        <a href="{{ path('app_walking_path_index') }}">Path Data</a>
+                    </li>
+                    <li>
+                        <a href="{{ path('app_walking_path_new') }}">Store Mapper</a>
+                    </li>
+                </ul>
             </div>
 
             <!-- Center -->
@@ -34,39 +52,9 @@
         </div>
     </div>
 
-    <div class="menu-overlay" hidden></div>
-    <nav class="side-menu" hidden>
-        <button type="button" class="menu-close" aria-label="Close menu">×</button>
-        <ul>
-            <li>
-                <button type="button"
-                    id="quickAddItems"
-                    data-quick-add-items="{{ quickAddItems|json_encode|e('html_attr') }}">
-                    Quick-add Items
-                </button>
-            </li>
-            <li class="desktop-only">
-                <a href="{{ path('app_food_item_new') }}">Add food</a>
-            </li>
-            <li class="desktop-only">
-                <a href="{{ path('admin_assign_food_edges', {id: 1}) }}">Map food</a>
-            </li>
-            <li class="desktop-only">
-                <a href="{{ path('app_supermarket_index') }}">Supermarkets</a>
-            </li>
-            <li class="desktop-only">
-                <a href="{{ path('app_walking_path_index') }}">Path Data</a>
-            </li>
-            <li>
-                <a href="{{ path('app_walking_path_new') }}">Store Mapper</a>
-            </li>
-        </ul>
-    </nav>
-
     <!-- BODY -->
     <div class="page-body flex-grow-1 overflow-auto px-2 pt-2">
         {{ form_start(form) }}
-
 
         <div
             id="listItems"
@@ -151,6 +139,8 @@
         </div>
     </div>
 </div>
+
+{% include 'supermarket/_default_supermarket_modal.html.twig' %}
 
 
 <style>
@@ -332,6 +322,65 @@
     flex-shrink: 0;  
 }
 
+/* Dark select box */
+#defaultSupermarketModal .form-select {
+    background-color: #1f1f1f;
+    color: #f8f9fa;
+    border: 1px solid #333;
+}
+
+/* Dropdown list (works in most browsers except some Safari cases) */
+#defaultSupermarketModal .form-select option {
+    background-color: #1f1f1f;
+    color: #f8f9fa;
+}
+
+/* ===== Scoped Tom Select (Default Supermarket Modal) ===== */
+
+/* Control (closed input) */
+#defaultSupermarketModal .ts-control {
+    background-color: #1f1f1f;
+    color: #e9ecef;
+    border: 1px solid #333;
+    min-height: 38px;
+    padding: 0.375rem 0.75rem;
+    flex-wrap: nowrap;
+}
+
+/* Input inside control */
+#defaultSupermarketModal .ts-control input {
+        background-color: #2b303b;
+    color: #e9ecef;
+    border: 1px solid #343a46;
+}
+
+/* Dropdown */
+#defaultSupermarketModal .ts-dropdown {
+    background-color: #1f1f1f;
+    color: #e9ecef;
+    border: 1px solid #333;
+}
+
+/* Options */
+#defaultSupermarketModal .ts-dropdown .option {
+    padding: 0.375rem 0.75rem;
+}
+
+/* Hover / active */
+#defaultSupermarketModal .ts-dropdown .active,
+#defaultSupermarketModal .ts-dropdown .active.create {
+    background-color: #343a46;
+    color: #e9ecef;
+}
+
+
+/* Tick alignment helper */
+#defaultSupermarketModal .ts-dropdown .option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 
 </style>
 
@@ -382,6 +431,14 @@ goShoppingBtn.addEventListener('click', async (e) => {
         console.error('Failed to save list', err);
         alert('Could not save your list. Try again.');
     }
+});
+
+// Default supermarket modal
+document.getElementById('defaultSupermarket').addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation(); // 👈 important
+    const modal = new bootstrap.Modal(document.getElementById('defaultSupermarketModal'));
+    modal.show();
 });
 
 
@@ -597,7 +654,7 @@ function updateItemLabel(item) {
     notesSpan.textContent = notes ? ` — ${notes}` : '';
 }
 
-{# TOM select #}
+{# TOM selects #}
 document.addEventListener('DOMContentLoaded', () => {
     function initFoodSelect(context = document) {
         context.querySelectorAll('select.food-select').forEach(select => {
@@ -682,6 +739,36 @@ document.addEventListener('DOMContentLoaded', () => {
     new TomSelect('#supermarketSelect', {
         create: false,
         allowEmptyOption: true,
+    });
+
+    // default supermarket TOM select
+    new TomSelect('#defaultSelect', {
+        create: false,
+        sortField: [{ field: '$order' }],
+        searchField: ['text'],
+        score: function(search) {
+            const score = this.getScoreFunction(search);
+
+            return function(item) {
+                if (!search) return 1; // no search → keep original order
+                return score(item);   // searching → relevance scoring kicks in
+            };
+        },
+        render: {
+            option: function(data, escape) {
+                const isSelected = data.$option.selected;
+
+                return `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>${escape(data.text)}</span>
+                        ${isSelected ? '<span>✔</span>' : ''}
+                    </div>
+                `;
+            },
+            item: function(data, escape) {
+                return `<div>${escape(data.text)}</div>`;
+            }
+        }
     });
 });
 

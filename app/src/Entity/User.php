@@ -51,14 +51,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: FoodItem::class, mappedBy: 'user')]
     private Collection $foodItems;
 
-    #[ORM\ManyToOne(inversedBy: 'users')]
-    private ?Supermarket $lastUsedSupermarket = null;
-
     /**
      * @var Collection<int, WalkingPath>
      */
     #[ORM\OneToMany(targetEntity: WalkingPath::class, mappedBy: 'user')]
     private Collection $walkingPaths;
+
+    #[ORM\ManyToOne(inversedBy: 'userDefaultSupermarkets')]
+    private ?Supermarket $defaultSupermarket = null;
 
     public function __construct()
     {
@@ -239,17 +239,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getLastUsedSupermarket(): ?Supermarket
-    {
-        return $this->lastUsedSupermarket;
-    }
-
-    public function setLastUsedSupermarket(?Supermarket $lastUsedSupermarket): static
-    {
-        $this->lastUsedSupermarket = $lastUsedSupermarket;
-
-        return $this;
-    }
 
     /**
      * @return Collection<int, WalkingPath>
@@ -277,6 +266,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $walkingPath->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getDefaultSupermarket(): ?Supermarket
+    {
+        return $this->defaultSupermarket;
+    }
+
+    public function setDefaultSupermarket(?Supermarket $defaultSupermarket): static
+    {
+        $this->defaultSupermarket = $defaultSupermarket;
 
         return $this;
     }

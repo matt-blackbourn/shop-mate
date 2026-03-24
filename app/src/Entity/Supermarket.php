@@ -48,12 +48,6 @@ class Supermarket
     private Collection $productPlacements;
 
     /**
-     * @var Collection<int, User>
-     */
-    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'lastUsedSupermarket')]
-    private Collection $users;
-
-    /**
      * @var Collection<int, Shelf>
      */
     #[ORM\OneToMany(targetEntity: Shelf::class, mappedBy: 'supermarket')]
@@ -83,23 +77,26 @@ class Supermarket
     #[ORM\Column(nullable: true)]
     private ?array $scaledPathData = null;
 
-    #[ORM\Column]
-    private ?bool $landscape = false;
-
     #[ORM\Column(nullable: true)]
     private ?int $aisleWidth = null;
 
     #[ORM\Column(nullable: true)]
     private ?int $shelfDepth = null;
 
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'defaultSupermarket')]
+    private Collection $userDefaultSupermarkets;
+
     public function __construct()
     {
         $this->edges = new ArrayCollection();
         $this->nodes = new ArrayCollection();
         $this->productPlacements = new ArrayCollection();
-        $this->users = new ArrayCollection();
         $this->shelves = new ArrayCollection();
         $this->shoppingSessions = new ArrayCollection();
+        $this->userDefaultSupermarkets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -247,36 +244,6 @@ class Supermarket
     }
 
     /**
-     * @return Collection<int, User>
-     */
-    public function getUsers(): Collection
-    {
-        return $this->users;
-    }
-
-    public function addUser(User $user): static
-    {
-        if (!$this->users->contains($user)) {
-            $this->users->add($user);
-            $user->setLastUsedSupermarket($this);
-        }
-
-        return $this;
-    }
-
-    public function removeUser(User $user): static
-    {
-        if ($this->users->removeElement($user)) {
-            // set the owning side to null (unless already changed)
-            if ($user->getLastUsedSupermarket() === $this) {
-                $user->setLastUsedSupermarket(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @return Collection<int, Shelf>
      */
     public function getShelves(): Collection
@@ -409,18 +376,6 @@ class Supermarket
         return $this;
     }
 
-    public function isLandscape(): ?bool
-    {
-        return $this->landscape;
-    }
-
-    public function setLandscape(bool $landscape): static
-    {
-        $this->landscape = $landscape;
-
-        return $this;
-    }
-
     public function getAisleWidth(): ?int
     {
         return $this->aisleWidth;
@@ -441,6 +396,36 @@ class Supermarket
     public function setShelfDepth(?int $shelfDepth): static
     {
         $this->shelfDepth = $shelfDepth;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getUserDefaultSupermarkets(): Collection
+    {
+        return $this->userDefaultSupermarkets;
+    }
+
+    public function addUserDefaultSupermarket(User $userDefaultSupermarket): static
+    {
+        if (!$this->userDefaultSupermarkets->contains($userDefaultSupermarket)) {
+            $this->userDefaultSupermarkets->add($userDefaultSupermarket);
+            $userDefaultSupermarket->setDefaultSupermarket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserDefaultSupermarket(User $userDefaultSupermarket): static
+    {
+        if ($this->userDefaultSupermarkets->removeElement($userDefaultSupermarket)) {
+            // set the owning side to null (unless already changed)
+            if ($userDefaultSupermarket->getDefaultSupermarket() === $this) {
+                $userDefaultSupermarket->setDefaultSupermarket(null);
+            }
+        }
 
         return $this;
     }
