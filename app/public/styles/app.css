@@ -4,26 +4,31 @@
 :root {
     --bg-color: #0f1115;         /* main background */
     --fg-color: #e9ecef;         /* main text */
-    --primary: #51cf66;          /* primary action color */
     --secondary: #2b303b;        /* secondary buttons, inputs */
     --border: #343a46;           /* borders for forms, tables */
     --header-bg: #121520;        /* headers, modal footers */
-    --fab-bg: #51cf66;           /* floating action button */
-    --fab-color: #0b0d12;
 
 
     /* Shelf */
     --shelf-fill: #1C4E65;
     --shelf-stroke: #0A96B1;
 
-    --shelf-highlight-fill: rgba(226, 254, 84, 0.43);
+    --shelf-highlight-fill: rgba(226, 254, 84, 0.178);
     --shelf-highlight-stroke: #E1FE54;
 
     /* Route */
     --route-active: #F968F5;
     --route-complete: #64748b;
     --route-upcoming: #f59e0b;
+
+    --primary-colour: #0A96B1;
+    --secondary-colour: #E1FE54;
+    --danger-colour: #fa5252;
+    /* --primary-colour: #51cf66;
+    --secondary-colour: #fab005;
+    --danger-colour: #fa5252; */
 }
+
 
 /* =================================
    Minimal reset (safe)
@@ -168,24 +173,6 @@ textarea.form-control {
     padding: 0.5rem;
 }
 
-/* =================================
-   Floating action button
-================================= */
-.fab {
-    position: fixed;
-    right: clamp(16px, 4vw, 24px);
-    bottom: calc(clamp(16px, 4vw, 24px) + env(safe-area-inset-bottom));
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--fab-bg);
-    color: var(--fab-color);
-    font-size: 2rem;
-    line-height: 56px;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    text-decoration: none;
-}
 
 /* =================================
    Scrollbars
@@ -203,12 +190,12 @@ textarea.form-control {
    Links
 ================================= */
 a {
-    color: var(--primary);
+    color: var(--primary-colour);
     text-decoration: none;
 }
 
 a:hover {
-    color: #51cf66;
+    color: var(--primary-colour);
 }
 
 /* =================================
@@ -320,15 +307,15 @@ a:hover {
 
 /* Modifiers */
 .border-green {
-    border-color: #51cf66;
+    border-color: var(--primary-colour);
 }
 
 .border-yellow {
-    border-color: #fab005;
+    border-color: var(--secondary-colour);
 }
 
 .border-red {
-    border-color: #fa5252;
+    border-color: var(--route-active);
 }
 
 /** shelf styling-------------------------*/
