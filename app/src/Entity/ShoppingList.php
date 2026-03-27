@@ -26,17 +26,17 @@ class ShoppingList
     #[ORM\OneToMany(targetEntity: ListItem::class, mappedBy: 'shoppingList', cascade: ['persist'], orphanRemoval: true)]
     private Collection $listItems;
 
-    #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
-    private ?User $user = null;
-
     #[ORM\Column]
-    private ?bool $quickAddList = null;
+    private ?bool $quickAddList = false;
 
     /**
      * @var Collection<int, ShoppingSession>
      */
     #[ORM\OneToMany(targetEntity: ShoppingSession::class, mappedBy: 'shoppingList')]
     private Collection $shoppingSessions;
+
+    #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
+    private ?Household $household = null;
 
     
     public function __construct()
@@ -95,19 +95,6 @@ class ShoppingList
         return $this;
     }
 
-
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
-
-    public function setUser(?User $user): static
-    {
-        $this->user = $user;
-
-        return $this;
-    }
-
     public function isQuickAddList(): ?bool
     {
         return $this->quickAddList;
@@ -146,6 +133,18 @@ class ShoppingList
                 $shoppingSession->setShoppingList(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getHousehold(): ?Household
+    {
+        return $this->household;
+    }
+
+    public function setHousehold(?Household $household): static
+    {
+        $this->household = $household;
 
         return $this;
     }

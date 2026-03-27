@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Household;
 use App\Entity\ListItem;
 use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
@@ -10,6 +11,7 @@ use App\Enum\PlacementType;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
+use App\Repository\HouseholdRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductPlacementRepository;
@@ -22,7 +24,6 @@ use App\Service\PlacementResolver;
 use App\Service\RoutedListItemDto;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Filesystem\Path;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,17 +38,12 @@ final class ShoppingListController extends AbstractController
         ShoppingListRepository $shoppingListRepository, 
         ListItemRepository $listItemRepository,
         SupermarketRepository $supermarketRepository,
+        HouseholdRepository $householdRepository,
     ): Response
     {
-        $shoppingList = $shoppingListRepository->findOneByUser($this->getUser());
-        if(!$shoppingList) {
-            $shoppingList = new ShoppingList();
-            $shoppingList->setDateCreated(new \DateTimeImmutable());
-            $shoppingList->setUser($this->getUser());
-            $shoppingList->setQuickAddList(false);
-            $em->persist($shoppingList);
-            $em->flush();
-        }
+        $user = $this->getUser();
+        $household = $householdRepository->findOneBy(['user' => $user]);
+        $shoppingList = $shoppingListRepository->findOneByHousehold($household);
 
         // if we dont render the picked items, doctrine will delete them when we flush
         //so we cache them here and manually add them back afer form submission
@@ -84,14 +80,14 @@ final class ShoppingListController extends AbstractController
         }
 
         $quickAddItems = [];
-        foreach($shoppingListRepository->findQuickAddListByUser($this->getUser())->getListItems() ?? [] as $item) {
-            $quickAddItems[] = [
-                'foodId' => $item->getFoodItem()->getId(),
-                'label' => $item->getFoodItem()->getName(),
-                'quantity' => $item->getQuantity(),
-                'notes' => $item->getNotes(),
-            ];
-        }
+        // foreach($shoppingListRepository->findQuickAddListByUser($this->getUser())->getListItems() ?? [] as $item) {
+        //     $quickAddItems[] = [
+        //         'foodId' => $item->getFoodItem()->getId(),
+        //         'label' => $item->getFoodItem()->getName(),
+        //         'quantity' => $item->getQuantity(),
+        //         'notes' => $item->getNotes(),
+        //     ];
+        // }
 
         return $this->render('shopping_list/edit.html.twig', [
             'quickAddItems' => $quickAddItems,

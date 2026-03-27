@@ -70,6 +70,7 @@ final class FoodItemController extends AbstractController
 
         $food = new FoodItem();
         $food->setName($name);
+        $food->setUser($this->getUser());
 
         $em->persist($food);
         $em->flush();
