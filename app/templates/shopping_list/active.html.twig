@@ -707,27 +707,18 @@ routeState.segments.forEach(segment => {
     segment.edges = resolveEdgesForSegment(segment);
 });
 
-
-// draw shelves on maps
+// Initial setup
 drawShelves(shelvesData)
-
 updateMapView();
-
-// 4. 🔥 Render initial route
-highlightItemOnMap();
-
-
-
+setMapMode(MAP_MODE_PATH);
 
 document.getElementById('placeItemBtn').addEventListener('click', () => {
-    setMapMode('placement');
+    setMapMode(MAP_MODE_PLACEMENT);
 });
 
 document.getElementById('placementCancelBtn').addEventListener('click', () => {
-    highlightItemOnMap() // reset current placement highlight
-
     if(mapView){
-        setMapMode('path');
+        setMapMode(MAP_MODE_PATH);
     } else {
         const modalEl = document.getElementById('mapModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
@@ -750,7 +741,7 @@ function setMapMode(mode) {
     const edgesLayer = document.getElementById('edges-layer');
 
 
-    if (mode === 'placement') {
+    if (mode === MAP_MODE_PLACEMENT) {
         // show these
         placementInstructions.classList.remove('d-none');
         placementConfirmBtn.classList.remove('d-none');
@@ -764,6 +755,8 @@ function setMapMode(mode) {
         foodInfo.classList.add('d-none');
         placeItemBtn.classList.add('d-none');
         edgesLayer.classList.add('d-none');
+
+        clearShelfHighlights()
 
     } else {
         // hide these
@@ -779,6 +772,8 @@ function setMapMode(mode) {
         foodInfo.classList.remove('d-none');
         placeItemBtn.classList.remove('d-none');
         edgesLayer.classList.remove('d-none');
+
+        highlightItemOnMap() // reset current placement highlight
     }
 
 }
@@ -987,7 +982,7 @@ function updateMapView() {
 
         const card = document.querySelector( `.shopping-card[data-id="${segment.itemId}"]`);
         if (card) {
-            setMapMode('placement');
+            setMapMode(MAP_MODE_PLACEMENT);
             openMapModal(card)
         }
     };
@@ -1400,7 +1395,7 @@ function linesIntersect(l1, l2) {
 
 document.getElementById('mapButton').addEventListener('click', e => {
     e.preventDefault();
-    setMapMode('path');
+    setMapMode(MAP_MODE_PATH);
     mapView = true;
 
     const segment = routeState.segments[routeState.currentSegment];
@@ -1412,12 +1407,6 @@ document.getElementById('mapButton').addEventListener('click', e => {
 function openMapModal(card){
     const modalEl = document.getElementById('mapModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
-    if(findRotationForNextItem() === 180){
-        setTimeout(() => {
-            rotateMap();
-        }, 500)
-    }
 
     if(card){
         const foodItemId = card.dataset.foodItemId;
@@ -1589,7 +1578,7 @@ function openPlacementMenu(card) {
     // ---- BUTTON HANDLERS ----
     mapItemBtn.onclick = () => {
         closeMenu();
-        setMapMode('placement');
+        setMapMode(MAP_MODE_PLACEMENT);
         openMapModal(mapItemBtn.closest('.shopping-card'));
     };
 
@@ -1739,7 +1728,7 @@ edgesData.forEach(e => {
 });
 
 function onShelfClicked(shelf, click) {
-    if(mapMode !== 'placement') return;
+    if(mapMode !== MAP_MODE_PLACEMENT) return;
 
     const edges = edgesNextToShelf(shelf, click);
     if (!edges.length) return;
