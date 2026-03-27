@@ -33,14 +33,21 @@ class Household
     #[ORM\OneToMany(targetEntity: HouseholdInvite::class, mappedBy: 'household')]
     private Collection $householdInvites;
 
-    #[ORM\ManyToOne(inversedBy: 'households')]
-    private ?User $user = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $name = null;
+
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'defaultHousehold')]
+    private Collection $users;
 
     public function __construct()
     {
-        $this->shoppingLists = new ArrayCollection();
         $this->householdMembers = new ArrayCollection();
         $this->householdInvites = new ArrayCollection();
+        $this->users = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -138,14 +145,44 @@ class Household
         return $this;
     }
 
-    public function getUser(): ?User
+    public function getName(): ?string
     {
-        return $this->user;
+        return $this->name;
     }
 
-    public function setUser(?User $user): static
+    public function setName(?string $name): static
     {
-        $this->user = $user;
+        $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getUsers(): Collection
+    {
+        return $this->users;
+    }
+
+    public function addUser(User $user): static
+    {
+        if (!$this->users->contains($user)) {
+            $this->users->add($user);
+            $user->setDefaultHousehold($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUser(User $user): static
+    {
+        if ($this->users->removeElement($user)) {
+            // set the owning side to null (unless already changed)
+            if ($user->getDefaultHousehold() === $this) {
+                $user->setDefaultHousehold(null);
+            }
+        }
 
         return $this;
     }

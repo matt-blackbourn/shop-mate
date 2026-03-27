@@ -66,11 +66,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: HouseholdInvite::class, mappedBy: 'invitedBy')]
     private Collection $householdInvites;
 
-    /**
-     * @var Collection<int, Household>
-     */
-    #[ORM\OneToMany(targetEntity: Household::class, mappedBy: 'user')]
-    private Collection $households;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $username = null;
+
+    #[ORM\ManyToOne(inversedBy: 'users')]
+    private ?Household $defaultHousehold = null;
 
     public function __construct()
     {
@@ -79,7 +79,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->walkingPaths = new ArrayCollection();
         $this->householdMembers = new ArrayCollection();
         $this->householdInvites = new ArrayCollection();
-        $this->households = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -326,32 +325,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, Household>
-     */
-    public function getHouseholds(): Collection
+
+    public function getUsername(): ?string
     {
-        return $this->households;
+        return $this->username;
     }
 
-    public function addHousehold(Household $household): static
+    public function setUsername(?string $username): static
     {
-        if (!$this->households->contains($household)) {
-            $this->households->add($household);
-            $household->setUser($this);
-        }
+        $this->username = $username;
 
         return $this;
     }
 
-    public function removeHousehold(Household $household): static
+    public function getDefaultHousehold(): ?Household
     {
-        if ($this->households->removeElement($household)) {
-            // set the owning side to null (unless already changed)
-            if ($household->getUser() === $this) {
-                $household->setUser(null);
-            }
-        }
+        return $this->defaultHousehold;
+    }
+
+    public function setDefaultHousehold(?Household $defaultHousehold): static
+    {
+        $this->defaultHousehold = $defaultHousehold;
 
         return $this;
     }

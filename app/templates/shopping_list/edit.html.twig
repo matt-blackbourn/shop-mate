@@ -48,7 +48,7 @@
 
             <!-- Right -->
             <div class="d-flex align-items-center">
-                <a href="" id="go-shopping-btn" class="btn-dark-base border-green">
+                <a href="" id="go-shopping-btn" class="btn-dark-base border-green" data-shopping-list-id="{{ shoppingListId }}">
                     <i class="bi bi-cart-fill"></i>
                 </a>
             </div>
@@ -427,8 +427,10 @@ goShoppingBtn.addEventListener('click', async (e) => {
             return;
         }
 
+        const listId = goShoppingBtn.dataset.shoppingListId;
+
         // 2️⃣ Redirect to the active page
-        window.location.href = `/active/${supermarketId}/true`;
+        window.location.href = `/active/${listId}/${supermarketId}/true`;
 
     } catch (err) {
         console.error('Failed to save list', err);

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\ShoppingList;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -37,4 +38,5 @@ class ShoppingListRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
 }

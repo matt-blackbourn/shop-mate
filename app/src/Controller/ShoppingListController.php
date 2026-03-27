@@ -42,11 +42,11 @@ final class ShoppingListController extends AbstractController
     ): Response
     {
         $user = $this->getUser();
-        $household = $householdRepository->findOneBy(['user' => $user]);
-        $shoppingList = $shoppingListRepository->findOneByHousehold($household);
+        $households = $householdRepository->findForUserOrdered($user);
+        $shoppingList = $shoppingListRepository->findOneByHousehold($households[0]);
 
         // if we dont render the picked items, doctrine will delete them when we flush
-        //so we cache them here and manually add them back afer form submission
+        // so we cache them here and manually add them back afer form submission
         $picked = $shoppingList->getListItems()->filter(fn($item) => $item->getPickedAt() !== null)->toArray();
 
         $form = $this->createForm(ShoppingListType::class, $shoppingList, [
@@ -93,11 +93,12 @@ final class ShoppingListController extends AbstractController
             'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),
             'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
+            'shoppingListId' => $shoppingList->getId(),
         ]);
     }
 
 
-    #[Route('/active/{supermarketId}/{showModal}', name: 'app_shopping_list_active', methods: ['GET'], defaults: ['showModal' => false])]
+    #[Route('/active/{listId}/{supermarketId}/{showModal}', name: 'app_shopping_list_active', methods: ['GET'], defaults: ['showModal' => false])]
     public function activeList(
         ShoppingListRepository $shoppingListRepository,
         PathFinder $pathFinder,
@@ -111,9 +112,10 @@ final class ShoppingListController extends AbstractController
         PlacementResolver $placementResolver,
         Request $request,
         int $supermarketId,
+        int $listId,
         bool $showModal,
     ): Response {
-        $shoppingList = $shoppingListRepository->findOneByUser($this->getUser());
+        $shoppingList = $shoppingListRepository->find($listId);
         $supermarket = $supermarketRepository->find($supermarketId);
 
         // find any open sessions for this list and supermarket, and close them (we open a new session once the first item is picked)

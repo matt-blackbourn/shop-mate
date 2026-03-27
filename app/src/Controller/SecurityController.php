@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Household;
 use App\Entity\HouseholdMember;
 use App\Entity\ShoppingList;
+use App\Repository\HouseholdMemberRepository;
 use App\Repository\HouseholdRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,12 +36,13 @@ class SecurityController extends AbstractController
         $user = $this->getUser();
 
         // 🔍 Check household
-        $household = $householdRepository->findOneBy(['user' => $user]);
-        if (!$household) {
-            // Create household
+        $households = $householdRepository->findForUserOrdered($user);
+        if (count($households) === 0) {
+            // first-time setup
             $household = new Household();
-            $household->setUser($user);
+            $household->setName($user->getUsername() . "'s Shopping List");
             $em->persist($household);
+            $user->setDefaultHousehold($household);
 
             $member = new HouseholdMember();
             $member->setUser($user);
