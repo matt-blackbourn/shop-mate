@@ -32,6 +32,7 @@ class CreateUserCommand extends Command
             ->setName('app:create-user')
             ->setDescription('Creates a new user')
             ->addArgument('email', InputArgument::REQUIRED, 'User email')
+            ->addArgument('username', InputArgument::REQUIRED, 'Username')
             ->addArgument('password', InputArgument::REQUIRED, 'User password');
     }
 
@@ -39,6 +40,7 @@ class CreateUserCommand extends Command
     {
         $email = strtolower(trim($input->getArgument('email')));
         $password = $input->getArgument('password');
+        $username = $input->getArgument('username');
 
         // 🔍 Check if user already exists
         $existingUser = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
@@ -53,6 +55,7 @@ class CreateUserCommand extends Command
 
         $hashedPassword = $this->passwordHasher->hashPassword($user, $password);
         $user->setPassword($hashedPassword);
+        $user->setUsername($username);
         $user->setRoles(['ROLE_USER']);
 
         $this->em->persist($user);

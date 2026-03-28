@@ -36,13 +36,27 @@ class ShoppingList
     private Collection $shoppingSessions;
 
     #[ORM\ManyToOne(inversedBy: 'shoppingLists')]
-    private ?Household $household = null;
+    private ?User $owner = null;
+
+    /**
+     * @var Collection<int, ListMember>
+     */
+    #[ORM\OneToMany(targetEntity: ListMember::class, mappedBy: 'shoppingList')]
+    private Collection $listMembers;
+
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'defaultList')]
+    private Collection $users;
 
     
     public function __construct()
     {
         $this->listItems = new ArrayCollection();
         $this->shoppingSessions = new ArrayCollection();
+        $this->listMembers = new ArrayCollection();
+        $this->users = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -137,14 +151,74 @@ class ShoppingList
         return $this;
     }
 
-    public function getHousehold(): ?Household
+    public function getOwner(): ?User
     {
-        return $this->household;
+        return $this->owner;
     }
 
-    public function setHousehold(?Household $household): static
+    public function setOwner(?User $owner): static
     {
-        $this->household = $household;
+        $this->owner = $owner;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListMember>
+     */
+    public function getListMembers(): Collection
+    {
+        return $this->listMembers;
+    }
+
+    public function addListMember(ListMember $listMember): static
+    {
+        if (!$this->listMembers->contains($listMember)) {
+            $this->listMembers->add($listMember);
+            $listMember->setShoppingList($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListMember(ListMember $listMember): static
+    {
+        if ($this->listMembers->removeElement($listMember)) {
+            // set the owning side to null (unless already changed)
+            if ($listMember->getShoppingList() === $this) {
+                $listMember->setShoppingList(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getUsers(): Collection
+    {
+        return $this->users;
+    }
+
+    public function addUser(User $user): static
+    {
+        if (!$this->users->contains($user)) {
+            $this->users->add($user);
+            $user->setDefaultList($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUser(User $user): static
+    {
+        if ($this->users->removeElement($user)) {
+            // set the owning side to null (unless already changed)
+            if ($user->getDefaultList() === $this) {
+                $user->setDefaultList(null);
+            }
+        }
 
         return $this;
     }

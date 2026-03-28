@@ -54,31 +54,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToOne(inversedBy: 'userDefaultSupermarkets')]
     private ?Supermarket $defaultSupermarket = null;
 
-    /**
-     * @var Collection<int, HouseholdMember>
-     */
-    #[ORM\OneToMany(targetEntity: HouseholdMember::class, mappedBy: 'user')]
-    private Collection $householdMembers;
-
-    /**
-     * @var Collection<int, HouseholdInvite>
-     */
-    #[ORM\OneToMany(targetEntity: HouseholdInvite::class, mappedBy: 'invitedBy')]
-    private Collection $householdInvites;
-
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $username = null;
 
+    /**
+     * @var Collection<int, ShoppingList>
+     */
+    #[ORM\OneToMany(targetEntity: ShoppingList::class, mappedBy: 'owner')]
+    private Collection $shoppingLists;
+
+    /**
+     * @var Collection<int, ListMember>
+     */
+    #[ORM\OneToMany(targetEntity: ListMember::class, mappedBy: 'user')]
+    private Collection $listMembers;
+
     #[ORM\ManyToOne(inversedBy: 'users')]
-    private ?Household $defaultHousehold = null;
+    private ?ShoppingList $defaultList = null;
+
 
     public function __construct()
     {
         $this->productPlacements = new ArrayCollection();
         $this->foodItems = new ArrayCollection();
         $this->walkingPaths = new ArrayCollection();
-        $this->householdMembers = new ArrayCollection();
-        $this->householdInvites = new ArrayCollection();
+        $this->shoppingLists = new ArrayCollection();
+        $this->listMembers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -265,67 +266,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, HouseholdMember>
-     */
-    public function getHouseholdMembers(): Collection
-    {
-        return $this->householdMembers;
-    }
-
-    public function addHouseholdMember(HouseholdMember $householdMember): static
-    {
-        if (!$this->householdMembers->contains($householdMember)) {
-            $this->householdMembers->add($householdMember);
-            $householdMember->setUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removeHouseholdMember(HouseholdMember $householdMember): static
-    {
-        if ($this->householdMembers->removeElement($householdMember)) {
-            // set the owning side to null (unless already changed)
-            if ($householdMember->getUser() === $this) {
-                $householdMember->setUser(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, HouseholdInvite>
-     */
-    public function getHouseholdInvites(): Collection
-    {
-        return $this->householdInvites;
-    }
-
-    public function addHouseholdInvite(HouseholdInvite $householdInvite): static
-    {
-        if (!$this->householdInvites->contains($householdInvite)) {
-            $this->householdInvites->add($householdInvite);
-            $householdInvite->setInvitedBy($this);
-        }
-
-        return $this;
-    }
-
-    public function removeHouseholdInvite(HouseholdInvite $householdInvite): static
-    {
-        if ($this->householdInvites->removeElement($householdInvite)) {
-            // set the owning side to null (unless already changed)
-            if ($householdInvite->getInvitedBy() === $this) {
-                $householdInvite->setInvitedBy(null);
-            }
-        }
-
-        return $this;
-    }
-
-
     public function getUsername(): ?string
     {
         return $this->username;
@@ -338,14 +278,74 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getDefaultHousehold(): ?Household
+    /**
+     * @return Collection<int, ShoppingList>
+     */
+    public function getShoppingLists(): Collection
     {
-        return $this->defaultHousehold;
+        return $this->shoppingLists;
     }
 
-    public function setDefaultHousehold(?Household $defaultHousehold): static
+    public function addShoppingList(ShoppingList $shoppingList): static
     {
-        $this->defaultHousehold = $defaultHousehold;
+        if (!$this->shoppingLists->contains($shoppingList)) {
+            $this->shoppingLists->add($shoppingList);
+            $shoppingList->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShoppingList(ShoppingList $shoppingList): static
+    {
+        if ($this->shoppingLists->removeElement($shoppingList)) {
+            // set the owning side to null (unless already changed)
+            if ($shoppingList->getOwner() === $this) {
+                $shoppingList->setOwner(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListMember>
+     */
+    public function getListMembers(): Collection
+    {
+        return $this->listMembers;
+    }
+
+    public function addListMember(ListMember $listMember): static
+    {
+        if (!$this->listMembers->contains($listMember)) {
+            $this->listMembers->add($listMember);
+            $listMember->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListMember(ListMember $listMember): static
+    {
+        if ($this->listMembers->removeElement($listMember)) {
+            // set the owning side to null (unless already changed)
+            if ($listMember->getUser() === $this) {
+                $listMember->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getDefaultList(): ?ShoppingList
+    {
+        return $this->defaultList;
+    }
+
+    public function setDefaultList(?ShoppingList $defaultList): static
+    {
+        $this->defaultList = $defaultList;
 
         return $this;
     }

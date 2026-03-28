@@ -2,16 +2,12 @@
 
 namespace App\Controller;
 
-use App\Entity\Household;
-use App\Entity\ListItem;
 use App\Entity\ProductPlacement;
-use App\Entity\ShoppingList;
 use App\Entity\ShoppingSession;
 use App\Enum\PlacementType;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
-use App\Repository\HouseholdRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductPlacementRepository;
@@ -38,12 +34,10 @@ final class ShoppingListController extends AbstractController
         ShoppingListRepository $shoppingListRepository, 
         ListItemRepository $listItemRepository,
         SupermarketRepository $supermarketRepository,
-        HouseholdRepository $householdRepository,
     ): Response
     {
         $user = $this->getUser();
-        $households = $householdRepository->findForUserOrdered($user);
-        $shoppingList = $shoppingListRepository->findOneByHousehold($households[0]);
+        $shoppingList = $user->getDefaultList() ?? $shoppingListRepository->findForUser($user)[0];
 
         // if we dont render the picked items, doctrine will delete them when we flush
         // so we cache them here and manually add them back afer form submission

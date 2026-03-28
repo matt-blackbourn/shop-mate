@@ -39,4 +39,14 @@ class ShoppingListRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function findForUser(User $user): array
+    {
+        return $this->createQueryBuilder('sl')
+            ->innerJoin('sl.listMembers', 'lm')
+            ->where('lm.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+    }
+
 }

@@ -2,11 +2,10 @@
 
 namespace App\Controller;
 
-use App\Entity\Household;
-use App\Entity\HouseholdMember;
+use App\Entity\ListMember;
 use App\Entity\ShoppingList;
-use App\Repository\HouseholdMemberRepository;
-use App\Repository\HouseholdRepository;
+use App\Enum\ListMemberRole;
+use App\Repository\ShoppingListRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,29 +30,23 @@ class SecurityController extends AbstractController
     }
 
     #[Route('/post-login', name: 'app_post_login')]
-    public function postLogin(EntityManagerInterface $em, HouseholdRepository $householdRepository): Response
+    public function postLogin(EntityManagerInterface $em, ShoppingListRepository $shoppingListRepository): Response
     {
         $user = $this->getUser();
 
-        // 🔍 Check household
-        $households = $householdRepository->findForUserOrdered($user);
-        if (count($households) === 0) {
+        $list = $shoppingListRepository->findByUser($user);
+        if (!$list) {
             // first-time setup
-            $household = new Household();
-            $household->setName($user->getUsername() . "'s Shopping List");
-            $em->persist($household);
-            $user->setDefaultHousehold($household);
-
-            $member = new HouseholdMember();
-            $member->setUser($user);
-            $member->setHousehold($household);
-            $em->persist($member);
-
-            // Create default list
             $list = new ShoppingList();
-            $list->setHousehold($household);
             $list->setDateCreated(new \DateTimeImmutable());
+            $list->setOwner($user);
             $em->persist($list);
+
+            $member = new ListMember();
+            $member->setUser($user);
+            $member->setShoppingList($list);
+            $member->setRole(ListMemberRole::OWNER);
+            $em->persist($member);
 
             $em->flush();
         }
