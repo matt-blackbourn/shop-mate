@@ -2,20 +2,20 @@
 
 namespace App\Controller;
 
-use App\Entity\Node;
-use App\Entity\Supermarket;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\ShoppingListRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class HomeController extends AbstractController
 {
-    #[Route('/unused', name: 'app_unused')]
-    public function index(EntityManagerInterface $em): Response
+    #[Route('/', name: 'app_home')]
+    public function index(ShoppingListRepository $shoppingListRepository): Response
     {
-        return $this->render('home/index.html.twig', [
-            'controller_name' => 'HomeController',
-        ]);
+        $user = $this->getUser();
+        $shoppingList = $user->getDefaultList() ?? $shoppingListRepository->findForUser($user)[0];
+
+        return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $shoppingList->getId()]);
+        // return $this->redirectToRoute('app_shoppinglist_edit', ['id' => 3]);
     }
 }

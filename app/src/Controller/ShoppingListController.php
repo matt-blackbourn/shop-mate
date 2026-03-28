@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\ProductPlacement;
+use App\Entity\ShoppingList;
 use App\Entity\ShoppingSession;
 use App\Enum\PlacementType;
 use App\Form\FoodItemGroupPlacementType;
@@ -25,20 +26,18 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+#[Route('/shoppinglist')]
 final class ShoppingListController extends AbstractController
 {
-    #[Route('/', name: 'app_home', methods: ['GET', 'POST'])]
+    #[Route('/edit/{id}', name: 'app_shoppinglist_edit', methods: ['GET', 'POST'])]
     public function home(
         Request $request, 
         EntityManagerInterface $em, 
-        ShoppingListRepository $shoppingListRepository, 
         ListItemRepository $listItemRepository,
         SupermarketRepository $supermarketRepository,
+        ShoppingList $shoppingList,
     ): Response
     {
-        $user = $this->getUser();
-        $shoppingList = $user->getDefaultList() ?? $shoppingListRepository->findForUser($user)[0];
-
         // if we dont render the picked items, doctrine will delete them when we flush
         // so we cache them here and manually add them back afer form submission
         $picked = $shoppingList->getListItems()->filter(fn($item) => $item->getPickedAt() !== null)->toArray();
@@ -197,7 +196,7 @@ final class ShoppingListController extends AbstractController
     }
 
     // maybe needs to go in list item controller later
-    #[Route('/shoppinglist/ajax/pick', name: 'app_shopping_pick', methods: ['POST'])]
+    #[Route('/ajax/pick', name: 'app_shopping_pick', methods: ['POST'])]
     public function pick(
         Request $request, 
         EntityManagerInterface $em, 
