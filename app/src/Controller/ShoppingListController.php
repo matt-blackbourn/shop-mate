@@ -9,6 +9,7 @@ use App\Enum\PlacementType;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
+use App\Repository\ListInviteRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\NodeRepository;
 use App\Repository\ProductPlacementRepository;
@@ -36,6 +37,7 @@ final class ShoppingListController extends AbstractController
         ListItemRepository $listItemRepository,
         SupermarketRepository $supermarketRepository,
         ShoppingList $shoppingList,
+        ListInviteRepository $inviteRepository,
     ): Response
     {
         // if we dont render the picked items, doctrine will delete them when we flush
@@ -82,17 +84,18 @@ final class ShoppingListController extends AbstractController
         //     ];
         // }
 
-        // $invites = $inviteRepo->findBy([
-        //     'email' => $currentUser->getEmail(),
-        //     'status' => 'pending'
-        // ]);
-        // “You’ve been invited to join X’s shopping list”
+        $invites = $inviteRepository->findBy([
+            'email' => $this->getUser()->getEmail(),
+            'status' => 'pending'
+        ]);
+        $invite = count($invites) > 0 ? $invites[0] : null;
 
         return $this->render('shopping_list/edit.html.twig', [
             'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),
             'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
             'shoppingListId' => $shoppingList->getId(),
+            'invite' => $invite,
         ]);
     }
 

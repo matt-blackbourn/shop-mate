@@ -15,7 +15,7 @@ final class HomeController extends AbstractController
         $user = $this->getUser();
         $shoppingList = $user->getDefaultList() ?? $shoppingListRepository->findForUser($user)[0];
 
-        return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $shoppingList->getId()]);
-        // return $this->redirectToRoute('app_shoppinglist_edit', ['id' => 3]);
+        // return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $shoppingList->getId()]);
+        return $this->redirectToRoute('app_shoppinglist_edit', ['id' => 3]);
     }
 }

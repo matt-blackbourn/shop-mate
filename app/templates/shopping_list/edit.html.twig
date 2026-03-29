@@ -69,7 +69,7 @@
         {% endfor %}
     {% endfor %}
     </div>
-    
+
     <!-- BODY -->
     <div class="page-body flex-grow-1 overflow-auto px-2 pt-2">
         {{ form_start(form) }}
@@ -164,6 +164,7 @@
 
 {% include 'supermarket/_default_supermarket_modal.html.twig' %}
 {% include 'list_invite/_send_invite_modal.html.twig' %}
+{% include 'list_invite/_invite_response_modal.html.twig' %}
 
 
 <style>
@@ -480,6 +481,22 @@ document.getElementById('sendInvite').addEventListener('click', function (e) {
     modal.show();
 });
 
+// Invite response modal (auto open if token exists)
+const responseModalEl = document.getElementById('inviteResponseModal');
+if (responseModalEl) {
+    const token = responseModalEl.dataset.token;
+    if (token) {
+        // Set hidden input value
+        const tokenInput = document.getElementById('inviteToken');
+        if (tokenInput) {
+            tokenInput.value = token;
+        }
+
+        // Show modal after page load
+        const modal = new bootstrap.Modal(responseModalEl);
+        modal.show();
+    }
+}
 
 document.getElementById('add-item').addEventListener('click', () => {
     addItemToCollection();

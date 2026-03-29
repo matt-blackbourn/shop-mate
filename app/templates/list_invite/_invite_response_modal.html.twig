@@ -1,0 +1,55 @@
+{% if invite %}
+<div class="modal fade" id="inviteResponseModal" tabindex="-1" aria-hidden="true" data-token="{{ invite.token }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <form method="POST" action="/invite/response">
+                <div class="modal-header">
+                    <h5 class="modal-title">Invitation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <input type="hidden" name="token" id="inviteToken">
+
+                <div class="modal-body">
+                    <p>You’ve been invited to join {{ invite.shoppingList.owner.username }}'s shopping list.</p>
+
+                    <div class="form-check">
+                        <input 
+                            class="form-check-input" 
+                            type="checkbox" 
+                            name="make_default" 
+                            id="makeDefault"
+                            value="1"
+                        >
+                        <label class="form-check-label" for="makeDefault">
+                            Make this my default shopping list
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button 
+                        type="submit" 
+                        name="response" 
+                        value="decline" 
+                        class="btn btn-secondary"
+                    >
+                        Decline
+                    </button>
+
+                    <button 
+                        type="submit" 
+                        name="response" 
+                        value="accept" 
+                        class="btn btn-primary"
+                    >
+                        Accept
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -21,7 +21,7 @@ class ListInvite
     private ?\DateTimeImmutable $dateSent = null;
 
     #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $dateAccepted = null;
+    private ?\DateTimeImmutable $dateResponded = null;
 
     #[ORM\Column(enumType: ListInviteStatus::class)]
     private ?ListInviteStatus $status = null;
@@ -29,6 +29,9 @@ class ListInvite
     #[ORM\ManyToOne(inversedBy: 'listInvites')]
     #[ORM\JoinColumn(nullable: false)]
     private ?ShoppingList $shoppingList = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $token = null;
 
     public function getId(): ?int
     {
@@ -59,14 +62,14 @@ class ListInvite
         return $this;
     }
 
-    public function getDateAccepted(): ?\DateTimeImmutable
+    public function getDateResponded(): ?\DateTimeImmutable
     {
-        return $this->dateAccepted;
+        return $this->dateResponded;
     }
 
-    public function setDateAccepted(\DateTimeImmutable $dateAccepted): static
+    public function setDateResponded(\DateTimeImmutable $dateResponded): static
     {
-        $this->dateAccepted = $dateAccepted;
+        $this->dateResponded = $dateResponded;
 
         return $this;
     }
@@ -91,6 +94,18 @@ class ListInvite
     public function setShoppingList(?ShoppingList $shoppingList): static
     {
         $this->shoppingList = $shoppingList;
+
+        return $this;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+
+    public function setToken(string $token): static
+    {
+        $this->token = $token;
 
         return $this;
     }
