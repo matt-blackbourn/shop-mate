@@ -82,6 +82,7 @@ class ProductPlacementController extends AbstractController
         $edgeId    = $placement['edgeId'];
         $supermarket = $supermarketRepository->find($placement['supermarketId']);
         $foodItem    = $foodItemRepository->find($placement['foodItemId']);
+        
 
         $existingPlacements = $productPlacementRepository->findBy([
             'supermarket' => $supermarket,
@@ -148,6 +149,7 @@ class ProductPlacementController extends AbstractController
 
         return $this->redirectToRoute('app_shopping_list_active', [
             'supermarketId' => $placement['supermarketId'],
+            'listId' => $placement['listId'],
             'startNode' => $placement['currentNodeId'], // in case we are reodering mid-shop
         ]);
     }

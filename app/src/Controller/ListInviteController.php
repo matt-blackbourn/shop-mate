@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\ListInvite;
 use App\Entity\ListMember;
 use App\Enum\ListInviteStatus;
+use App\Enum\ListMemberRole;
 use App\Repository\ListInviteRepository;
 use App\Repository\ShoppingListRepository;
 use App\Repository\UserRepository;
@@ -68,6 +69,7 @@ final class ListInviteController extends AbstractController
             $member = new ListMember();
             $member->setUser($user);
             $member->setShoppingList($list);
+            $member->setRole(ListMemberRole::MEMBER);
             $em->persist($member);
             
             if ($makeDefault) {

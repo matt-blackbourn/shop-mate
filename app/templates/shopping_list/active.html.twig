@@ -13,6 +13,7 @@
     data-segments="{{ segments|json_encode|e('html_attr') }}"
     data-entrance-node-id="{{ supermarket.entranceNode.id }}"
     data-supermarket-id="{{ supermarket.id }}" 
+    data-list-id="{{ shoppingList.id }}" 
     data-aisle-width='{{ supermarket.aisleWidth }}'
     data-shelf-depth='{{ supermarket.shelfDepth }}'
 >
@@ -50,25 +51,25 @@
     <!-- Spacer -->
     <div class="sticky-spacer"></div>
 
-    {% if showPlacementHint is defined and showPlacementHint %}
+    {# {% if showPlacementHint is defined and showPlacementHint %}
     <div class="alert alert-dismissible fade show small" role="alert">
         Some items don’t have locations yet.
         <strong>Long-press</strong> an item or tap <strong>⋯</strong> to add one.
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    {% endif %}
+    {% endif %} #}
 
 
     <!-- Spacer -->
     <div class="sticky-spacer"></div>
 
-    {% if showPlacementHint is defined and showPlacementHint %}
+    {# {% if showPlacementHint is defined and showPlacementHint %}
     <div class="alert alert-warning alert-dismissible fade show small" role="alert">
         Some items don’t have locations yet.
         <strong>Long-press</strong> an item or tap <strong>⋯</strong> to add one.
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    {% endif %}
+    {% endif %} #}
 
     <!-- Shopping items -->
     <div class="shopping-cards" id="data" data-placement-status="{{ placementStatus|json_encode|e('html_attr') }}">
@@ -144,6 +145,7 @@
         </div>
         {% endfor %}
     </div>
+
     {# Flash messages #}
     <div class="flash-container">
     {% for label, messages in app.flashes %}
@@ -155,6 +157,7 @@
         {% endfor %}
     {% endfor %}
     </div>
+    
 </div>
 <div id="sheetBackdrop" class="sheet-backdrop"></div>
 
@@ -590,6 +593,7 @@ const shelvesData = JSON.parse(container.dataset.shelves);
 const segments = JSON.parse(container.dataset.segments);
 const entranceNodeId = container.dataset.entranceNodeId;  
 const supermarketId = container.dataset.supermarketId;  
+const listId = container.dataset.listId;  
 const placementStatuses = JSON.parse(document.getElementById('data').dataset.placementStatus);
 const otherPlacementEdgeEls = new Map(); 
 const pathEdgeEls = new Map(); 
@@ -627,6 +631,7 @@ let processingQueue = false;
 const pickQueue = [];
 const placementState = {
     supermarketId: supermarketId,
+    listId: listId,
     foodItemId: null,
     edgeId: null,
     aisleSide: null,
@@ -1889,45 +1894,6 @@ function shelfOrientation(shelf) {
     return shelf.width >= shelf.height ? 'horizontal' : 'vertical';
 }
 
-/**
-function openPlacementModal(modalElement) {
-    const modalEl = document.getElementById('mapModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
-    const foodItemId = modalElement.dataset.foodItemId;
-    const edgeId = modalElement.dataset.placementEdgeId || null;
-    const aisleSide = modalElement.dataset.placementAisleSide || null;
-
-    placementState.foodItemId = foodItemId;
-
-    // Only select placement if one exists
-    if (edgeId) {
-        preselectShelf(Number(edgeId), Number(aisleSide))
-    }
-    
-    modal.show();
-}
-*/
-/**
-function openPlacementModal(itemEl) {
-    const modalEl = document.getElementById('placementModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
-    const foodItemId = itemEl.dataset.foodItemId;
-    const edgeId = itemEl.dataset.placementEdgeId || null;
-    const aisleSide = itemEl.dataset.placementAisleSide || null;
-
-    placementState.foodItemId = foodItemId;
-
-    // Only select edge if one exists
-    if (edgeId) {
-        preselectEdge(edgeId, aisleSide)
-    }
-    
-    modal.show();
-}
-*/
-
 function openGroupingModal(modalElement) {
     const modalEl = document.getElementById('groupItemModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -1939,7 +1905,6 @@ function openGroupingModal(modalElement) {
 
     modal.show();
 }
-
 
 
 document.getElementById('mapBackBtn').addEventListener('click', () => {

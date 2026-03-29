@@ -281,6 +281,9 @@ final class ShoppingListController extends AbstractController
         $lastPicked->setPickedAt(null);
         $em->flush();
 
-        return $this->redirectToRoute('app_shopping_list_active', ['supermarketId' => $supermarketId]);
+        return $this->redirectToRoute('app_shopping_list_active', [
+            'supermarketId' => $supermarketId,
+            'listId' => $shoppingListId,
+        ]);
     }
 }
