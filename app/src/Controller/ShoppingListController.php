@@ -82,6 +82,12 @@ final class ShoppingListController extends AbstractController
         //     ];
         // }
 
+        // $invites = $inviteRepo->findBy([
+        //     'email' => $currentUser->getEmail(),
+        //     'status' => 'pending'
+        // ]);
+        // “You’ve been invited to join X’s shopping list”
+
         return $this->render('shopping_list/edit.html.twig', [
             'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),

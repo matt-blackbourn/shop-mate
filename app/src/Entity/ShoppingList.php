@@ -50,6 +50,12 @@ class ShoppingList
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'defaultList')]
     private Collection $users;
 
+    /**
+     * @var Collection<int, ListInvite>
+     */
+    #[ORM\OneToMany(targetEntity: ListInvite::class, mappedBy: 'shoppingList')]
+    private Collection $listInvites;
+
     
     public function __construct()
     {
@@ -57,6 +63,7 @@ class ShoppingList
         $this->shoppingSessions = new ArrayCollection();
         $this->listMembers = new ArrayCollection();
         $this->users = new ArrayCollection();
+        $this->listInvites = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -217,6 +224,36 @@ class ShoppingList
             // set the owning side to null (unless already changed)
             if ($user->getDefaultList() === $this) {
                 $user->setDefaultList(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListInvite>
+     */
+    public function getListInvites(): Collection
+    {
+        return $this->listInvites;
+    }
+
+    public function addListInvite(ListInvite $listInvite): static
+    {
+        if (!$this->listInvites->contains($listInvite)) {
+            $this->listInvites->add($listInvite);
+            $listInvite->setShoppingList($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListInvite(ListInvite $listInvite): static
+    {
+        if ($this->listInvites->removeElement($listInvite)) {
+            // set the owning side to null (unless already changed)
+            if ($listInvite->getShoppingList() === $this) {
+                $listInvite->setShoppingList(null);
             }
         }
 

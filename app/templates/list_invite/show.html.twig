@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}ListInvite{% endblock %}
+
+{% block body %}
+    <h1>ListInvite</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ list_invite.id }}</td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td>{{ list_invite.email }}</td>
+            </tr>
+            <tr>
+                <th>DateSent</th>
+                <td>{{ list_invite.dateSent ? list_invite.dateSent|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>DateAccepted</th>
+                <td>{{ list_invite.dateAccepted ? list_invite.dateAccepted|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td>{{ list_invite.status }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_list_invite_index') }}">back to list</a>
+
+    <a href="{{ path('app_list_invite_edit', {'id': list_invite.id}) }}">edit</a>
+
+    {{ include('list_invite/_delete_form.html.twig') }}
+{% endblock %}

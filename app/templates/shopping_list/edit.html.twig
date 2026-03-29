@@ -32,6 +32,9 @@
                         <a href="{{ path('app_walking_path_new') }}">Store Mapper</a>
                     </li>
                     <li>
+                        <a href="" id="sendInvite">Invite Someone to Your List</a>
+                    </li>
+                    <li>
                         <a href="{{ path('app_logout') }}">Logout</a>
                     </li>
                 </ul>
@@ -55,6 +58,18 @@
         </div>
     </div>
 
+    {# Flash messages #}
+    <div class="flash-container">
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible mt-2 mb-0" role="alert" data-auto-fade="{{ label == 'success' ? '1' : '0' }}">
+                {{ message|raw }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    </div>
+    
     <!-- BODY -->
     <div class="page-body flex-grow-1 overflow-auto px-2 pt-2">
         {{ form_start(form) }}
@@ -122,6 +137,8 @@
 
     </div>
 
+
+
     <!-- FOOTER -->
     <div class="page-footer">
         <div class="d-flex gap-2 p-2">
@@ -141,9 +158,12 @@
 
         </div>
     </div>
+
+
 </div>
 
 {% include 'supermarket/_default_supermarket_modal.html.twig' %}
+{% include 'list_invite/_send_invite_modal.html.twig' %}
 
 
 <style>
@@ -352,7 +372,7 @@
 
 /* Input inside control */
 #defaultSupermarketModal .ts-control input {
-        background-color: #2b303b;
+    background-color: #2b303b;
     color: #e9ecef;
     border: 1px solid #343a46;
 }
@@ -441,8 +461,22 @@ goShoppingBtn.addEventListener('click', async (e) => {
 // Default supermarket modal
 document.getElementById('defaultSupermarket').addEventListener('click', function (e) {
     e.preventDefault();
-    e.stopPropagation(); // 👈 important
+    e.stopPropagation(); 
     const modal = new bootstrap.Modal(document.getElementById('defaultSupermarketModal'));
+    modal.show();
+});
+
+// Send invite modal
+const inviteModalEl = document.getElementById('inviteUserModal');
+const inviteInput = document.getElementById('inviteEmail');
+inviteModalEl.addEventListener('shown.bs.modal', function () {
+    inviteInput.focus();
+});
+document.getElementById('sendInvite').addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const modal = new bootstrap.Modal(inviteModalEl);
     modal.show();
 });
 

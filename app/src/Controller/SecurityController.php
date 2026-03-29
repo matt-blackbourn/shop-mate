@@ -51,12 +51,6 @@ class SecurityController extends AbstractController
             $em->flush();
         }
 
-        // $invites = $inviteRepo->findBy([
-        //     'email' => $currentUser->getEmail(),
-        //     'status' => 'pending'
-        // ]);
-        // “You’ve been invited to join X’s shopping list”
-
         return $this->redirectToRoute('app_home');
     }
 

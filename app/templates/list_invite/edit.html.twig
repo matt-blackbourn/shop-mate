@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit ListInvite{% endblock %}
+
+{% block body %}
+    <h1>Edit ListInvite</h1>
+
+    {{ include('list_invite/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_list_invite_index') }}">back to list</a>
+
+    {{ include('list_invite/_delete_form.html.twig') }}
+{% endblock %}

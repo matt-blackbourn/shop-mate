@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}ListInvite index{% endblock %}
+
+{% block body %}
+    <h1>ListInvite index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Email</th>
+                <th>DateSent</th>
+                <th>DateAccepted</th>
+                <th>Status</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for list_invite in list_invites %}
+            <tr>
+                <td>{{ list_invite.id }}</td>
+                <td>{{ list_invite.email }}</td>
+                <td>{{ list_invite.dateSent ? list_invite.dateSent|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ list_invite.dateAccepted ? list_invite.dateAccepted|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ list_invite.status }}</td>
+                <td>
+                    <a href="{{ path('app_list_invite_show', {'id': list_invite.id}) }}">show</a>
+                    <a href="{{ path('app_list_invite_edit', {'id': list_invite.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_list_invite_new') }}">Create new</a>
+{% endblock %}
