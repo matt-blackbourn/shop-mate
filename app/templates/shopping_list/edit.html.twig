@@ -32,6 +32,9 @@
                         <a href="{{ path('app_walking_path_new') }}">Store Mapper</a>
                     </li>
                     <li>
+                        <a href="" id="switchList">Change List</a>
+                    </li>
+                    <li>
                         <a href="" id="sendInvite">Invite Someone to Your List</a>
                     </li>
                     <li>
@@ -163,6 +166,7 @@
 </div>
 
 {% include 'supermarket/_default_supermarket_modal.html.twig' %}
+{% include 'shopping_list/_switch_list_modal.html.twig' %}
 {% include 'list_invite/_send_invite_modal.html.twig' %}
 {% include 'list_invite/_invite_response_modal.html.twig' %}
 
@@ -347,14 +351,14 @@
 }
 
 /* Dark select box */
-#defaultSupermarketModal .form-select {
+.editPageModal .form-select {
     background-color: #1f1f1f;
     color: #f8f9fa;
     border: 1px solid #333;
 }
 
 /* Dropdown list (works in most browsers except some Safari cases) */
-#defaultSupermarketModal .form-select option {
+.editPageModal .form-select option {
     background-color: #1f1f1f;
     color: #f8f9fa;
 }
@@ -362,7 +366,7 @@
 /* ===== Scoped Tom Select (Default Supermarket Modal) ===== */
 
 /* Control (closed input) */
-#defaultSupermarketModal .ts-control {
+.editPageModal .ts-control {
     background-color: #1f1f1f;
     color: #e9ecef;
     border: 1px solid #333;
@@ -372,34 +376,34 @@
 }
 
 /* Input inside control */
-#defaultSupermarketModal .ts-control input {
+.editPageModal .ts-control input {
     background-color: #2b303b;
     color: #e9ecef;
     border: 1px solid #343a46;
 }
 
 /* Dropdown */
-#defaultSupermarketModal .ts-dropdown {
+.editPageModal .ts-dropdown {
     background-color: #1f1f1f;
     color: #e9ecef;
     border: 1px solid #333;
 }
 
 /* Options */
-#defaultSupermarketModal .ts-dropdown .option {
+.editPageModal .ts-dropdown .option {
     padding: 0.375rem 0.75rem;
 }
 
 /* Hover / active */
-#defaultSupermarketModal .ts-dropdown .active,
-#defaultSupermarketModal .ts-dropdown .active.create {
+.editPageModal .ts-dropdown .active,
+.editPageModal .ts-dropdown .active.create {
     background-color: #343a46;
     color: #e9ecef;
 }
 
 
 /* Tick alignment helper */
-#defaultSupermarketModal .ts-dropdown .option {
+.editPageModal .ts-dropdown .option {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -464,6 +468,14 @@ document.getElementById('defaultSupermarket').addEventListener('click', function
     e.preventDefault();
     e.stopPropagation(); 
     const modal = new bootstrap.Modal(document.getElementById('defaultSupermarketModal'));
+    modal.show();
+});
+
+// Default supermarket modal
+document.getElementById('switchList').addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation(); 
+    const modal = new bootstrap.Modal(document.getElementById('switchListModal'));
     modal.show();
 });
 
@@ -783,18 +795,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Init existing items
-    initFoodSelect();
-
-    // Handle Symfony collection add
-    document.addEventListener('collection:add', (e) => {
-        initFoodSelect(e.target);
-    });
-
     // select supermarket Tom select
     new TomSelect('#supermarketSelect', {
         create: false,
         allowEmptyOption: true,
+    });
+
+    // select list Tom select
+    new TomSelect('#listSelect', {
+        create: false,
+        allowEmptyOption: false,
+        render: {
+            option: function(data, escape) {
+                const isSelected = data.$option.selected;
+
+                return `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>${escape(data.text)}</span>
+                        ${isSelected ? '<span>✔</span>' : ''}
+                    </div>
+                `;
+            },
+            item: function(data, escape) {
+                return `<div>${escape(data.text)}</div>`;
+            }
+        }
     });
 
     // default supermarket TOM select
@@ -825,6 +850,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `<div>${escape(data.text)}</div>`;
             }
         }
+    });
+
+    // Handle Symfony collection add
+    initFoodSelect();
+    document.addEventListener('collection:add', (e) => {
+        initFoodSelect(e.target);
     });
 });
 

@@ -1,23 +1,24 @@
-<div class="modal fade editPageModal" id="defaultSupermarketModal" tabindex="-1" aria-hidden="true">
+{% if availableLists|length %}
+<div class="modal fade  editPageModal" id="switchListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
 
-            <form method="POST" action="/supermarket/default">
+            <form method="POST" action="/shoppinglist/switch">
                 <div class="modal-header">
-                    <h5 class="modal-title">Set Default Supermarket</h5>
+                    <h5 class="modal-title">Switch Shopping List</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
-                    <select id="defaultSelect" name="supermarket_id" class="form-select w-100">
-                        {% for supermarket in supermarkets %}
+                    <select id="listSelect" name="list_id" class="form-select w-100">
+                        {% for list in availableLists %}
                             <option 
-                                value="{{ supermarket.id }}"
-                                {% if app.user.defaultSupermarket and supermarket.id == app.user.defaultSupermarket.id %}
+                                value="{{ list.id }}"
+                                {% if app.user.defaultList and list.id == app.user.defaultList.id %}
                                     selected
                                 {% endif %}
                             >
-                                {{ supermarket.type.value }} - {{ supermarket.suburb }}
+                                {{ list.owner.username }}'s List
                             </option>
                         {% endfor %}
                     </select>
@@ -32,3 +33,4 @@
         </div>
     </div>
 </div>
+{% endif %}

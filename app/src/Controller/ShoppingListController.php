@@ -37,6 +37,7 @@ final class ShoppingListController extends AbstractController
         ListItemRepository $listItemRepository,
         SupermarketRepository $supermarketRepository,
         ShoppingList $shoppingList,
+        ShoppingListRepository $shoppingListRepository,
         ListInviteRepository $inviteRepository,
     ): Response
     {
@@ -90,6 +91,7 @@ final class ShoppingListController extends AbstractController
             'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
             'shoppingListId' => $shoppingList->getId(),
             'invite' => $invite,
+            'availableLists' => $shoppingListRepository->findForUser($this->getUser()),
         ]);
     }
 
@@ -251,7 +253,7 @@ final class ShoppingListController extends AbstractController
     }
 
     // maybe needs to go in list item controller later
-    #[Route('/shoppinglist/unpick', name: 'app_shopping_unpick', methods: ['POST'])]
+    #[Route('/unpick', name: 'app_shopping_unpick', methods: ['POST'])]
     public function unpick(
         Request $request,
         ListItemRepository $listItemRepository, 

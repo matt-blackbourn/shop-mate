@@ -186,17 +186,6 @@ textarea.form-control {
     border-radius: 4px;
 }
 
-/* =================================
-   Links
-================================= */
-a {
-    color: var(--primary-colour);
-    text-decoration: none;
-}
-
-a:hover {
-    color: var(--primary-colour);
-}
 
 /* =================================
    Modals (optional, scoped)
@@ -259,6 +248,11 @@ a:hover {
     border: none;
     text-align: left;
     cursor: pointer;
+}
+
+.dropdown-menu a{
+    text-decoration: none;
+    color: var(--secondary-colour)
 }
 
 .menu-overlay {
