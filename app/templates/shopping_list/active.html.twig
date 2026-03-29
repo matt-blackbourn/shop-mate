@@ -157,7 +157,7 @@
         {% endfor %}
     {% endfor %}
     </div>
-    
+
 </div>
 <div id="sheetBackdrop" class="sheet-backdrop"></div>
 
@@ -1902,6 +1902,7 @@ function openGroupingModal(modalElement) {
     // Set hidden fields
     document.getElementById('{{ form.foodItemId.vars.id }}').value = foodItemId;
     document.getElementById('{{ form.supermarketId.vars.id }}').value = supermarketId;
+    document.getElementById('{{ form.listId.vars.id }}').value = listId;
 
     modal.show();
 }

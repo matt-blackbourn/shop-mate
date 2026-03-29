@@ -63,12 +63,6 @@ final class ShoppingListController extends AbstractController
 
             $em->flush();
 
-            if ($request->request->get('intent') === 'go_shopping') {
-                return $this->redirectToRoute('app_shopping_list_active', [
-                    'id' => $shoppingList->getId(),
-                ]);
-            }
-
             if ($request->isXmlHttpRequest()) {
                 return new Response(null, 204);
             }

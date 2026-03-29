@@ -26,6 +26,7 @@ class FoodItemGroupPlacementType extends AbstractType
             ])
             ->add('supermarketId', HiddenType::class)
             ->add('foodItemId', HiddenType::class)
+            ->add('listId', HiddenType::class)
         ;
     }
 

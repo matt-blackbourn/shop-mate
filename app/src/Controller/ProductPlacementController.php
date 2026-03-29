@@ -28,7 +28,8 @@ class ProductPlacementController extends AbstractController
     ): Response {
         // Extract supermarketId BEFORE creating form
         $formData = $request->request->all();
-        $supermarketId = $formData['food_item_group_placement']['supermarketId'] ?? null;
+        $supermarketId = $formData['food_item_group_placement']['supermarketId'];
+        $listId = $formData['food_item_group_placement']['listId'];
         $supermarket = $supermarketRepo->find($supermarketId);
 
         if (!$supermarket) {
@@ -61,6 +62,7 @@ class ProductPlacementController extends AbstractController
         
         return $this->redirectToRoute('app_shopping_list_active', [
             'supermarketId' => $supermarket->getId(),
+            'listId' => $listId,
         ]);
     }
 
