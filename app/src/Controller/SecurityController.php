@@ -32,10 +32,9 @@ class SecurityController extends AbstractController
     #[Route('/post-login', name: 'app_post_login')]
     public function postLogin(EntityManagerInterface $em, ShoppingListRepository $shoppingListRepository): Response
     {
-        return $this->redirectToRoute('app_home');
-
+        
         $user = $this->getUser();
-
+        
         $list = $shoppingListRepository->findOneByOwner($user);
         if (!$list) {
             // first-time setup
@@ -43,16 +42,17 @@ class SecurityController extends AbstractController
             $list->setDateCreated(new \DateTimeImmutable());
             $list->setOwner($user);
             $em->persist($list);
-
+            
             $member = new ListMember();
             $member->setUser($user);
             $member->setShoppingList($list);
             $member->setRole(ListMemberRole::OWNER);
             $em->persist($member);
-
+            
             $em->flush();
         }
-
+        
+        return $this->redirectToRoute('app_home');
     }
 
     #[Route('/logout', name: 'app_logout')]

@@ -266,12 +266,18 @@ final class ShoppingListController extends AbstractController
 
         $session = $shoppingSessionRepository->findCurrentSession($shoppingListId, $supermarketId);
         if(!$session){
-            return $this->redirectToRoute('app_shopping_list_active', ['supermarketId' => $supermarketId]);
+            return $this->redirectToRoute('app_shopping_list_active', [
+                'supermarketId' => $supermarketId, 
+                'listId' => $shoppingListId,
+            ]);
         }
 
         $lastPicked = $listItemRepository->findLastPickedInSession($session);
         if(!$lastPicked){
-            return $this->redirectToRoute('app_shopping_list_active', ['supermarketId' => $supermarketId]);
+            return $this->redirectToRoute('app_shopping_list_active', [
+                'supermarketId' => $supermarketId, 
+                'listId' => $shoppingListId,
+            ]);
         }
 
         $lastPicked->setPickedAt(null);

@@ -292,6 +292,11 @@ textarea.form-control {
     transition: background 0.15s ease; /* smooth highlight */
 }
 
+/* Disabled → slightly darker "middle" feel */
+.btn-dark-base:disabled i {
+    color: #888;
+}
+
 .guide-line,
 .guide-label,
 .perimeter-path,

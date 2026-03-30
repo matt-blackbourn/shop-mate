@@ -21,14 +21,14 @@
     <div class="sticky-header">
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
-            <div class="header-left d-flex align-items-center">
-                <a href="{{ path('app_home') }}" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
+            <div class="header-left d-flex align-items-center gap-2">
+                <a href="{{ path('app_home') }}" class="btn-dark-base border-yellow">
                     <i class="bi bi-check-circle-fill"></i>
                 </a>
                 <form method="POST" action="/shoppinglist/unpick">
                     <input type="hidden" name="shoppingListId" value="{{ shoppingList.id }}">
                     <input type="hidden" name="supermarketId" value="{{ supermarket.id }}">
-                    <button type="submit" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
+                    <button type="submit" id="unpickBtn" disabled class="btn-dark-base">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
                 </form>
@@ -41,7 +41,7 @@
             </div>
 
             <div class="header-right d-flex align-items-center">
-                <a href="" id="mapButton" class="btn btn-sm d-flex align-items-center gap-1 header-btn">
+                <a href="" id="mapButton" class="btn-dark-base">
                     <i class="bi-grid-3x3"></i>
                 </a>
             </div>
@@ -196,6 +196,13 @@
 .header-btn:hover {
     background-color: rgba(77, 171, 247, 0.15);
     border-color: #4dabf7;
+}
+
+
+
+/* Enabled → highlight center with a tint */
+#unpickBtn:not(:disabled) i {
+    color: var(--route-active);
 }
 
 /* Shopping card container */
@@ -407,9 +414,6 @@
     flex-direction: column;
 }
 
-
-
-
 .flash-container {
     position: fixed;
     bottom: 1rem;
@@ -427,26 +431,6 @@
     background: #0f1115;
     overflow: hidden;  /* map will scale within container */
 }
-{# .map-overlay {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    pointer-events: none; /* clicks go through to map */
-    z-index: 10;
-
-}
-
-.overlay-card {
-    background: rgba(33, 37, 41, 0.9);
-    color: #fff;
-
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    text-align: center;
-    line-height: 1.2;
-} #}
 
 
 {# shared modal styles  #}
@@ -628,6 +612,7 @@ const currentItemState = {
 
 // other state
 let processingQueue = false;
+let pickQueueTimer = null;
 const pickQueue = [];
 const placementState = {
     supermarketId: supermarketId,
@@ -1453,6 +1438,12 @@ document.querySelector('#skip-item-map').addEventListener('click', () => {
     skipItemById(routeState.currentItem.itemId);
 });
 
+function updateUnpickButtonState() {
+    const btn = document.getElementById('unpickBtn');
+    const isBusy = pickQueue.length > 0 || pickQueueTimer !== null;
+    btn.disabled = isBusy;
+}
+
 function checkForFinishedList() {
     if(routeState.currentSegment === routeState.segments.length -1) {
         // all items picked or skipped, close modal
@@ -1503,7 +1494,7 @@ function openPlacementMenu(card) {
         case 'provisional':
             textEl.textContent = "This item has been placed by another user.";
             mapItemBtn.textContent = "Confirm Placement";
-            groupItemBtn.textContent = "Place Somewhere Else";
+            groupItemBtn.style.display = 'none';
             break;
         case 'group':
             textEl.textContent = "This is an approximate location based on similar items. Can you confirm it for us?";
@@ -1593,13 +1584,6 @@ function openPlacementMenu(card) {
     };
 }
 
-
-
-function enqueuePick(itemId) {
-    pickQueue.push(itemId);
-    processPickQueue();
-}
-
 async function processPickQueue() {
     if (processingQueue) return;
     processingQueue = true;
@@ -1629,15 +1613,33 @@ async function processPickQueue() {
     }
 
     processingQueue = false;
+    updateUnpickButtonState();
 }
+
 
 function pickItemById(itemId) {
     removeCardFromList(itemId);
-    enqueuePick(itemId);  // Add to queue for server update
+
+    pickQueue.push(itemId);
+    updateUnpickButtonState(); // Dont allow unpicking while we have pending picks to process
+    
     updateRouteState(itemId);
     updateMapView();
     highlightItemOnMap();
     rotateMap()
+
+    // Clear any existing timer
+    if (pickQueueTimer) {
+        clearTimeout(pickQueueTimer);
+    }
+
+    // Set a new timer
+    pickQueueTimer = setTimeout(() => {
+        processPickQueue();
+        pickQueueTimer = null; // optional cleanup
+    }, 1500);
+
+    updateUnpickButtonState();
 }
 
 function skipItemById(itemId) {

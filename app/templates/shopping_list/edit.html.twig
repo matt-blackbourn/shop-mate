@@ -47,7 +47,11 @@
             <div class="flex-grow-1 d-flex justify-content-center">
                 <select id="supermarketSelect" class="w-100">
                     {% for supermarket in supermarkets %}
-                        <option value="{{ supermarket.id }}">{{ supermarket.type.value }} - {{ supermarket.suburb }}</option>
+                        {% if supermarket.suburb == null%}
+                            <option value="{{ supermarket.id }}">No Supermarket</option>
+                        {% else %}
+                            <option value="{{ supermarket.id }}">{{ supermarket.type.value }} - {{ supermarket.suburb }}</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>
