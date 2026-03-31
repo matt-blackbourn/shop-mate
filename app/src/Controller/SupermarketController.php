@@ -92,7 +92,7 @@ class SupermarketController extends AbstractController
         $user->setDefaultSupermarket($supermarket);
         $em->flush();
 
-        return $this->redirectToRoute('app_home');
+        return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $request->request->get('current_list')]);
     }
 
 

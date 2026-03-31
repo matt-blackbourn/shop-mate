@@ -288,4 +288,32 @@ final class ShoppingListController extends AbstractController
             'listId' => $shoppingListId,
         ]);
     }
+
+    
+    #[Route('/default', name: 'app_shopping_list_set_default', methods: ['POST'])]
+    public function setDefault(
+        Request $request,
+        EntityManagerInterface $em,
+        ShoppingListRepository $repo,
+    ): Response {
+        $user = $this->getUser();
+        $id = $request->request->get('list_id');
+
+        $list = $repo->find($id);
+        if (!$list) {
+            throw $this->createNotFoundException();
+        }
+
+        $user->setDefaultList($list);
+        $em->flush();
+
+        return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $request->request->get('current_list')]);
+    }
+    
+    #[Route('/switch', name: 'app_shopping_list_switch', methods: ['POST'])]
+    public function switch(
+        Request $request,
+    ): Response {
+        return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $request->request->get('list_id')]);
+    }
 }

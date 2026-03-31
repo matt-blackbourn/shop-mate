@@ -22,7 +22,7 @@
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
             <div class="header-left d-flex align-items-center gap-2">
-                <a href="{{ path('app_home') }}" class="btn-dark-base border-yellow">
+                <a href="{{ path('app_home') }}" class="btn-dark-base">
                     <i class="bi bi-check-circle-fill"></i>
                 </a>
                 <form method="POST" action="/shoppinglist/unpick">
@@ -202,7 +202,7 @@
 
 /* Enabled → highlight center with a tint */
 #unpickBtn:not(:disabled) i {
-    color: var(--route-active);
+    color: var(--secondary-colour);
 }
 
 /* Shopping card container */

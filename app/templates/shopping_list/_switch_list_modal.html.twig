@@ -14,18 +14,19 @@
                         {% for list in availableLists %}
                             <option 
                                 value="{{ list.id }}"
-                                {% if app.user.defaultList and list.id == app.user.defaultList.id %}
-                                    selected
-                                {% endif %}
                             >
-                                {{ list.owner.username }}'s List
+                                {% if app.user.defaultList and list.id == app.user.defaultList.id %}
+                                    {{ list.owner.username }}'s List (default)
+                                {% else %}
+                                    {{ list.owner.username }}'s List
+                                {% endif %}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" class="btn btn-primary">Ok</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </form>

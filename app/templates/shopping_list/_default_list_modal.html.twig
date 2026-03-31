@@ -1,23 +1,25 @@
-<div class="modal fade editPageModal" id="defaultSupermarketModal" tabindex="-1" aria-hidden="true">
+{% if availableLists|length %}
+<div class="modal fade  editPageModal" id="defaultListModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
 
-            <form method="POST" action="/supermarket/default">
+            <form method="POST" action="/shoppinglist/default">
                 <div class="modal-header">
-                    <h5 class="modal-title">Set Default Supermarket</h5>
+                    <h5 class="modal-title">Set Default Shopping List</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
-                    <select id="defaultSelect" name="supermarket_id" class="form-select w-100">
-                        {% for supermarket in supermarkets %}
+                    <select id="listSelect" name="list_id" class="form-select w-100">
+                        {% for list in availableLists %}
                             <option 
-                                value="{{ supermarket.id }}"
-                                {% if app.user.defaultSupermarket and supermarket.id == app.user.defaultSupermarket.id %}
-                                    selected
-                                {% endif %}
+                                value="{{ list.id }}"
                             >
-                                {{ supermarket.type.value }} - {{ supermarket.suburb }}
+                                {% if app.user.defaultList and list.id == app.user.defaultList.id %}
+                                    {{ list.owner.username }}'s List (default)
+                                {% else %}
+                                    {{ list.owner.username }}'s List
+                                {% endif %}
                             </option>
                         {% endfor %}
                     </select>
@@ -33,3 +35,4 @@
         </div>
     </div>
 </div>
+{% endif %}
