@@ -89,7 +89,7 @@ final class ShoppingListController extends AbstractController
             'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),
             'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
-            'shoppingListId' => $shoppingList->getId(),
+            'shoppingList' => $shoppingList,
             'invite' => $invite,
             'availableLists' => $shoppingListRepository->findForUser($this->getUser()),
         ]);
