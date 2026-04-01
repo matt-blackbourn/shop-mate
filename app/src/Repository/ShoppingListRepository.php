@@ -28,16 +28,6 @@ class ShoppingListRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    public function findQuickAddListByUser($user): ?ShoppingList
-    {
-        return $this->createQueryBuilder('s')
-            ->andWhere('s.user = :user')
-            ->andWhere('s.quickAddList = true')
-            ->setParameter('user', $user)
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
 
     public function findForUser(User $user): array
     {

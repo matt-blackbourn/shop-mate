@@ -16,9 +16,9 @@
                                 value="{{ list.id }}"
                             >
                                 {% if app.user.defaultList and list.id == app.user.defaultList.id %}
-                                    {{ list.owner.username }}'s List (default)
+                                    {{ list.name }} (default)
                                 {% else %}
-                                    {{ list.owner.username }}'s List
+                                    {% if list.type.value == 'recipe' %}Recipe: {% endif %}{{ list.name }}
                                 {% endif %}
                             </option>
                         {% endfor %}

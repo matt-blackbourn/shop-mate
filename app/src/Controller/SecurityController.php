@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\ListMember;
 use App\Entity\ShoppingList;
 use App\Enum\ListMemberRole;
+use App\Enum\ListType;
 use App\Repository\ShoppingListRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,7 +33,6 @@ class SecurityController extends AbstractController
     #[Route('/post-login', name: 'app_post_login')]
     public function postLogin(EntityManagerInterface $em, ShoppingListRepository $shoppingListRepository): Response
     {
-        
         $user = $this->getUser();
         
         $list = $shoppingListRepository->findOneByOwner($user);
@@ -41,6 +41,8 @@ class SecurityController extends AbstractController
             $list = new ShoppingList();
             $list->setDateCreated(new \DateTimeImmutable());
             $list->setOwner($user);
+            $list->setType(ListType::NORMAL);
+            $list->setName($user->getUsername() . "'s List");
             $em->persist($list);
             
             $member = new ListMember();

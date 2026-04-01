@@ -12,15 +12,17 @@
                 <div class="modal-body">
                     <select id="listSelect" name="list_id" class="form-select w-100">
                         {% for list in availableLists %}
-                            <option 
-                                value="{{ list.id }}"
-                            >
-                                {% if app.user.defaultList and list.id == app.user.defaultList.id %}
-                                    {{ list.owner.username }}'s List (default)
-                                {% else %}
-                                    {{ list.owner.username }}'s List
-                                {% endif %}
-                            </option>
+                            {% if list.type.value == 'normal'%}
+                                <option 
+                                    value="{{ list.id }}"
+                                >
+                                    {% if app.user.defaultList and list.id == app.user.defaultList.id %}
+                                        {{ list.name }} (default)
+                                    {% else %}
+                                        {{ list.name }}
+                                    {% endif %}
+                                </option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                     <input type="hidden" name="current_list" value="{{ shoppingList.id }}">

@@ -2,9 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\ListMember;
 use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
 use App\Entity\ShoppingSession;
+use App\Enum\ListMemberRole;
+use App\Enum\ListType;
 use App\Enum\PlacementType;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
@@ -84,7 +87,7 @@ final class ShoppingListController extends AbstractController
             'status' => 'pending'
         ]);
         $invite = count($invites) > 0 ? $invites[0] : null;
-
+        
         return $this->render('shopping_list/edit.html.twig', [
             'quickAddItems' => $quickAddItems,
             'form' => $form->createView(),
@@ -308,6 +311,40 @@ final class ShoppingListController extends AbstractController
         $em->flush();
 
         return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $request->request->get('current_list')]);
+    }
+    
+    #[Route('/add-recipe', name: 'app_shopping_list_add_recipe', methods: ['POST'])]
+    public function addRecipe(
+        Request $request,
+        EntityManagerInterface $em,
+        ShoppingListRepository $repo,
+    ): Response {
+        $user = $this->getUser();
+        $recipeName = $request->request->get('name');
+
+        $list = $repo->findOneBy(['name' => $recipeName, 'owner' => $user]);
+        if ($list) {
+            throw $this->createNotFoundException(); // this will do, avoid duplicates
+        }
+
+        $list = new ShoppingList();
+        $list->setDateCreated(new \DateTimeImmutable());
+        $list->setOwner($user);
+        $list->setName($recipeName);
+        $list->setType(ListType::RECIPE);
+        $em->persist($list);
+        
+        $member = new ListMember();
+        $member->setUser($user);
+        $member->setShoppingList($list);
+        $member->setRole(ListMemberRole::OWNER);
+        $em->persist($member);
+        
+        $em->flush();
+
+        $this->addFlash('success', "{$recipeName} created - add items and save to quick-add them to your shopping list");
+
+        return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $list->getId()]);
     }
     
     #[Route('/switch', name: 'app_shopping_list_switch', methods: ['POST'])]

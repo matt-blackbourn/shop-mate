@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\ListType;
 use App\Repository\ShoppingListRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -55,6 +56,12 @@ class ShoppingList
      */
     #[ORM\OneToMany(targetEntity: ListInvite::class, mappedBy: 'shoppingList')]
     private Collection $listInvites;
+
+    #[ORM\Column(nullable: true, enumType: ListType::class)]
+    private ?ListType $type = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $name = null;
 
     
     public function __construct()
@@ -256,6 +263,30 @@ class ShoppingList
                 $listInvite->setShoppingList(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getType(): ?ListType
+    {
+        return $this->type;
+    }
+
+    public function setType(?ListType $type): static
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(?string $name): static
+    {
+        $this->name = $name;
 
         return $this;
     }
