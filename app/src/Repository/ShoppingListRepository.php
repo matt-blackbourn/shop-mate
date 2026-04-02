@@ -40,13 +40,13 @@ class ShoppingListRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findRecipesByUser(User $user): array
+    public function findItemGroupsByUser(User $user): array
     {
         return $this->createQueryBuilder('sl')
             ->innerJoin('sl.listMembers', 'lm')
             ->where('lm.user = :user')
             ->andWhere('sl.type = :type')
-            ->setParameter('type', ListType::RECIPE->value)
+            ->setParameter('type', ListType::ITEM_GROUP->value)
             ->setParameter('user', $user)
             ->getQuery()
             ->getResult();

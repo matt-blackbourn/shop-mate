@@ -17,23 +17,23 @@
                 </button>
                 <ul class="dropdown-menu">
                     <li>
-                        <a href="" id="addRecipe" class="dropdown-item">Add Recipe</a>
+                        <a href="" id="addItemGroup" class="dropdown-item">Add Item Group</a>
                     </li>
                     <li>
-                        <a href="" id="defaultSupermarket">Set Default Supermarket</a>
+                        <a href="" id="defaultSupermarket" class="dropdown-item">Set Default Supermarket</a>
                     </li>
                     <li class="desktop-only">
-                        <a href="{{ path('app_supermarket_index') }}">Supermarkets</a>
+                        <a href="{{ path('app_supermarket_index') }}" class="dropdown-item">Supermarkets</a>
                     </li>
                     <li class="desktop-only">
-                        <a href="{{ path('app_walking_path_index') }}">Path Data</a>
+                        <a href="{{ path('app_walking_path_index') }}" class="dropdown-item">Path Data</a>
                     </li>
                     <li>
-                        <a href="{{ path('app_walking_path_new') }}">Store Mapper</a>
+                        <a href="{{ path('app_walking_path_new') }}" class="dropdown-item">Store Mapper</a>
                     </li>
                  
                     <li>
-                        <a href="{{ path('app_logout') }}">Logout</a>
+                        <a href="{{ path('app_logout') }}" class="dropdown-item">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -48,7 +48,7 @@
 
                     <ul class="dropdown-menu">
                         <li>
-                            <a href="" id="switchList" class="dropdown-item">Switch Lists</a>
+                            <a href="" id="switchList" class="dropdown-item">Other Lists</a>
                         </li>
                      
                         <li>
@@ -155,19 +155,17 @@
 
     </div>
 
-
-
     <!-- FOOTER -->
     <div class="page-footer">
         <div class="d-flex gap-2 p-2">
            <div class="btn-group">
-                <button type="button" id="recipeButton" data-recipes="{{ recipes|json_encode|e('html_attr') }}"class="btn-dark-base" data-bs-toggle="dropdown">
+                <button type="button" id="itemGroupButton" data-item-groups="{{ itemGroups|json_encode|e('html_attr') }}"class="btn-dark-base" data-bs-toggle="dropdown">
                     <i class="bi bi-stack"></i>
                 </button>
                 <ul class="dropdown-menu">
-                    {% for id, recipe in recipes %}
+                    {% for id, group in itemGroups %}
                     <li>
-                        <a href="" id="{{ id }}" class="dropdown-item">{{ recipe.name }}</a>
+                        <a href="" id="{{ id }}" class="dropdown-item item-group">{{ group.name }}</a>
                     </li>
                     {% endfor %}
                 </ul>
@@ -196,7 +194,7 @@
 {% include 'supermarket/_select_supermarket_modal.html.twig' %}
 {% include 'shopping_list/_switch_list_modal.html.twig' %}
 {% include 'shopping_list/_default_list_modal.html.twig' %}
-{% include 'shopping_list/_add_recipe_modal.html.twig' %}
+{% include 'shopping_list/_add_item_group_modal.html.twig' %}
 {% include 'list_invite/_send_invite_modal.html.twig' %}
 {% include 'list_invite/_invite_response_modal.html.twig' %}
 
@@ -439,7 +437,18 @@
     align-items: center;
 }
 
-
+.just-added-1{
+    border: 2px solid var(--secondary-colour);
+}
+.just-added-2{
+    border: 2px solid var(--route-active);
+}
+.just-added-3{
+    border: 2px solid var(--danger-colour);
+}
+.just-added-4{
+    border: 2px solid var(--primary-colour);
+}
 
 </style>
 
@@ -453,18 +462,72 @@ const form = document.querySelector('form');
 const saveButton = document.getElementById('save-list');
 const refreshButton = document.getElementById('refresh-page');
 const trolleyButton = document.getElementById('trolleyButton');
-const recipeButton = document.getElementById('recipeButton');
+const itemGroupButton = document.getElementById('itemGroupButton');
+const itemGroupData = JSON.parse(itemGroupButton.dataset.itemGroups)
 const listId = trolleyButton.dataset.shoppingListId
 const listType = trolleyButton.dataset.shoppingListType
-if(listType === 'recipe'){
+if(listType === 'group'){
     trolleyButton.parentElement.classList.add('d-none');
-    recipeButton.parentElement.classList.add('d-none');
+    itemGroupButton.parentElement.classList.add('d-none');
 }
+
+if(Array.isArray(itemGroupData)){
+    itemGroupButton.parentElement.classList.add('d-none');
+}
+
+let justAddedCount = 1;
+document.querySelectorAll('.item-group').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const items = itemGroupData[this.id]?.items || [];
+        if (!items.length) {
+            alert('No quick-add items available.');
+            return;
+        }
+
+        items.forEach((item, i)=> {
+            const card = addItemToCollection({
+                foodId: item.foodId,
+                foodLabel: item.label,
+                notes: item.notes,
+                quantity: item.quantity
+            });
+
+            if (card) {
+                card.classList.add(`just-added-${justAddedCount}`);
+            }
+
+            if (i === items.length - 1) {
+                setTimeout(() => {
+                    const lastCard = container.querySelector('.list-item');
+
+                    if (!lastCard) return;
+
+                    // Collapse card
+                    lastCard.classList.remove('expanded');
+                    lastCard.classList.add('collapsed');
+
+                    updateItemLabel(lastCard);
+
+                    // Close Tom Select
+                    const select = lastCard.querySelector('select');
+                    if (select?.tomselect) {
+                        select.tomselect.close();
+                        select.tomselect.blur();
+                    }
+                }, 0);
+            }
+        });
+
+        markDirty();
+        justAddedCount = (justAddedCount % 4) + 1;
+        document.querySelector('.menu-close')?.click();
+    });
+});
 
 updateActionButtons();
 
 const shoppingForm = document.querySelector('form[name="shopping_list"]');
-
 const goShoppingBtn = document.getElementById('goShoppingButton');
 goShoppingBtn.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -524,10 +587,10 @@ document.getElementById('trolleyButton').addEventListener('click', function (e) 
     const modal = new bootstrap.Modal(document.getElementById('selectSupermarketModal'));
     modal.show();
 });
-document.getElementById('addRecipe').addEventListener('click', function (e) {
+document.getElementById('addItemGroup').addEventListener('click', function (e) {
     e.preventDefault();
     e.stopPropagation(); 
-    const modal = new bootstrap.Modal(document.getElementById('createRecipeModal'));
+    const modal = new bootstrap.Modal(document.getElementById('createItemGroupModal'));
     modal.show();
 });
 
@@ -565,50 +628,6 @@ if (responseModalEl) {
 document.getElementById('add-item').addEventListener('click', () => {
     addItemToCollection();
 });
-{# 
-const quickAddItemsBtn = document.getElementById('quickAddItems');
-document.getElementById('quickAddItems').addEventListener('click', () => {
-    const items = JSON.parse(quickAddItemsBtn.dataset.quickAddItems || '[]');
-    if (!items.length) {
-        alert('No quick-add items available.');
-        return;
-    }
-
-    items.forEach((item, i)=> {
-        const card = addItemToCollection({
-            foodId: item.foodId,
-            foodLabel: item.label,
-            notes: item.notes,
-            quantity: item.quantity
-        });
-
-        if (card) {
-            card.classList.add('just-added');
-        }
-
-        if (i === items.length - 1) {
-            setTimeout(() => {
-                const lastCard = container.querySelector('.list-item');
-
-                if (!lastCard) return;
-
-                // Collapse card
-                lastCard.classList.remove('expanded');
-                lastCard.classList.add('collapsed');
-
-                // Close Tom Select
-                const select = lastCard.querySelector('select');
-                if (select?.tomselect) {
-                    select.tomselect.close();
-                    select.tomselect.blur();
-                }
-            }, 0);
-        }
-    });
-
-    markDirty();
-    document.querySelector('.menu-close')?.click();
-}); #}
 
 
 function addItemToCollection({

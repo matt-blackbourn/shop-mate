@@ -5,7 +5,7 @@ namespace App\Enum;
 enum ListType: string
 {
     case NORMAL = 'normal'; 
-    case RECIPE = 'recipe';  
+    case ITEM_GROUP = 'group';  
 }
 
 

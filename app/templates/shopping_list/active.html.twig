@@ -1936,5 +1936,52 @@ function clearSelection() {
 }
 
 
+// Reordering items efficiently
+// Last known order from backend
+{# let originalOrder = [12, 5, 9, 21, 3];
+
+// Live UI state
+let currentOrder  = [12, 5, 9, 21, 3];
+
+function moveItem(currentOrder, fromIndex, toIndex) {
+  const item = currentOrder.splice(fromIndex, 1)[0];
+  currentOrder.splice(toIndex, 0, item);
+}
+
+function getMovedItems(original, current) {
+  const moved = [];
+
+  current.forEach((id, newIndex) => {
+    const oldIndex = original.indexOf(id);
+    if (oldIndex !== newIndex) {
+      moved.push(id);
+    }
+  });
+
+  return moved;
+}
+
+function buildMovePayload(current, movedIds) {
+  return movedIds.map(id => {
+    const index = current.indexOf(id);
+    return {
+      movedItemId: id,
+      beforeId: current[index - 1] ?? null,
+      afterId: current[index + 1] ?? null
+    };
+  });
+}
+
+const movedIds = getMovedItems(originalOrder, currentOrder);
+
+if (movedIds.length > 0) {
+  const payload = buildMovePayload(currentOrder, movedIds);
+  sendToBackend(payload);
+
+  // Reset baseline after sync
+  originalOrder = [...currentOrder];
+} #}
+
+
 </script>
 {% endblock %}

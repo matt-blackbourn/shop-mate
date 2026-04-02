@@ -72,11 +72,11 @@ final class ShoppingListController extends AbstractController
             }
         }
 
-        $recipes = [];
-        foreach($shoppingListRepository->findRecipesByUser($this->getUser()) as $recipe) {
-            foreach($recipe->getListItems() as $item){
-                $recipes[$recipe->getId()]['name'] = $recipe->getName();
-                $recipes[$recipe->getId()]['items'][] = [
+        $itemGroups = [];
+        foreach($shoppingListRepository->findItemGroupsByUser($this->getUser()) as $group) {
+            foreach($group->getListItems() as $item){
+                $itemGroups[$group->getId()]['name'] = $group->getName();
+                $itemGroups[$group->getId()]['items'][] = [
                     'foodId' => $item->getFoodItem()->getId(),
                     'label' => $item->getFoodItem()->getName(),
                     'quantity' => $item->getQuantity(),
@@ -92,7 +92,7 @@ final class ShoppingListController extends AbstractController
         $invite = count($invites) > 0 ? $invites[0] : null;
         
         return $this->render('shopping_list/edit.html.twig', [
-            'recipes' => $recipes,
+            'itemGroups' => $itemGroups,
             'form' => $form->createView(),
             'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
             'shoppingList' => $shoppingList,
@@ -316,16 +316,16 @@ final class ShoppingListController extends AbstractController
         return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $request->request->get('current_list')]);
     }
     
-    #[Route('/add-recipe', name: 'app_shopping_list_add_recipe', methods: ['POST'])]
-    public function addRecipe(
+    #[Route('/add-group', name: 'app_shopping_list_item_group', methods: ['POST'])]
+    public function addItemGroup(
         Request $request,
         EntityManagerInterface $em,
         ShoppingListRepository $repo,
     ): Response {
         $user = $this->getUser();
-        $recipeName = $request->request->get('name');
+        $groupName = $request->request->get('name');
 
-        $list = $repo->findOneBy(['name' => $recipeName, 'owner' => $user]);
+        $list = $repo->findOneBy(['name' => $groupName, 'owner' => $user]);
         if ($list) {
             throw $this->createNotFoundException(); // this will do, avoid duplicates
         }
@@ -333,8 +333,8 @@ final class ShoppingListController extends AbstractController
         $list = new ShoppingList();
         $list->setDateCreated(new \DateTimeImmutable());
         $list->setOwner($user);
-        $list->setName($recipeName);
-        $list->setType(ListType::RECIPE);
+        $list->setName($groupName);
+        $list->setType(ListType::ITEM_GROUP);
         $em->persist($list);
         
         $member = new ListMember();
@@ -345,7 +345,7 @@ final class ShoppingListController extends AbstractController
         
         $em->flush();
 
-        $this->addFlash('success', "{$recipeName} created - add items and save to quick-add them to your shopping list");
+        $this->addFlash('success', "{$groupName} created - add items and save to quick-add them to your shopping list");
 
         return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $list->getId()]);
     }
