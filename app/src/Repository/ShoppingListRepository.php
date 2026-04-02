@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\ShoppingList;
 use App\Entity\User;
+use App\Enum\ListType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -39,4 +40,15 @@ class ShoppingListRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function findRecipesByUser(User $user): array
+    {
+        return $this->createQueryBuilder('sl')
+            ->innerJoin('sl.listMembers', 'lm')
+            ->where('lm.user = :user')
+            ->andWhere('sl.type = :type')
+            ->setParameter('type', ListType::RECIPE->value)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+    }
 }

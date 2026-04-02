@@ -17,7 +17,7 @@
                 </button>
                 <ul class="dropdown-menu">
                     <li>
-                        <a href="" id="quickAddItems" data-quick-add-items="{{ quickAddItems|json_encode|e('html_attr') }}">Quick-add Items</a>
+                        <a href="" id="addRecipe" class="dropdown-item">Add Recipe</a>
                     </li>
                     <li>
                         <a href="" id="defaultSupermarket">Set Default Supermarket</a>
@@ -50,9 +50,7 @@
                         <li>
                             <a href="" id="switchList" class="dropdown-item">Switch Lists</a>
                         </li>
-                        <li>
-                            <a href="" id="addRecipe" class="dropdown-item">Add Recipe</a>
-                        </li>
+                     
                         <li>
                             <a href="" id="defaultList" class="dropdown-item">Set Default List</a>
                         </li>
@@ -65,7 +63,13 @@
 
             <!-- Right -->
             <div class="d-flex align-items-center">
-                <a href="" id="trolleyButton" class="btn-dark-base border-green">
+                <a 
+                    href="" 
+                    id="trolleyButton" 
+                    class="btn-dark-base border-green"
+                    data-shopping-list-id="{{ shoppingList.id }}"
+                    data-shopping-list-type="{{ shoppingList.type.value }}"
+                >
                     <i class="bi bi-cart-fill"></i>
                 </a>
             </div>
@@ -156,6 +160,18 @@
     <!-- FOOTER -->
     <div class="page-footer">
         <div class="d-flex gap-2 p-2">
+           <div class="btn-group">
+                <button type="button" id="recipeButton" data-recipes="{{ recipes|json_encode|e('html_attr') }}"class="btn-dark-base" data-bs-toggle="dropdown">
+                    <i class="bi bi-stack"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    {% for id, recipe in recipes %}
+                    <li>
+                        <a href="" id="{{ id }}" class="dropdown-item">{{ recipe.name }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
 
             <button type="button" id="add-item" class="flex-grow-1 btn-dark-base border-green">
                 <i class="bi bi-plus"></i>
@@ -436,6 +452,14 @@ let activeFoodSelect = null;
 const form = document.querySelector('form');
 const saveButton = document.getElementById('save-list');
 const refreshButton = document.getElementById('refresh-page');
+const trolleyButton = document.getElementById('trolleyButton');
+const recipeButton = document.getElementById('recipeButton');
+const listId = trolleyButton.dataset.shoppingListId
+const listType = trolleyButton.dataset.shoppingListType
+if(listType === 'recipe'){
+    trolleyButton.parentElement.classList.add('d-none');
+    recipeButton.parentElement.classList.add('d-none');
+}
 
 updateActionButtons();
 
@@ -465,7 +489,6 @@ goShoppingBtn.addEventListener('click', async (e) => {
             return;
         }
 
-        const listId = goShoppingBtn.dataset.shoppingListId
 
         // 2️⃣ Redirect to the active page
         window.location.href = `/shoppinglist/active/${listId}/${supermarketId}/true`;
@@ -542,7 +565,7 @@ if (responseModalEl) {
 document.getElementById('add-item').addEventListener('click', () => {
     addItemToCollection();
 });
-
+{# 
 const quickAddItemsBtn = document.getElementById('quickAddItems');
 document.getElementById('quickAddItems').addEventListener('click', () => {
     const items = JSON.parse(quickAddItemsBtn.dataset.quickAddItems || '[]');
@@ -585,7 +608,7 @@ document.getElementById('quickAddItems').addEventListener('click', () => {
 
     markDirty();
     document.querySelector('.menu-close')?.click();
-});
+}); #}
 
 
 function addItemToCollection({
@@ -886,6 +909,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('collection:add', (e) => {
         initFoodSelect(e.target);
     });
+
+
 });
 
 // Any change marks the form dirty

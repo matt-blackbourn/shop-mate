@@ -72,15 +72,18 @@ final class ShoppingListController extends AbstractController
             }
         }
 
-        $quickAddItems = [];
-        // foreach($shoppingListRepository->findQuickAddListByUser($this->getUser())->getListItems() ?? [] as $item) {
-        //     $quickAddItems[] = [
-        //         'foodId' => $item->getFoodItem()->getId(),
-        //         'label' => $item->getFoodItem()->getName(),
-        //         'quantity' => $item->getQuantity(),
-        //         'notes' => $item->getNotes(),
-        //     ];
-        // }
+        $recipes = [];
+        foreach($shoppingListRepository->findRecipesByUser($this->getUser()) as $recipe) {
+            foreach($recipe->getListItems() as $item){
+                $recipes[$recipe->getId()]['name'] = $recipe->getName();
+                $recipes[$recipe->getId()]['items'][] = [
+                    'foodId' => $item->getFoodItem()->getId(),
+                    'label' => $item->getFoodItem()->getName(),
+                    'quantity' => $item->getQuantity(),
+                    'notes' => $item->getNotes(),
+                ];
+            }
+        }
 
         $invites = $inviteRepository->findBy([
             'email' => $this->getUser()->getEmail(),
@@ -89,7 +92,7 @@ final class ShoppingListController extends AbstractController
         $invite = count($invites) > 0 ? $invites[0] : null;
         
         return $this->render('shopping_list/edit.html.twig', [
-            'quickAddItems' => $quickAddItems,
+            'recipes' => $recipes,
             'form' => $form->createView(),
             'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
             'shoppingList' => $shoppingList,
