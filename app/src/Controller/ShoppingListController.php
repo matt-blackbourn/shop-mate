@@ -6,9 +6,11 @@ use App\Entity\ListMember;
 use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
 use App\Entity\ShoppingSession;
+use App\Entity\Supermarket;
 use App\Enum\ListMemberRole;
 use App\Enum\ListType;
 use App\Enum\PlacementType;
+use App\Enum\SupermarketType;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
@@ -90,11 +92,21 @@ final class ShoppingListController extends AbstractController
             'status' => 'pending'
         ]);
         $invite = count($invites) > 0 ? $invites[0] : null;
+
+        $supermarkets = $supermarketRepository->findActiveMappedSupermarkets($this->getUser());
+        $noSupermaketOption = new Supermarket();
+        $noSupermaketOption->setType(SupermarketType::NONE);
+
+        if($this->getUser()->getDefaultSupermarket()){
+            array_splice($supermarkets, 1, 0, [$noSupermaketOption]);
+        } else {
+            array_unshift($supermarkets, $noSupermaketOption);
+        }
         
         return $this->render('shopping_list/edit.html.twig', [
             'itemGroups' => $itemGroups,
             'form' => $form->createView(),
-            'supermarkets' => $supermarketRepository->findActiveMappedSupermarkets($this->getUser()),
+            'supermarkets' => $supermarkets,
             'shoppingList' => $shoppingList,
             'invite' => $invite,
             'availableLists' => $shoppingListRepository->findForUser($this->getUser()),

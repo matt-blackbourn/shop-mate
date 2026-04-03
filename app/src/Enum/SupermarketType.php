@@ -13,6 +13,7 @@ enum SupermarketType: string
     case SUPER_VALUE = 'Super Value'; 
     case RAEWARD = 'Raeward Fresh';
     case ON_THE_SPOT = 'On The Spot';
+    case NONE = 'none';
 }
 
 

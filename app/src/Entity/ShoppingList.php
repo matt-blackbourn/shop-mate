@@ -63,6 +63,12 @@ class ShoppingList
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $name = null;
 
+    /**
+     * @var Collection<int, ListFoodOrder>
+     */
+    #[ORM\OneToMany(targetEntity: ListFoodOrder::class, mappedBy: 'list')]
+    private Collection $listFoodOrders;
+
     
     public function __construct()
     {
@@ -71,6 +77,7 @@ class ShoppingList
         $this->listMembers = new ArrayCollection();
         $this->users = new ArrayCollection();
         $this->listInvites = new ArrayCollection();
+        $this->listFoodOrders = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -287,6 +294,36 @@ class ShoppingList
     public function setName(?string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListFoodOrder>
+     */
+    public function getListFoodOrders(): Collection
+    {
+        return $this->listFoodOrders;
+    }
+
+    public function addListFoodOrder(ListFoodOrder $listFoodOrder): static
+    {
+        if (!$this->listFoodOrders->contains($listFoodOrder)) {
+            $this->listFoodOrders->add($listFoodOrder);
+            $listFoodOrder->setList($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListFoodOrder(ListFoodOrder $listFoodOrder): static
+    {
+        if ($this->listFoodOrders->removeElement($listFoodOrder)) {
+            // set the owning side to null (unless already changed)
+            if ($listFoodOrder->getList() === $this) {
+                $listFoodOrder->setList(null);
+            }
+        }
 
         return $this;
     }

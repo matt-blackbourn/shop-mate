@@ -34,10 +34,17 @@ class FoodItem
     #[ORM\ManyToOne(inversedBy: 'foodItems')]
     private ?User $user = null;
 
+    /**
+     * @var Collection<int, ListFoodOrder>
+     */
+    #[ORM\OneToMany(targetEntity: ListFoodOrder::class, mappedBy: 'foodItem')]
+    private Collection $listFoodOrders;
+
     public function __construct()
     {
         $this->listItems = new ArrayCollection();
         $this->productPlacements = new ArrayCollection();
+        $this->listFoodOrders = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -127,6 +134,36 @@ class FoodItem
     public function setUser(?User $user): static
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListFoodOrder>
+     */
+    public function getListFoodOrders(): Collection
+    {
+        return $this->listFoodOrders;
+    }
+
+    public function addListFoodOrders(ListFoodOrder $listFoodOrders): static
+    {
+        if (!$this->listFoodOrders->contains($listFoodOrders)) {
+            $this->listFoodOrders->add($listFoodOrders);
+            $listFoodOrders->setFoodItem($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListFoodOrders(ListFoodOrder $listFoodOrders): static
+    {
+        if ($this->listFoodOrders->removeElement($listFoodOrders)) {
+            // set the owning side to null (unless already changed)
+            if ($listFoodOrders->getFoodItem() === $this) {
+                $listFoodOrders->setFoodItem(null);
+            }
+        }
 
         return $this;
     }

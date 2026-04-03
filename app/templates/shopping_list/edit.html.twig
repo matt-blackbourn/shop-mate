@@ -17,7 +17,7 @@
                 </button>
                 <ul class="dropdown-menu">
                     <li>
-                        <a href="" id="addItemGroup" class="dropdown-item">Add Item Group</a>
+                        <a href="" id="addItemGroup" class="dropdown-item">Add Collection</a>
                     </li>
                     <li>
                         <a href="" id="defaultSupermarket" class="dropdown-item">Set Default Supermarket</a>
@@ -48,7 +48,7 @@
 
                     <ul class="dropdown-menu">
                         <li>
-                            <a href="" id="switchList" class="dropdown-item">Other Lists</a>
+                            <a href="" id="switchList" class="dropdown-item">Change List</a>
                         </li>
                      
                         <li>
@@ -545,15 +545,7 @@ goShoppingBtn.addEventListener('click', async (e) => {
             return;
         }
 
-         // 1️⃣ Get the selected supermarket
         const supermarketId = supermarketSelect.value;
-        if (!supermarketId) {
-            alert('Please select a supermarket first.');
-            return;
-        }
-
-
-        // 2️⃣ Redirect to the active page
         window.location.href = `/shoppinglist/active/${listId}/${supermarketId}/true`;
 
     } catch (err) {
