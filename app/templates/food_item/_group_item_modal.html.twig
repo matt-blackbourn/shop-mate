@@ -1,4 +1,5 @@
 
+{% if form %}
 <div class="modal fade" id="groupItemModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -37,7 +38,6 @@
         </div>
     </div>
 </div>
-
 
 <style>
 
@@ -156,3 +156,5 @@ document.getElementById('groupItemModal').addEventListener('shown.bs.modal', fun
 });
 
 </script>
+
+{% endif %}

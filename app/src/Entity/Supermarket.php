@@ -104,6 +104,11 @@ class Supermarket
         return $this->id;
     }
 
+    public function setId($id): static
+    {
+        $this->id = $id;
+        return $this;
+    }
 
     /**
      * @return Collection<int, Edge>

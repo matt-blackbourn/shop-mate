@@ -11,11 +11,12 @@
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-shelves="{{ shelves|json_encode|e('html_attr') }}"
     data-segments="{{ segments|json_encode|e('html_attr') }}"
-    data-entrance-node-id="{{ supermarket.entranceNode.id }}"
-    data-supermarket-id="{{ supermarket.id }}" 
     data-list-id="{{ shoppingList.id }}" 
-    data-aisle-width='{{ supermarket.aisleWidth }}'
-    data-shelf-depth='{{ supermarket.shelfDepth }}'
+    data-entrance-node-id="{{ supermarket and supermarket.entranceNode ? supermarket.entranceNode.id : '' }}"
+    data-supermarket-id="{{ supermarket ? supermarket.id : '' }}"
+    data-aisle-width="{{ supermarket ? supermarket.aisleWidth : '' }}"
+    data-shelf-depth="{{ supermarket ? supermarket.shelfDepth : '' }}"
+    data-has-supermarket="{{ supermarket ? '1' : '0' }}"
 >
 
     <div class="sticky-header">
@@ -27,7 +28,7 @@
                 </a>
                 <form method="POST" action="/shoppinglist/unpick">
                     <input type="hidden" name="shoppingListId" value="{{ shoppingList.id }}">
-                    <input type="hidden" name="supermarketId" value="{{ supermarket.id }}">
+                    <input type="hidden" name="supermarketId" value="{{ supermarket ? supermarket.id : '' }}">
                     <button type="submit" id="unpickBtn" disabled class="btn-dark-base">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
@@ -36,7 +37,11 @@
 
             <div class="header-center flex-grow-1 d-flex justify-content-center">
                 <h6>
+                {% if supermarket %}
                     {{ supermarket.type.value }} - {{ supermarket.suburb }}
+                {% else %}
+                    No Supermarket Selected
+                {% endif %}
                 </h6>
             </div>
 
@@ -585,6 +590,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const shelfEls = []; // keep refs + geometry
 const mapSvg = document.getElementById("map-svg");
 const AISLE_WIDTH = container.dataset.aisleWidth
+const hasSupermarket = container.dataset.hasSupermarket === '1';
 
 const MAP_MODE_PATH = 'path';
 const MAP_MODE_PLACEMENT = 'placement';
@@ -1897,6 +1903,8 @@ function shelfOrientation(shelf) {
 }
 
 function openGroupingModal(modalElement) {
+    if(!hasSupermarket) return;
+
     const modalEl = document.getElementById('groupItemModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     const foodItemId = modalElement.dataset.foodItemId;

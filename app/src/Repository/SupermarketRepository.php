@@ -42,4 +42,15 @@ class SupermarketRepository extends ServiceEntityRepository
 
             ->getQuery()->getResult();
     }
+
+    public function findWithMostPlacements(): ?Supermarket
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.productPlacements', 'pp') // assumes relation exists
+            ->groupBy('s.id')
+            ->orderBy('COUNT(pp.id)', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

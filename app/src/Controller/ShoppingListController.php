@@ -95,6 +95,7 @@ final class ShoppingListController extends AbstractController
 
         $supermarkets = $supermarketRepository->findActiveMappedSupermarkets($this->getUser());
         $noSupermaketOption = new Supermarket();
+        $noSupermaketOption->setId(0);
         $noSupermaketOption->setType(SupermarketType::NONE);
 
         if($this->getUser()->getDefaultSupermarket()){
@@ -112,7 +113,6 @@ final class ShoppingListController extends AbstractController
             'availableLists' => $shoppingListRepository->findForUser($this->getUser()),
         ]);
     }
-
 
     #[Route('/active/{listId}/{supermarketId}/{showModal}', name: 'app_shopping_list_active', methods: ['GET'], defaults: ['showModal' => false])]
     public function activeList(
@@ -132,7 +132,29 @@ final class ShoppingListController extends AbstractController
         bool $showModal,
     ): Response {
         $shoppingList = $shoppingListRepository->find($listId);
-        $supermarket = $supermarketRepository->find($supermarketId);
+        $supermarket = $supermarketId ? $supermarketRepository->find($supermarketId) : null;
+
+        // fallback behaviour (no routing, no map, no placements)
+        if (!$supermarket) {
+            $supermarket = $supermarketRepository->findWithMostPlacements();
+            $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket);
+            if(count($orderedList) === 0) {
+                return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $listId]);
+            }
+            
+            return $this->render('shopping_list/active.html.twig', [
+                'form' => null,
+                'orderedList' => $orderedList,
+                'shoppingList' => $shoppingList,
+                'supermarket' => null,
+                'placementStatus' => [],
+                'nodes' => [],
+                'edges' => [],
+                'shelves' => [],
+                'viewBox' => null,
+                'segments' => [],
+            ]);
+        }
 
         // find any open sessions for this list and supermarket, and close them (we open a new session once the first item is picked)
         $openSessions = $shoppingSessionRepository->findRecentActiveByListAndSupermarket($shoppingList, $supermarket);
@@ -175,7 +197,7 @@ final class ShoppingListController extends AbstractController
         
         $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, $currentNodeId);
         if(count($orderedList) === 0) {
-            return $this->redirectToRoute('app_home');
+            return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $listId]);
         }
 
         if($showModal){
@@ -201,7 +223,7 @@ final class ShoppingListController extends AbstractController
         $form = $this->createForm(FoodItemGroupPlacementType::class, null, [
             'food_items' => $foodItems,
             'action' => $this->generateUrl('app_product_placement_group'), // submit target
-            'method' => 'POST', // or GET if you prefer
+            'method' => 'POST',
         ]);
         
         return $this->render('shopping_list/active.html.twig', [
