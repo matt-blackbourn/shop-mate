@@ -1903,8 +1903,6 @@ function shelfOrientation(shelf) {
 }
 
 function openGroupingModal(modalElement) {
-    if(!hasSupermarket) return;
-
     const modalEl = document.getElementById('groupItemModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     const foodItemId = modalElement.dataset.foodItemId;

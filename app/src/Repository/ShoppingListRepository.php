@@ -48,6 +48,7 @@ class ShoppingListRepository extends ServiceEntityRepository
             ->andWhere('sl.type = :type')
             ->setParameter('type', ListType::ITEM_GROUP->value)
             ->setParameter('user', $user)
+            ->addOrderBy('sl.name', 'ASC')
             ->getQuery()
             ->getResult();
     }
