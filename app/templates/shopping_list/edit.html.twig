@@ -295,6 +295,15 @@
     color: #e9ecef;
 }
 
+.ts-control .item.active {
+    background-color: #343a46;
+    color: #e9ecef;
+}
+.ts-control, .ts-wrapper.single.input-active .ts-control{
+    background-color: #343a46;
+
+}
+
 .ts-control {
     min-height: 38px;
     padding: 0.375rem 0.75rem;
@@ -751,6 +760,7 @@ container.addEventListener('click', e => {
 
         input.value = value;
         display.textContent = value;
+        markDirty()
     }
 });
 

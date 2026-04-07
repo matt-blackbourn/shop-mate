@@ -26,7 +26,7 @@
 
             <div class="modal-body">
                 <div class="map-container">
-                    <svg id="map-svg" class="map-svg" viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}">
+                    <svg id="map-svg" class="map-svg" {% if viewBox is not null %}viewBox="{{ viewBox.minX }} {{ viewBox.minY }} {{ viewBox.width }} {{ viewBox.height }}"{% endif %}>
                         <g id="map-inner">
                             <g id="edges-layer"></g>
                             <g id="entrance-layer"></g>

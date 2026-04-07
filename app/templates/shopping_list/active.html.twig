@@ -22,17 +22,10 @@
     <div class="sticky-header">
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
-            <div class="header-left d-flex align-items-center gap-2">
+            <div class="header-left d-flex align-items-center">
                 <a href="{{ path('app_home') }}" class="btn-dark-base">
                     <i class="bi bi-check-circle-fill"></i>
                 </a>
-                <form method="POST" action="/shoppinglist/unpick">
-                    <input type="hidden" name="shoppingListId" value="{{ shoppingList.id }}">
-                    <input type="hidden" name="supermarketId" value="{{ supermarket ? supermarket.id : '' }}">
-                    <button type="submit" id="unpickBtn" disabled class="btn-dark-base">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                </form>
             </div>
 
             <div class="header-center flex-grow-1 d-flex justify-content-center">
@@ -45,7 +38,14 @@
                 </h6>
             </div>
 
-            <div class="header-right d-flex align-items-center">
+            <div class="header-right d-flex align-items-center gap-2">
+                 <form method="POST" action="/shoppinglist/unpick">
+                    <input type="hidden" name="shoppingListId" value="{{ shoppingList.id }}">
+                    <input type="hidden" name="supermarketId" value="{{ supermarket ? supermarket.id : '' }}">
+                    <button type="submit" id="unpickBtn" disabled class="btn-dark-base">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </form>
                 <a href="" id="mapButton" class="btn-dark-base">
                     <i class="bi-grid-3x3"></i>
                 </a>
@@ -606,6 +606,10 @@ if (!mapSvg.dataset.originalViewBox) {
     mapSvg.dataset.originalViewBox = `${vb.x} ${vb.y} ${vb.width} ${vb.height}`;
 }
 
+if(!hasSupermarket){
+    document.getElementById('mapButton').style.display = 'none';
+}
+
 /*
  we loop over edges data a lot of times in this code, it probably needs optimising
 */
@@ -804,31 +808,12 @@ function rotateMap(){
         if (newRotation === null) return;
 
         const target = shortestAngle(currentRotation, newRotation);
-
         const vb = mapSvg.viewBox.baseVal;
         const width = vb.width;
         const height = vb.height;
-
         const start = { x: vb.x, y: vb.y, width: vb.width, height: vb.height };
-
-        const isLandscape = newRotation === 90 || newRotation === 270;
-
-        let end;
-
-        if (isLandscape) {
-            const segment = routeState.segments[routeState.currentSegment];
-            const nodeB = nodes[segment.pathNodes[segment.pathNodes.length - 1]];
-
-            end = {
-                x: nodeB.x - width / 2,
-                y: nodeB.y - height / 2,
-                width,
-                height
-            };
-        } else {
-            const parts = mapSvg.dataset.originalViewBox.split(' ').map(Number);
-            end = { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
-        }
+        const parts = mapSvg.dataset.originalViewBox.split(' ').map(Number);
+        let end = { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
 
         // ✅ animate BOTH once
         animateRotation(currentRotation, target, 600);
@@ -883,7 +868,18 @@ function findRotationForNextItem(){
         return null
     }
 
-    // Compute the desired orientation from the edge
+    const dx = nodeB.x - nodeA.x;
+    const dy = nodeB.y - nodeA.y;
+
+    // 👇 ONLY decide between up vs down
+    // If moving downward → flip 180
+    // If moving upward → stay 0
+    const targetRotation = dy > 0 ? 180 : 0;
+
+    return targetRotation;
+
+    /** THis was for 90 degree rotation, but we only want 180 dgree to prevent landscape 
+    Compute the desired orientation from the edge
     const ax = nodeA.x;
     const bx = nodeB.x;
     const ay = nodeA.y;
@@ -905,7 +901,7 @@ function findRotationForNextItem(){
     if (delta < -180) delta += 360;
     mapRotation += delta;
 
-    return mapRotation;
+    return mapRotation;*/
 }
 
 function updateMapView() {
@@ -1905,12 +1901,16 @@ function shelfOrientation(shelf) {
 function openGroupingModal(modalElement) {
     const modalEl = document.getElementById('groupItemModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    const foodItemId = modalElement.dataset.foodItemId;
 
     // Set hidden fields
-    document.getElementById('{{ form.foodItemId.vars.id }}').value = foodItemId;
-    document.getElementById('{{ form.supermarketId.vars.id }}').value = supermarketId;
-    document.getElementById('{{ form.listId.vars.id }}').value = listId;
+    const foodItemInput = document.getElementById('food_item_group_placement_foodItemId');
+    const supermarketInput = document.getElementById('food_item_group_placement_supermarketId');
+    const listInput = document.getElementById('food_item_group_placement_listId');
+    foodItemInput.value = modalElement.dataset.foodItemId;
+    supermarketInput.value = supermarketId;
+    listInput.value = listId;
+
+    console.log(modalElement.dataset.foodItemId, supermarketId, listId);
 
     modal.show();
 }

@@ -36,7 +36,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ShoppingListController extends AbstractController
 {
     #[Route('/edit/{id}', name: 'app_shoppinglist_edit', methods: ['GET', 'POST'])]
-    public function home(
+    public function edit(
         Request $request, 
         EntityManagerInterface $em, 
         ListItemRepository $listItemRepository,
@@ -115,7 +115,7 @@ final class ShoppingListController extends AbstractController
     }
 
     #[Route('/active/{listId}/{supermarketId}/{showModal}', name: 'app_shopping_list_active', methods: ['GET'], defaults: ['showModal' => false])]
-    public function activeList(
+    public function active(
         ShoppingListRepository $shoppingListRepository,
         PathFinder $pathFinder,
         ProductPlacementRepository $productPlacementRepository,
