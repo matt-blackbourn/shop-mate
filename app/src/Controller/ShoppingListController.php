@@ -225,7 +225,7 @@ final class ShoppingListController extends AbstractController
             'action' => $this->generateUrl('app_product_placement_group'), // submit target
             'method' => 'POST',
         ]);
-        
+
         return $this->render('shopping_list/active.html.twig', [
             'form' => $form->createView(),
             'orderedList' => $orderedList,

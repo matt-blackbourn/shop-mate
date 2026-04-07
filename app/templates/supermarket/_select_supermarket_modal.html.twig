@@ -12,7 +12,11 @@
             <div class="modal-body">
                 <select id="supermarketSelect" class="w-100">
                     {% for supermarket in supermarkets %}
-                        <option value="{{ supermarket.id }}">{{ supermarket.type.value }} - {{ supermarket.suburb }}</option>
+                        {% if supermarket.id %}
+                            <option value="{{ supermarket.id }}">{{ supermarket.type.value }} - {{ supermarket.suburb }}</option>
+                        {% else %}
+                            <option value="{{ supermarket.id }}">No Supermarket</option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>

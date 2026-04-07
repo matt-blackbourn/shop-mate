@@ -114,6 +114,10 @@
                             {% endif %}
                         </button>
 
+                        <button id="shiftUp" class="btn-dark-base shift-btn">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+
                         <div class="placement-menu">
                             <div class="sheet-handle"></div>
                             <p class="menu-text"></p>
@@ -124,8 +128,6 @@
                             </div>
                         </div>
                     </div>
-
-               
                 </div>
 
                 <!-- MAIN CONTENT -->
@@ -144,8 +146,10 @@
                     {% endif %}
                 </div>
 
-                <button class="pick-btn-list btn-dark-base border-green" type="button">Pick Item</button>
-
+                <div class="d-flex gap-3">
+                    <button id="shiftDown" class="btn-dark-base shift-btn"><i class="bi bi-chevron-down"></i></button>
+                    <button class="pick-btn-list btn-dark-base border-green" type="button">Pick Item</button>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -225,7 +229,6 @@
     padding: 0.5rem;
 }
 
-/* Card header layout */
 .card-header {
     display: flex;
     align-items: center;
@@ -235,6 +238,31 @@
     color: #e9ecef;
 }
 
+.card-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.title {
+    font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+.notes{
+    font-size: clamp(0.7rem, 1vw, 0.9rem);
+    font-style: italic;
+}
+
+{# Stop buttons from shrinking  #}
+.card-header > div:last-child {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+
 /* Left meta (dots + placement indicator) */
 .card-meta {
     display: flex;
@@ -243,6 +271,10 @@
     gap: 0.5rem;
     margin-right: 8px;
     flex-shrink: 0;
+}
+
+.shift-btn {
+    padding: 2px 4px;
 }
 
 /* Dots button */
@@ -297,20 +329,6 @@
 }
 
 
-/* Card main title */
-.title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    padding-right: 8px;
-    flex: 1;
-    min-width: 0;              /* allows truncation */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.notes{
-    font-style: italic;
-}
 
 {# placement modal #}
 .sheet-handle {
@@ -548,8 +566,6 @@
     stroke: var(--secondary-colour);        /* amber-500 */
     opacity: 1;
 }
-
-
 
 .location-side {
     fill: #f59e0b80
@@ -1456,16 +1472,35 @@ function checkForFinishedList() {
 }
 
 document.querySelectorAll('.placement-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-        e.stopPropagation();
-        openPlacementMenu(e.target.closest('.shopping-card'));
-    });
+    if(hasSupermarket){
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            openPlacementMenu(e.target.closest('.shopping-card'));
+        });
+    } else {
+        btn.style.display = 'none';
+    }
 });
+document.querySelectorAll('.shift-btn').forEach(btn => {
+    if(hasSupermarket){
+        btn.style.display = 'none';
+    } else {
+        /**
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            openPlacementMenu(e.target.closest('.shopping-card'));
+        });
+        */
+    }
+});
+
 document.querySelectorAll('.card-main').forEach(btn => {
-    btn.addEventListener('click', e => {
-        e.stopPropagation();
-        openPlacementMenu(e.target.closest('.shopping-card'));
-    });
+    if(hasSupermarket){
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            openPlacementMenu(e.target.closest('.shopping-card'));
+        });
+    }
 });
 
 
