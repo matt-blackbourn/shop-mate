@@ -33,7 +33,12 @@ class PathFinder
     /**
      * Nearest-neighbour route 
      */
-    public function orderShoppingList(ShoppingList $shoppingList, Supermarket $supermarket, ?int $startNode = null): array {
+    public function orderShoppingList(
+        ShoppingList $shoppingList, 
+        Supermarket $supermarket, 
+        ?int $startNode = null, 
+        $reverseOder = false,
+    ): array {
         // Convert collection to id-indexed array, and separate by phase and unmapped items
         $unmappedItems = [];
         $mappedItems = array_fill_keys($this->phases, []);
@@ -235,7 +240,9 @@ class PathFinder
             }
         }
 
-        return array_merge($unmappedItems, $orderedList); // Show unmapped items at the start of the list to prompt user to place them
+        // Show unmapped items at the start of the list to prompt user to place them
+        // If reverseOrder, we are dealing with a no supermarket case, so we want unmapped items at the end
+        return $reverseOder ? array_merge($orderedList, $unmappedItems) : array_merge($unmappedItems, $orderedList); 
     }
 
     private function findLowestRemainingAisle(array $remainingItems): ?int

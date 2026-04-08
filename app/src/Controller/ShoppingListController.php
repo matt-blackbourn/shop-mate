@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\ListFoodOrder;
 use App\Entity\ListMember;
 use App\Entity\ProductPlacement;
 use App\Entity\ShoppingList;
@@ -14,6 +15,7 @@ use App\Enum\SupermarketType;
 use App\Form\FoodItemGroupPlacementType;
 use App\Form\ShoppingListType;
 use App\Repository\FoodItemRepository;
+use App\Repository\ListFoodOrderRepository;
 use App\Repository\ListInviteRepository;
 use App\Repository\ListItemRepository;
 use App\Repository\NodeRepository;
@@ -126,7 +128,7 @@ final class ShoppingListController extends AbstractController
         SupermarketRepository $supermarketRepository,
         MapBuilder $mapBuilder,
         PlacementResolver $placementResolver,
-        Request $request,
+        ListFoodOrderRepository $listFoodOrderRepository,
         int $supermarketId,
         int $listId,
         bool $showModal,
@@ -148,9 +150,28 @@ final class ShoppingListController extends AbstractController
         // fallback behaviour (no routing, no map, no placements)
         if (!$supermarket) {
             $supermarket = $supermarketRepository->findWithMostPlacements();
-            $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket);
+            $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, null, true);
             if(count($orderedList) === 0) {
+                $this->addFlash('warning', 'No items in your shopping list!');
                 return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $listId]);
+            }
+
+
+            // create an initial order if there is no existing order for this list
+            $existingOrder = $listFoodOrderRepository->findBy(['list' => $shoppingList]);
+            if(count($existingOrder) === 0) {
+                $position = 1000;
+                foreach($orderedList as $dto) {
+                    $order = new ListFoodOrder();
+                    $order->setList($shoppingList);
+                    $order->setFoodItem($dto->item->getFoodItem());
+                    $order->setPosition($position);
+                    $em->persist($order);
+                    $position += 1000;
+                }
+                $em->flush();
+            } else {
+
             }
 
             return $this->render('shopping_list/active.html.twig', [
@@ -200,6 +221,7 @@ final class ShoppingListController extends AbstractController
         
         $orderedList = $pathFinder->orderShoppingList($shoppingList, $supermarket, $currentNodeId);
         if(count($orderedList) === 0) {
+            $this->addFlash('warning', 'No items in your shopping list!');
             return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $listId]);
         }
 

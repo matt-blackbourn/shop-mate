@@ -25,7 +25,7 @@
         <div class="d-flex align-items-center px-2 py-2 w-100">
 
             <div class="header-left d-flex align-items-center">
-                <a href="{{ path('app_home') }}" class="btn-dark-base">
+                <a href="{{ path('app_shoppinglist_edit', {'id': shoppingList.id}) }}" class="btn-dark-base">
                     <i class="bi bi-check-circle-fill"></i>
                 </a>
             </div>
@@ -577,9 +577,6 @@
     transition: transform 1s ease;
 }
 
-
-
-
 /* ----------------------
    Animations
    ---------------------- */
@@ -631,6 +628,8 @@ if (!mapSvg.dataset.originalViewBox) {
 
 if(!hasSupermarket){
     document.getElementById('mapButton').style.display = 'none';
+} else {
+    document.querySelectorAll('.shift-up').forEach(btn => btn.style.display = 'none');
 }
 
 if(hasSession){
@@ -646,8 +645,6 @@ const currentItemState = {
     quantity: null,
     notes: null,
 };
-
-// other state
 
 const placementState = {
     supermarketId: supermarketId,
