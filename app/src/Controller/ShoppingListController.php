@@ -156,10 +156,9 @@ final class ShoppingListController extends AbstractController
                 return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $listId]);
             }
 
-
             // create an initial order if there is no existing order for this list
-            $existingOrder = $listFoodOrderRepository->findBy(['list' => $shoppingList]);
-            if(count($existingOrder) === 0) {
+            $listFoodOrder = $listFoodOrderRepository->findBy(['list' => $shoppingList]);
+            if(count($listFoodOrder) === 0) {
                 $position = 1000;
                 foreach($orderedList as $dto) {
                     $order = new ListFoodOrder();
@@ -171,7 +170,19 @@ final class ShoppingListController extends AbstractController
                 }
                 $em->flush();
             } else {
+                $orderedItems = $listItemRepository->findUnpickedByShoppingListInOrder($shoppingList);
 
+                // Get ordered list in the correct format for the template
+                $orderedList = [];
+                foreach($orderedItems as $item) {   
+                    $orderedList[] = new RoutedListItemDto(
+                        item: $item,
+                        placement: null,
+                        targetNodeId: null,
+                        distanceFromPrevious: 0,
+                        path: []
+                    );
+                }
             }
 
             return $this->render('shopping_list/active.html.twig', [

@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\ListFoodOrder;
 use App\Entity\ListItem;
 use App\Entity\ShoppingList;
 use App\Entity\ShoppingSession;
@@ -26,6 +27,23 @@ class ListItemRepository extends ServiceEntityRepository
             ->andWhere('li.pickedAt IS NULL')
             ->setParameter('shoppingList', $shoppingList)
             ->addOrderBy('fi.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findUnpickedByShoppingListInOrder(ShoppingList $shoppingList): array {
+        return $this->createQueryBuilder('li')
+            ->leftJoin(ListFoodOrder::class, 'lfo', 'WITH',  'lfo.foodItem = li.foodItem AND lfo.list = :listId'
+            )
+            ->where('li.shoppingList = :listId')
+            ->setParameter('listId', $shoppingList->getId())
+        
+            // First: items WITH order come first (NULLs last)
+            ->orderBy('CASE WHEN lfo.position IS NULL THEN 1 ELSE 0 END', 'ASC')
+        
+            // Then: order by position
+            ->addOrderBy('lfo.position', 'ASC')
+        
             ->getQuery()
             ->getResult();
     }
