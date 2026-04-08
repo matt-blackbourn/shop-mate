@@ -152,7 +152,7 @@ final class ShoppingListController extends AbstractController
             if(count($orderedList) === 0) {
                 return $this->redirectToRoute('app_shoppinglist_edit', ['id' => $listId]);
             }
-            
+
             return $this->render('shopping_list/active.html.twig', [
                 'form' => null,
                 'orderedList' => $orderedList,
@@ -165,6 +165,7 @@ final class ShoppingListController extends AbstractController
                 'viewBox' => null,
                 'segments' => [],
                 'hasSession' => $shoppingSessionRepository->findCurrentSession($shoppingList->getId(), $supermarketId) !== null,
+                'initialOrder' => array_map(fn($item) => $item->item->getFoodItem()->getId(), $orderedList),
             ]);
         }
 
@@ -240,6 +241,7 @@ final class ShoppingListController extends AbstractController
             'viewBox' => $mapBuilder->getViewBox($supermarket),
             'segments' => $segments,
             'hasSession' => $shoppingSessionRepository->findCurrentSession($shoppingList->getId(), $supermarketId) !== null,
+            'initialOrder' => [],
         ]);
     }
 

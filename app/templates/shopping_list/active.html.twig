@@ -18,6 +18,7 @@
     data-shelf-depth="{{ supermarket ? supermarket.shelfDepth : '' }}"
     data-has-supermarket="{{ supermarket ? '1' : '0' }}"
     data-has-session="{{ hasSession ? '1' : '0' }}"
+    data-initial-order="{{ initialOrder|json_encode|e('html_attr') }}"
 >
 
     <div class="sticky-header">
@@ -115,7 +116,7 @@
                             {% endif %}
                         </button>
 
-                        <button id="shiftUp" class="btn-dark-base shift-btn">
+                        <button class="btn-dark-base shift-up">
                             <i class="bi bi-chevron-up"></i>
                         </button>
 
@@ -148,7 +149,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <button id="shiftDown" class="btn-dark-base shift-btn"><i class="bi bi-chevron-down"></i></button>
+                    {# <button id="shiftDown" class="btn-dark-base shift-btn"><i class="bi bi-chevron-down"></i></button> #}
                     <button class="pick-btn-list btn-dark-base border-green" type="button">Pick Item</button>
                 </div>
             </div>
@@ -610,15 +611,16 @@ const AISLE_WIDTH = container.dataset.aisleWidth
 const hasSupermarket = container.dataset.hasSupermarket === '1';
 const hasSession = container.dataset.hasSession === '1';
 const pickQueue = [];
-
 const MAP_MODE_PATH = 'path';
 const MAP_MODE_PLACEMENT = 'placement';
+
 let mapRotation = 0;
 let currentRotation = 0;
 let mapView = false
 let mapMode = 'path';
 let processingQueue = false;
 let pickQueueTimer = null;
+
 
 
 // store original viewBox in SVG units
@@ -748,6 +750,8 @@ document.getElementById('placementCancelBtn').addEventListener('click', () => {
         modal.hide();
     }
 });
+
+
 
 function setMapMode(mode) {
     mapMode = mode;
@@ -1440,7 +1444,14 @@ function openMapModal(card){
 }
 
 
-// Pick item function
+document.querySelectorAll('.shift-up').forEach(btn => {
+    btn.addEventListener('click', e => {
+        const card = e.target.closest('.shopping-card');
+        const itemId = Number(card.dataset.id);
+        shiftItemById(itemId);
+    });
+});
+
 document.querySelectorAll('.pick-btn-list').forEach(btn => {
     btn.addEventListener('click', e => {
         const card = e.target.closest('.shopping-card');
@@ -1660,6 +1671,71 @@ async function processPickQueue() {
     updateUnpickButtonState();
 }
 
+//---------------------------------------
+
+let initialOrder = JSON.parse(container.dataset.initialOrder);
+let currentOrder = JSON.parse(container.dataset.initialOrder);
+console.log('Initial order:', initialOrder);
+function shiftItemById(itemId) {
+    const card = document.querySelector(`.shopping-card[data-id="${itemId}"]`);
+    if (!card) return;
+
+    const fromIndex = currentOrder.indexOf(Number(card.dataset.foodItemId));
+    const toIndex = fromIndex - 1
+
+    // Prevent out-of-bounds moves
+    if (toIndex < 0 || toIndex >= currentOrder.length) return;
+
+    // ✅ Update array FIRST
+    moveItem(currentOrder, fromIndex, toIndex);
+    animateShiftUp(card);
+
+    console.log('Current order:', currentOrder);
+    syncOrder();
+}
+
+
+function moveItem(currentOrder, fromIndex, toIndex) {
+    const item = currentOrder.splice(fromIndex, 1)[0];
+    currentOrder.splice(toIndex, 0, item);
+}
+
+function getMovedItems(initial, current) {
+    const moved = [];
+
+    current.forEach((id, newIndex) => {
+        const oldIndex = initial.indexOf(id);
+        if (oldIndex !== newIndex) {
+        moved.push(id);
+        }
+    });
+
+    return moved;
+}
+
+function buildMovePayload(current, movedIds) {
+    return movedIds.map(id => {
+        const index = current.indexOf(id);
+        return {
+            movedItemId: id,
+            beforeId: current[index - 1] ?? null,
+            afterId: current[index + 1] ?? null
+        };
+    });
+}
+
+function syncOrder() {
+    const movedIds = getMovedItems(initialOrder, currentOrder);
+
+    if (movedIds.length === 0) return;
+
+    const payload = buildMovePayload(currentOrder, movedIds);
+    console.log(payload);
+    //sendToBackend(payload);
+}
+
+
+//--------------------
 
 function pickItemById(itemId) {
     pickQueue.push(itemId);
@@ -1703,6 +1779,89 @@ function removeCardFromList(itemId){
     card.style.transform = 'translateX(-120%)';
     card.style.opacity = '0';
     setTimeout(() => card.remove(), 200); // Remove from DOM after animation
+}
+
+function animateShiftUp(card) {
+    const prevCard = card.previousElementSibling;
+    if (!prevCard || !prevCard.classList.contains('shopping-card')) return;
+
+    // 1. FIRST: get initial positions
+    const first = card.getBoundingClientRect();
+    const prevFirst = prevCard.getBoundingClientRect();
+
+    // 2. Move in DOM
+    prevCard.insertAdjacentElement('beforebegin', card);
+
+    // 3. LAST: get new positions
+    const last = card.getBoundingClientRect();
+    const prevLast = prevCard.getBoundingClientRect();
+
+    // 4. INVERT
+    const dx = first.left - last.left;
+    const dy = first.top - last.top;
+
+    const prevDx = prevFirst.left - prevLast.left;
+    const prevDy = prevFirst.top - prevLast.top;
+
+    // Apply transform to "jump back"
+    card.style.transform = `translate(${dx}px, ${dy}px)`;
+    prevCard.style.transform = `translate(${prevDx}px, ${prevDy}px)`;
+
+    // Force reflow
+    card.offsetHeight;
+
+    // 5. PLAY (animate to natural position)
+    card.style.transition = 'transform 250ms ease';
+    prevCard.style.transition = 'transform 250ms ease';
+
+    card.style.transform = '';
+    prevCard.style.transform = '';
+
+    // Cleanup
+    setTimeout(() => {
+        card.style.transition = '';
+        prevCard.style.transition = '';
+    }, 250);
+}
+
+function animateShiftDown(card){
+    const nextCard = card.nextElementSibling;
+    if (!nextCard || !nextCard.classList.contains('shopping-card')) return;
+
+    // FIRST
+    const first = card.getBoundingClientRect();
+    const nextFirst = nextCard.getBoundingClientRect();
+
+    // Move
+    nextCard.insertAdjacentElement('afterend', card);
+
+    // LAST
+    const last = card.getBoundingClientRect();
+    const nextLast = nextCard.getBoundingClientRect();
+
+    // INVERT
+    const dx = first.left - last.left;
+    const dy = first.top - last.top;
+
+    const nextDx = nextFirst.left - nextLast.left;
+    const nextDy = nextFirst.top - nextLast.top;
+
+    card.style.transform = `translate(${dx}px, ${dy}px)`;
+    nextCard.style.transform = `translate(${nextDx}px, ${nextDy}px)`;
+
+    card.offsetHeight;
+
+    // PLAY
+    card.style.transition = 'transform 250ms ease';
+    nextCard.style.transition = 'transform 250ms ease';
+
+    card.style.transform = '';
+    nextCard.style.transform = '';
+
+    setTimeout(() => {
+        card.style.transition = '';
+        nextCard.style.transition = '';
+    }, 250);
 }
 
 function updateRouteState(itemId){
@@ -1985,51 +2144,7 @@ function clearSelection() {
 }
 
 
-// Reordering items efficiently
-// Last known order from backend
-{# let originalOrder = [12, 5, 9, 21, 3];
 
-// Live UI state
-let currentOrder  = [12, 5, 9, 21, 3];
-
-function moveItem(currentOrder, fromIndex, toIndex) {
-  const item = currentOrder.splice(fromIndex, 1)[0];
-  currentOrder.splice(toIndex, 0, item);
-}
-
-function getMovedItems(original, current) {
-  const moved = [];
-
-  current.forEach((id, newIndex) => {
-    const oldIndex = original.indexOf(id);
-    if (oldIndex !== newIndex) {
-      moved.push(id);
-    }
-  });
-
-  return moved;
-}
-
-function buildMovePayload(current, movedIds) {
-  return movedIds.map(id => {
-    const index = current.indexOf(id);
-    return {
-      movedItemId: id,
-      beforeId: current[index - 1] ?? null,
-      afterId: current[index + 1] ?? null
-    };
-  });
-}
-
-const movedIds = getMovedItems(originalOrder, currentOrder);
-
-if (movedIds.length > 0) {
-  const payload = buildMovePayload(currentOrder, movedIds);
-  sendToBackend(payload);
-
-  // Reset baseline after sync
-  originalOrder = [...currentOrder];
-} #}
 
 
 </script>
