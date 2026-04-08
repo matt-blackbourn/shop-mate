@@ -133,6 +133,17 @@ final class ShoppingListController extends AbstractController
     ): Response {
         $shoppingList = $shoppingListRepository->find($listId);
         $supermarket = $supermarketId ? $supermarketRepository->find($supermarketId) : null;
+        
+        // find any open sessions for this list and supermarket, and close them (we open a new session once the first item is picked)
+        $openSessions = $shoppingSessionRepository->findRecentActiveByListAndSupermarket($listId, $supermarketId);
+        if($openSessions) {
+            foreach($openSessions as $session) {
+                $lastPicked = $listItemRepository->findLastPickedInSession($session);
+                $session->setCompletedAt($lastPicked?->getPickedAt() ?? new \DateTimeImmutable());
+            }
+        }
+
+        $em->flush();
 
         // fallback behaviour (no routing, no map, no placements)
         if (!$supermarket) {
@@ -153,19 +164,10 @@ final class ShoppingListController extends AbstractController
                 'shelves' => [],
                 'viewBox' => null,
                 'segments' => [],
+                'hasSession' => $shoppingSessionRepository->findCurrentSession($shoppingList->getId(), $supermarketId) !== null,
             ]);
         }
 
-        // find any open sessions for this list and supermarket, and close them (we open a new session once the first item is picked)
-        $openSessions = $shoppingSessionRepository->findRecentActiveByListAndSupermarket($shoppingList, $supermarket);
-        if($openSessions) {
-            foreach($openSessions as $session) {
-                $lastPicked = $listItemRepository->findLastPickedInSession($session);
-                $session->setCompletedAt($lastPicked?->getPickedAt() ?? new \DateTimeImmutable());
-            }
-        }
-
-        $em->flush();
 
         // Now check for a current session, and get the current node if it exists, so we can start the path from there
         $currentSession = $shoppingSessionRepository->findCurrentSession($shoppingList->getId(), $supermarket->getId());
@@ -237,6 +239,7 @@ final class ShoppingListController extends AbstractController
             'shelves' => $mapBuilder->getAllShelves($supermarket),
             'viewBox' => $mapBuilder->getViewBox($supermarket),
             'segments' => $segments,
+            'hasSession' => $shoppingSessionRepository->findCurrentSession($shoppingList->getId(), $supermarketId) !== null,
         ]);
     }
 
@@ -257,14 +260,14 @@ final class ShoppingListController extends AbstractController
         $supermarketId = $data['supermarketId'] ?? null;
         $currentNodeId = $data['currentNodeId'] ?? null;
 
-        if (!$listItemId || !$supermarketId) {
+        if (!$listItemId) {
             return new JsonResponse(['error' => 'Invalid payload'], 400);
         }
 
         // fetch entities
         $item = $listItemRepository->find($listItemId);
         $supermarket = $supermarketRepository->find($supermarketId);
-        $session = $shoppingSessionRepository->findCurrentSession($item->getShoppingList()->getId(), $supermarket->getId());
+        $session = $shoppingSessionRepository->findCurrentSession($item->getShoppingList()->getId(), $supermarketId);
 
         // Create session if none exists
         if (!$session) {
@@ -272,7 +275,7 @@ final class ShoppingListController extends AbstractController
             $session->setShoppingList($item->getShoppingList());
             $session->setStartedAt(new \DateTimeImmutable());
             $session->setSupermarket($supermarket);
-            $session->setCurrentNode($supermarket->getEntranceNode());
+            $session->setCurrentNode($supermarket?->getEntranceNode());
             $em->persist($session);
         }
 

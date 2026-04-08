@@ -17,6 +17,7 @@
     data-aisle-width="{{ supermarket ? supermarket.aisleWidth : '' }}"
     data-shelf-depth="{{ supermarket ? supermarket.shelfDepth : '' }}"
     data-has-supermarket="{{ supermarket ? '1' : '0' }}"
+    data-has-session="{{ hasSession ? '1' : '0' }}"
 >
 
     <div class="sticky-header">
@@ -41,7 +42,7 @@
             <div class="header-right d-flex align-items-center gap-2">
                  <form method="POST" action="/shoppinglist/unpick">
                     <input type="hidden" name="shoppingListId" value="{{ shoppingList.id }}">
-                    <input type="hidden" name="supermarketId" value="{{ supermarket ? supermarket.id : '' }}">
+                    <input type="hidden" name="supermarketId" value="{{ supermarket ? supermarket.id : 0 }}">
                     <button type="submit" id="unpickBtn" disabled class="btn-dark-base">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
@@ -607,6 +608,8 @@ const shelfEls = []; // keep refs + geometry
 const mapSvg = document.getElementById("map-svg");
 const AISLE_WIDTH = container.dataset.aisleWidth
 const hasSupermarket = container.dataset.hasSupermarket === '1';
+const hasSession = container.dataset.hasSession === '1';
+const pickQueue = [];
 
 const MAP_MODE_PATH = 'path';
 const MAP_MODE_PLACEMENT = 'placement';
@@ -614,6 +617,8 @@ let mapRotation = 0;
 let currentRotation = 0;
 let mapView = false
 let mapMode = 'path';
+let processingQueue = false;
+let pickQueueTimer = null;
 
 
 // store original viewBox in SVG units
@@ -624,6 +629,10 @@ if (!mapSvg.dataset.originalViewBox) {
 
 if(!hasSupermarket){
     document.getElementById('mapButton').style.display = 'none';
+}
+
+if(hasSession){
+    updateUnpickButtonState()
 }
 
 /*
@@ -637,9 +646,7 @@ const currentItemState = {
 };
 
 // other state
-let processingQueue = false;
-let pickQueueTimer = null;
-const pickQueue = [];
+
 const placementState = {
     supermarketId: supermarketId,
     listId: listId,
@@ -1655,15 +1662,16 @@ async function processPickQueue() {
 
 
 function pickItemById(itemId) {
-    removeCardFromList(itemId);
-
     pickQueue.push(itemId);
     updateUnpickButtonState(); // Dont allow unpicking while we have pending picks to process
+    removeCardFromList(itemId);
     
-    updateRouteState(itemId);
-    updateMapView();
-    highlightItemOnMap();
-    rotateMap()
+    if(hasSupermarket){
+        updateRouteState(itemId);
+        updateMapView();
+        highlightItemOnMap();
+        rotateMap()
+    }
 
     // Clear any existing timer
     if (pickQueueTimer) {
@@ -1673,7 +1681,7 @@ function pickItemById(itemId) {
     // Set a new timer
     pickQueueTimer = setTimeout(() => {
         processPickQueue();
-        pickQueueTimer = null; // optional cleanup
+        pickQueueTimer = null;
     }, 1500);
 
     updateUnpickButtonState();

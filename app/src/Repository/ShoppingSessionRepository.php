@@ -19,34 +19,41 @@ class ShoppingSessionRepository extends ServiceEntityRepository
     }
 
     public function findCurrentSession($listId, $supermarketId){
-        return $this->createQueryBuilder('s')
+        $qb = $this->createQueryBuilder('s')
             ->where('s.shoppingList = :list')
-            ->andWhere('s.supermarket = :supermarket')
             ->andWhere('s.completedAt IS NULL')
             ->setParameter('list', $listId)
-            ->setParameter('supermarket', $supermarketId)
             ->orderBy('s.startedAt', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+            ->setMaxResults(1);
+    
+        if ($supermarketId === null || $supermarketId == 0) {
+            $qb->andWhere('s.supermarket IS NULL');
+        } else {
+            $qb->andWhere('s.supermarket = :supermarket')
+               ->setParameter('supermarket', $supermarketId);
+        }
+    
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
-    public function findRecentActiveByListAndSupermarket(
-        ShoppingList $list,
-        Supermarket $supermarket,
-    ){
+    public function findRecentActiveByListAndSupermarket($listId, $supermarketId){
         $cutoff =  new \DateTimeImmutable('-1 hour');
 
-        return $this->createQueryBuilder('s')
+        $qb = $this->createQueryBuilder('s')
             ->where('s.shoppingList = :list')
-            ->andWhere('s.supermarket = :supermarket')
             ->andWhere('s.completedAt IS NULL')
             ->andWhere('s.startedAt <= :cutoff')
-            ->setParameter('list', $list)
-            ->setParameter('supermarket', $supermarket)
+            ->setParameter('list', $listId)
             ->setParameter('cutoff', $cutoff)
-            ->orderBy('s.startedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->orderBy('s.startedAt', 'DESC');
+
+            if ($supermarketId === null || $supermarketId == 0) {
+                $qb->andWhere('s.supermarket IS NULL');
+            } else {
+                $qb->andWhere('s.supermarket = :supermarket')
+                   ->setParameter('supermarket', $supermarketId);
+            }
+        
+            return $qb->getQuery()->getResult();
     }
 }
