@@ -613,6 +613,7 @@ function createEdge(a, b) {
     );
 
     if (blockingNode) {
+        console.log(blockingNode);
         alert('An intermediate node exists on this edge.');
         return;
     }
@@ -891,6 +892,19 @@ ON LEAST(e.start_id, e.end_id) = d.node_a
 AND GREATEST(e.start_id, e.end_id) = d.node_b
 WHERE e.supermarket_id = :supermarketId
 ORDER BY node_a, node_b, e.id; #}
+
+
+{# find duplicate nodes #}
+{# 
+SELECT *
+FROM node n
+WHERE (x_value, y_value, supermarket_id) IN (
+    SELECT x_value, y_value, supermarket_id
+    FROM node
+    GROUP BY x_value, y_value, supermarket_id
+    HAVING COUNT(*) > 1
+)
+ORDER BY supermarket_id, x_value, y_value; #}
    
 </script>
 

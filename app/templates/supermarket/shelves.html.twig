@@ -35,6 +35,7 @@
     data-edges="{{ edges|json_encode|e('html_attr') }}"
     data-aisle-width='{{ supermarket.aisleWidth }}'
     data-shelf-depth='{{ supermarket.shelfDepth }}'
+    preserveAspectRatio="xMidYMid meet"
 >
   <g id="edges-layer"></g>
   <g id="shelves-layer"></g>
@@ -66,8 +67,8 @@ const shelvesLayer = document.getElementById('shelves-layer');
 const autoGenerateBtn = document.getElementById('auto-generate');
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-const AISLE_WIDTH = svg.dataset.aisleWidth
-const SHELF_DEPTH = svg.dataset.shelfDepth
+const AISLE_WIDTH = Number(svg.dataset.aisleWidth);
+const SHELF_DEPTH = Number(svg.dataset.shelfDepth);
 
 const END_CLEARANCE = AISLE_WIDTH / 2; // prevent shelves touching at intersections - half aisle width is a good start
 const OFFSET = AISLE_WIDTH / 2 + SHELF_DEPTH / 2; // how far from the center line of the aisle to place shelves
@@ -82,10 +83,9 @@ let activeShelfId = null;
 let tempRect = null;
 let startX = 0;
 let startY = 0;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
 
 const edgesData = JSON.parse(svg.dataset.edges);
+console.log(edgesData);
 const nodesData = JSON.parse(svg.dataset.nodes);
 const shelfForm  = document.getElementById('shelfForm');
 const shelfInput = document.getElementById('shelfInput');
@@ -189,50 +189,50 @@ svg.addEventListener('mousemove', e => {
 });
 
 svg.addEventListener('mouseup', () => {
-  if (!isSelecting || !selectionRectEl) return;
+    if (!isSelecting || !selectionRectEl) return;
 
-  isSelecting = false;
+    isSelecting = false;
 
-  const groupRect = {
-    x: parseFloat(selectionRectEl.getAttribute("x")),
-    y: parseFloat(selectionRectEl.getAttribute("y")),
-    width: parseFloat(selectionRectEl.getAttribute("width")),
-    height: parseFloat(selectionRectEl.getAttribute("height"))
-  };
+    const groupRect = {
+        x: parseFloat(selectionRectEl.getAttribute("x")),
+        y: parseFloat(selectionRectEl.getAttribute("y")),
+        width: parseFloat(selectionRectEl.getAttribute("width")),
+        height: parseFloat(selectionRectEl.getAttribute("height"))
+    };
 
-  svg.removeChild(selectionRectEl);
-  selectionRectEl = null;
+    svg.removeChild(selectionRectEl);
+    selectionRectEl = null;
 
-  createShelfGroup(groupRect);
+    createShelfGroup(groupRect);
 });
 
 function createShelfGroup(selectionRect) {
-  const groupedShelves = shelves.filter(shelf =>
-    rectIntersects(selectionRect, shelf)
-  );
+    const groupedShelves = shelves.filter(shelf =>
+        rectIntersects(selectionRect, shelf)
+    );
 
-  if (!groupedShelves.length) return;
+    if (!groupedShelves.length) return;
 
-  pushUndoState();
+    pushUndoState();
 
-  // Compute bounding box of group
-  const x1 = Math.min(...groupedShelves.map(s => s.x));
-  const y1 = Math.min(...groupedShelves.map(s => s.y));
-  const x2 = Math.max(...groupedShelves.map(s => s.x + s.width));
-  const y2 = Math.max(...groupedShelves.map(s => s.y + s.height));
+    // Compute bounding box of group
+    const x1 = Math.min(...groupedShelves.map(s => s.x));
+    const y1 = Math.min(...groupedShelves.map(s => s.y));
+    const x2 = Math.max(...groupedShelves.map(s => s.x + s.width));
+    const y2 = Math.max(...groupedShelves.map(s => s.y + s.height));
 
-  const group = {
-    id: uuid(),
-    shelves: groupedShelves.map(s => s.id),
-    x: x1,
-    y: y1,
-    width: x2 - x1,
-    height: y2 - y1
-  };
+    const group = {
+        id: uuid(),
+        shelves: groupedShelves.map(s => s.id),
+        x: x1,
+        y: y1,
+        width: x2 - x1,
+        height: y2 - y1
+    };
 
-  shelfGroups.push(group);
-  console.log('Created shelf group:', group);
-  drawShelfGroup(group);
+    shelfGroups.push(group);
+    console.log('Created shelf group:', group);
+    drawShelfGroup(group);
 }
 
 function drawShelfGroup(group) {
@@ -438,9 +438,18 @@ function autoGenerateShelves() {
   });
 
   shelves.forEach(drawShelf);
+
+  console.log(
+    shelves
+    );
 }
 
-
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        restoreUndoState();
+    }
+});
 
 function drawShelf(shelf) {
     const rect = document.createElementNS(SVG_NS, 'rect');
