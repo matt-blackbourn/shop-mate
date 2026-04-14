@@ -109,12 +109,27 @@ svg.appendChild(pathLayer);
 inputX.addEventListener('input', updateSelectedNode);
 inputY.addEventListener('input', updateSelectedNode);
 
-// Draw existing nodes and populate array
-const scaledPath = nodesData.map(n => ({
-    x: n.x * SCALE_MULTIPLIER,
-    y: n.y * SCALE_MULTIPLIER,
-    phase: n.phase
-}));
+// 🔍 detect orientation from RAW data (important)
+const xs = nodesData.map(n => n.x);
+const ys = nodesData.map(n => n.y);
+const width = Math.max(...xs) - Math.min(...xs);
+const height = Math.max(...ys) - Math.min(...ys);
+const isLandscape = width > height;
+const scaledPath = nodesData.map(n => {
+    const x = n.x * SCALE_MULTIPLIER;
+    const y = n.y * SCALE_MULTIPLIER;
+
+    if (!isLandscape) {
+        return { x, y, phase: n.phase };
+    }
+
+    // 🔄 rotate 90° if landscape
+    return {
+        x: -y,
+        y: x,
+        phase: n.phase
+    };
+});
 
 let normalizedPath;
 
