@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Generation Time: Apr 16, 2026 at 05:50 AM
+-- Generation Time: May 06, 2026 at 08:53 PM
 -- Server version: 8.0.44
 -- PHP Version: 8.3.26
 
@@ -569,7 +569,6 @@ INSERT INTO `food_item` (`id`, `name`, `user_id`) VALUES
 (46, 'Meusli', NULL),
 (47, 'Cat food', NULL),
 (48, 'Sunblock', NULL),
-(49, 'Muesli', NULL),
 (51, 'Sardines', NULL),
 (52, 'Tuna - canned', NULL),
 (53, 'Fish', NULL),
@@ -606,7 +605,6 @@ INSERT INTO `food_item` (`id`, `name`, `user_id`) VALUES
 (95, 'Halloumi', NULL),
 (99, 'Dried thyme', NULL),
 (100, 'Black adder tea', NULL),
-(101, 'Napp', NULL),
 (102, 'Toothpaste', NULL),
 (103, 'Pasta', NULL),
 (104, 'Decaf tea', NULL),
@@ -650,7 +648,6 @@ INSERT INTO `food_item` (`id`, `name`, `user_id`) VALUES
 (146, 'Dog food', NULL),
 (147, 'Tomato paste', NULL),
 (148, 'Pot', NULL),
-(149, 'Ora', NULL),
 (150, 'Nachos', 1),
 (151, 'Worcestershire sauce', 3),
 (152, 'Beef stock', 3),
@@ -684,7 +681,15 @@ INSERT INTO `food_item` (`id`, `name`, `user_id`) VALUES
 (180, 'Coconut', 3),
 (181, 'Cinnamon', 3),
 (182, 'Laundry detergent', 2),
-(183, 'Paracetamol', 3);
+(183, 'Paracetamol', 3),
+(184, 'Curry sauce', 3),
+(185, 'Lamb', 3),
+(186, 'Naan', 3),
+(187, 'Green beans', 3),
+(188, 'Chicken burgers - frozen', 2),
+(189, 'Tissues', 2),
+(190, 'Coffee - filter grind', 2),
+(191, 'Marmite', 2);
 
 -- --------------------------------------------------------
 
@@ -916,7 +921,6 @@ INSERT INTO `list_item` (`id`, `quantity`, `notes`, `picked_at`, `shopping_list_
 (472, 1, NULL, '2026-03-15 02:09:12', 3, 142, 14),
 (473, 1, 'Multigrain', '2026-03-15 02:07:44', 3, 17, 14),
 (474, 1, NULL, '2026-03-15 01:58:46', 3, 8, 14),
-(475, 1, 'Just pams', '2026-03-22 21:06:12', 3, 49, 15),
 (476, 1, NULL, '2026-03-15 02:00:41', 3, 41, 14),
 (477, 1, 'Molenburg', '2026-03-15 02:07:49', 3, 15, 14),
 (479, NULL, NULL, '2026-03-15 02:00:41', 3, 16, 14),
@@ -1147,18 +1151,63 @@ INSERT INTO `list_item` (`id`, `quantity`, `notes`, `picked_at`, `shopping_list_
 (831, 1, NULL, '2026-04-14 01:43:42', 7, 66, 26),
 (834, 1, NULL, '2026-04-14 01:48:11', 7, 141, 26),
 (835, 1, 'At least 180 grams', '2026-04-14 01:42:51', 7, 121, 26),
-(836, 1, NULL, NULL, 7, 172, NULL),
 (837, 1, 'Plain', '2026-04-14 01:42:14', 7, 14, 26),
 (838, 1, NULL, '2026-04-14 01:45:28', 7, 168, 26),
 (840, 2, NULL, '2026-04-14 01:40:33', 7, 24, 26),
 (841, 1, 'Big one', '2026-04-14 01:41:14', 7, 11, 26),
 (842, 1, NULL, '2026-04-14 01:51:18', 7, 15, 26),
-(843, 1, NULL, NULL, 7, 151, NULL),
-(844, 1, NULL, NULL, 7, 60, NULL),
-(845, 1, NULL, NULL, 7, 182, NULL),
-(846, 1, NULL, NULL, 7, 73, NULL),
-(847, 1, NULL, NULL, 7, 183, NULL),
-(848, 1, NULL, NULL, 7, 181, NULL);
+(858, 1, NULL, '2026-04-21 04:09:16', 7, 5, 27),
+(861, 1, NULL, '2026-04-21 04:06:10', 7, 15, 27),
+(863, 1, NULL, '2026-04-21 03:55:17', 7, 21, 27),
+(872, 1, 'Isha', '2026-04-21 04:04:26', 7, 55, 27),
+(873, 1, NULL, '2026-04-21 03:55:18', 7, 61, 27),
+(875, 1, NULL, '2026-04-21 04:04:47', 7, 22, 27),
+(878, 1, NULL, '2026-04-21 03:58:41', 7, 72, 27),
+(881, 1, NULL, '2026-04-21 04:09:36', 7, 26, 27),
+(882, 1, 'The one you got last time', '2026-04-21 04:01:44', 7, 107, 27),
+(883, 1, NULL, '2026-04-21 03:55:18', 7, 8, 27),
+(884, 1, NULL, '2026-04-21 04:11:36', 7, 35, 27),
+(885, 1, NULL, '2026-04-21 03:56:55', 7, 11, 27),
+(888, 1, NULL, '2026-04-21 04:00:21', 7, 66, 27),
+(889, 2, NULL, '2026-04-21 04:00:22', 7, 1, 27),
+(890, 1, NULL, '2026-04-26 03:18:07', 7, 160, 28),
+(892, 1, NULL, '2026-04-21 04:00:19', 7, 64, 27),
+(893, 1, 'Orange', '2026-04-21 03:55:32', 7, 43, 27),
+(894, 1, NULL, '2026-04-21 03:57:13', 7, 16, 27),
+(895, 1, 'Plan only', '2026-04-21 03:58:41', 7, 14, 27),
+(896, 1, NULL, '2026-04-21 04:11:08', 7, 188, 27),
+(898, 1, 'To chop up', '2026-04-26 03:08:05', 7, 91, 28),
+(901, 1, NULL, '2026-04-26 03:15:14', 7, 189, 28),
+(902, 1, NULL, '2026-04-26 03:06:11', 7, 89, 28),
+(903, 1, NULL, '2026-04-26 03:13:24', 7, 145, 28),
+(904, 1, NULL, '2026-04-26 03:04:14', 7, 87, 28),
+(906, 1, NULL, '2026-04-26 03:06:33', 7, 16, 28),
+(907, 1, NULL, '2026-04-26 03:10:13', 7, 90, 28),
+(908, 1, NULL, '2026-04-26 03:02:37', 7, 8, 28),
+(909, 1, NULL, '2026-04-26 03:11:34', 7, 15, 28),
+(910, 1, NULL, '2026-04-26 03:06:12', 7, 68, 28),
+(911, 1, 'Both', '2026-04-26 03:08:31', 7, 14, 28),
+(913, 2, NULL, '2026-04-26 03:10:14', 7, 1, 28),
+(914, 1, NULL, '2026-04-26 03:03:55', 7, 120, 28),
+(915, 1, NULL, '2026-04-26 03:02:59', 7, 70, 28),
+(916, 1, NULL, '2026-04-26 03:08:04', 7, 41, 28),
+(917, 1, NULL, '2026-04-26 03:21:42', 7, 47, 28),
+(919, 1, NULL, '2026-04-26 03:16:03', 7, 105, 28),
+(920, 1, NULL, '2026-04-26 03:01:13', 7, 61, 28),
+(921, 1, NULL, '2026-04-26 03:21:42', 7, 60, 28),
+(925, 1, NULL, '2026-05-01 04:42:14', 7, 120, 29),
+(931, 1, NULL, '2026-05-01 04:42:15', 7, 11, 29),
+(932, 1, NULL, '2026-05-01 04:42:16', 7, 103, 29),
+(933, 1, NULL, '2026-05-01 04:42:15', 7, 16, 29),
+(943, 2, NULL, '2026-05-01 04:42:16', 7, 1, 29),
+(944, 1, 'Both', '2026-05-01 04:42:15', 7, 14, 29),
+(946, 1, NULL, '2026-05-01 04:42:16', 7, 171, 29),
+(949, 1, NULL, '2026-05-01 04:42:17', 7, 45, 29),
+(962, 2, NULL, NULL, 7, 1, NULL),
+(963, 1, 'Half', NULL, 7, 115, NULL),
+(965, 1, NULL, NULL, 7, 41, NULL),
+(971, 1, 'Strips', NULL, 7, 91, NULL),
+(972, 1, NULL, NULL, 7, 87, NULL);
 
 -- --------------------------------------------------------
 
@@ -1607,7 +1656,6 @@ INSERT INTO `product_placement` (`id`, `aisle_side`, `type`, `food_item_id`, `su
 (7, -1, 'system', 20, 1, 15, NULL, NULL),
 (13, 1, 'system', 16, 1, 25, NULL, NULL),
 (14, -1, 'system', 39, 1, 5, NULL, 1),
-(16, 1, 'user', 49, 1, 71, NULL, 1),
 (17, 1, 'user', 14, 1, 35, NULL, 1),
 (18, -1, 'system', 1, 1, 35, NULL, NULL),
 (19, -1, 'system', 56, 1, 83, NULL, 1),
@@ -1694,7 +1742,7 @@ INSERT INTO `product_placement` (`id`, `aisle_side`, `type`, `food_item_id`, `su
 (101, 1, 'user', 144, 1, 69, NULL, 1),
 (102, -1, 'user', 123, 1, 74, NULL, 1),
 (103, 1, 'user', 146, 1, 99, NULL, 1),
-(104, -1, 'user', 47, 9, 600, NULL, 1),
+(104, -1, 'system', 47, 9, 600, NULL, NULL),
 (105, -1, 'group', 146, 9, 600, NULL, NULL),
 (106, 1, 'system', 16, 9, 564, NULL, NULL),
 (107, 1, 'user', 72, 9, 560, NULL, 2),
@@ -1706,10 +1754,10 @@ INSERT INTO `product_placement` (`id`, `aisle_side`, `type`, `food_item_id`, `su
 (113, 1, 'system', 87, 9, 535, NULL, NULL),
 (114, 1, 'system', 8, 9, 539, NULL, NULL),
 (115, 1, 'group', 20, 9, 535, NULL, NULL),
-(116, 1, 'user', 21, 9, 544, NULL, 1),
+(116, 1, 'system', 21, 9, 544, NULL, NULL),
 (117, 1, 'group', 28, 9, 544, NULL, NULL),
 (118, 1, 'user', 3, 9, 628, NULL, 1),
-(119, 1, 'group', 22, 9, 628, NULL, NULL),
+(119, 1, 'user', 22, 9, 628, NULL, 2),
 (120, 1, 'system', 103, 9, 631, NULL, NULL),
 (121, 1, 'user', 12, 9, 623, NULL, 1),
 (122, -1, 'user', 39, 9, 520, NULL, 3),
@@ -1758,7 +1806,7 @@ INSERT INTO `product_placement` (`id`, `aisle_side`, `type`, `food_item_id`, `su
 (165, 1, 'user', 174, 1, 71, NULL, 3),
 (166, 1, 'user', 103, 1, 94, NULL, 3),
 (167, 1, 'user', 55, 1, 75, NULL, 3),
-(168, 1, 'group', 46, 9, 610, NULL, NULL),
+(168, 1, 'user', 46, 9, 610, NULL, 2),
 (169, -1, 'user', 129, 9, 624, NULL, 2),
 (170, 1, 'system', 172, 9, 630, NULL, NULL),
 (171, -1, 'user', 177, 9, 628, NULL, 3),
@@ -1771,7 +1819,20 @@ INSERT INTO `product_placement` (`id`, `aisle_side`, `type`, `food_item_id`, `su
 (178, 1, 'user', 179, 9, 626, NULL, 2),
 (179, -1, 'user', 3, 9, 629, NULL, 2),
 (180, -1, 'user', 124, 9, 623, NULL, 2),
-(181, 1, 'user', 180, 9, 627, NULL, 2);
+(181, 1, 'user', 180, 9, 627, NULL, 2),
+(182, 1, 'user', 64, 9, 567, NULL, 2),
+(183, -1, 'group', 63, 9, 553, NULL, NULL),
+(184, 1, 'user', 107, 9, 621, NULL, 2),
+(185, 1, 'user', 35, 9, 638, NULL, 2),
+(186, 1, 'user', 16, 9, 562, NULL, 2),
+(187, -1, 'user', 188, 9, 655, NULL, 2),
+(188, 1, 'user', 26, 9, 621, NULL, 2),
+(189, -1, 'user', 5, 9, 626, NULL, 2),
+(190, 1, 'group', 89, 9, 544, NULL, NULL),
+(191, -1, 'user', 105, 9, 637, NULL, 2),
+(192, -1, 'user', 189, 9, 649, NULL, 2),
+(193, 1, 'user', 160, 9, 638, NULL, 2),
+(194, -1, 'user', 190, 9, 624, NULL, 2);
 
 -- --------------------------------------------------------
 
@@ -2037,7 +2098,10 @@ INSERT INTO `shopping_session` (`id`, `started_at`, `completed_at`, `shopping_li
 (22, '2026-04-06 04:26:04', '2026-04-06 05:17:22', 7, 513, 9),
 (23, '2026-04-07 23:52:39', '2026-04-08 05:26:35', 10, NULL, NULL),
 (25, '2026-04-10 21:54:07', '2026-04-10 22:43:45', 7, 513, 9),
-(26, '2026-04-14 01:40:33', '2026-04-14 01:54:10', 7, 513, 9);
+(26, '2026-04-14 01:40:33', '2026-04-14 01:54:10', 7, 513, 9),
+(27, '2026-04-21 03:55:17', '2026-04-21 04:11:36', 7, 513, 9),
+(28, '2026-04-26 03:01:13', '2026-04-26 03:21:42', 7, 513, 9),
+(29, '2026-05-01 04:42:14', NULL, 7, 513, 9);
 
 -- --------------------------------------------------------
 
@@ -2262,7 +2326,7 @@ ALTER TABLE `edge`
 -- AUTO_INCREMENT for table `food_item`
 --
 ALTER TABLE `food_item`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=184;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=192;
 
 --
 -- AUTO_INCREMENT for table `list_food_order`
@@ -2280,7 +2344,7 @@ ALTER TABLE `list_invite`
 -- AUTO_INCREMENT for table `list_item`
 --
 ALTER TABLE `list_item`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=849;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=973;
 
 --
 -- AUTO_INCREMENT for table `list_member`
@@ -2304,7 +2368,7 @@ ALTER TABLE `owner_type`
 -- AUTO_INCREMENT for table `product_placement`
 --
 ALTER TABLE `product_placement`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=195;
 
 --
 -- AUTO_INCREMENT for table `shelf`
@@ -2322,7 +2386,7 @@ ALTER TABLE `shopping_list`
 -- AUTO_INCREMENT for table `shopping_session`
 --
 ALTER TABLE `shopping_session`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `supermarket`
